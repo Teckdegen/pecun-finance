@@ -39,19 +39,25 @@ export function Mark({ label, size = 36, ring }: { label: string; size?: number;
 
 /** Image logo with a lettered fallback when missing or broken. */
 export function Logo({ src, label, size = 36, ring, title }: { src?: string; label: string; size?: number; ring?: boolean; title?: string }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) return <Mark label={label} size={size} ring={ring} />;
+  // 0: through PECUN's logo cache, 1: the original URL, 2: give up and show the letter mark.
+  const [state, setState] = useState({ src, stage: 0 });
+  const stage = state.src === src ? state.stage : 0;
+  const setStage = (next: (s: number) => number) => setState({ src, stage: next(stage) });
+  if (!src || stage >= 2) return <Mark label={label} size={size} ring={ring} />;
+  const external = src.startsWith("https://");
+  const url = external && stage === 0 ? `/api/logo?u=${encodeURIComponent(src)}` : src;
   return (
     // eslint-disable-next-line @next/next/no-img-element -- logos come from many external hosts
     <img
-      src={src}
+      key={url}
+      src={url}
       alt=""
       title={title}
       width={size}
       height={size}
       loading="lazy"
       referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
+      onError={() => setStage((s) => (external && s === 0 ? 1 : 2))}
       className={`shrink-0 rounded-full bg-white object-cover ${ring ? "ring-2 ring-card" : ""}`}
       style={{ width: size, height: size }}
     />

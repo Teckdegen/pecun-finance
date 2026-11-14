@@ -84,7 +84,29 @@ function candidates(asset: string): string[] {
   return out.map((s) => s.toUpperCase());
 }
 
+/**
+ * Every external logo URL the catalog has handed out. /api/logo only fetches URLs in this set,
+ * so it can't be used as an open proxy.
+ */
+const known = ((globalThis as unknown as { __pecunKnownLogos?: Set<string> }).__pecunKnownLogos ??= new Set<string>(
+  Object.values(PLATFORM_LOGO).filter((u) => u.startsWith("https://")),
+));
+
+export function isKnownLogo(url: string): boolean {
+  return known.has(url);
+}
+
+function remember(...urls: (string | undefined)[]) {
+  for (const u of urls) if (u && u.startsWith("https://")) known.add(u);
+}
+
 export function withLogos(list: Opportunity[], idx: LogoIndex | null): Opportunity[] {
+  const out = withLogosInner(list, idx);
+  for (const o of out) remember(o.assetLogo, o.logoUrl, o.protocolLogo, o.chainLogo, ...(o.managers ?? []).map((m) => m.logoUrl));
+  return out;
+}
+
+function withLogosInner(list: Opportunity[], idx: LogoIndex | null): Opportunity[] {
   return list.map((o) => {
     const lifiChain = CHAIN_ALIAS[o.chain] ?? o.chain;
     const chainId = idx?.chainIdByName.get(lifiChain);
