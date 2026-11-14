@@ -229,12 +229,6 @@ export function Explorer({ catalog, initialQuery = "", initialEarn }: { catalog:
         </div>
       )}
 
-      <p className="mt-10 font-sans text-xs leading-relaxed text-faint">
-        Live from each protocol&apos;s own API · updated {new Date(catalog.updatedAt).toLocaleTimeString()}. Every positive-APY yield over $1,000 TVL from our sources is listed.
-        APYs are variable and not a promise of future returns. Not available in unsupported regions, including the United States, the United Kingdom, Ontario
-        and sanctioned jurisdictions.
-      </p>
-
       {modalOpen && (
         <FilterModal
           all={all}

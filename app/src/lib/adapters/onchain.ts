@@ -110,6 +110,7 @@ const COMET = parseAbi([
   "function totalSupply() view returns (uint256)",
   "function totalBorrow() view returns (uint256)",
   "function isSupplyPaused() view returns (bool)",
+  "function isWithdrawPaused() view returns (bool)",
 ]);
 
 /** Comet rates are per second, 1e18-scaled. */
@@ -121,15 +122,15 @@ export async function compound(): Promise<Opportunity[]> {
     const p = client(chainId);
     const read = <T>(functionName: string, args: unknown[] = []) =>
       p.readContract({ address, abi: COMET, functionName, args } as never) as Promise<T>;
-    const [base, symbol, util, supply, borrow, paused] = await Promise.all([
+    const [base, symbol, util, supply, borrow, supplyPaused, withdrawPaused] = await Promise.all([
       read<Address>("baseToken"),
       read<string>("symbol"),
       read<bigint>("getUtilization"),
       read<bigint>("totalSupply"),
       read<bigint>("totalBorrow"),
       read<boolean>("isSupplyPaused"),
+      read<boolean>("isWithdrawPaused"),
     ]);
-    if (paused) return null;
     const [supplyRate, borrowRate, decimals, info] = await Promise.all([
       read<bigint>("getSupplyRate", [util]),
       read<bigint>("getBorrowRate", [util]),
@@ -143,6 +144,11 @@ export async function compound(): Promise<Opportunity[]> {
     const apy = cometApy(supplyRate);
     return {
       id: `compound:${chainId}:${address}`,
+      ...(withdrawPaused
+        ? { status: "paused" as const, statusReason: "Paused by Compound: withdrawals are stopped for now." }
+        : supplyPaused
+          ? { status: "withdraw-only" as const, statusReason: "Compound has paused new deposits. You can still withdraw." }
+          : {}),
       protocol: "Compound",
       name: `${asset} lending (${symbol})`,
       ticker: symbol,
@@ -272,7 +278,6 @@ async function sparkLend(chainId: number, pool: Address): Promise<Opportunity[]>
     const active = bits(cfg, 56, 1) === 1;
     const frozen = bits(cfg, 57, 1) === 1;
     const paused = bits(cfg, 60, 1) === 1;
-    if (!active || frozen || paused) return null;
     const [aSupply, vDebt] = await Promise.all([
       p.readContract({ address: d.aTokenAddress, abi: ERC20, functionName: "totalSupply" }),
       p.readContract({ address: d.variableDebtTokenAddress, abi: ERC20, functionName: "totalSupply" }),
@@ -285,6 +290,11 @@ async function sparkLend(chainId: number, pool: Address): Promise<Opportunity[]>
     const apy = aaveRateToApy(d.currentLiquidityRate);
     return {
       id: `spark:${chainId}:${asset}`,
+      ...(paused || !active
+        ? { status: "paused" as const, statusReason: "Paused by Spark: deposits and withdrawals are stopped for now." }
+        : frozen
+          ? { status: "withdraw-only" as const, statusReason: "Frozen by Spark governance: no new deposits. You can still withdraw." }
+          : {}),
       protocol: "Spark",
       name: `${symbol} lending`,
       asset: symbol,

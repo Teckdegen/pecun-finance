@@ -49,16 +49,16 @@ export function PortfolioView() {
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <div className="grid min-w-[640px] grid-cols-4 px-1 text-sm text-muted">
+      <div className="mt-4">
+        <div className="grid grid-cols-4 gap-2 px-1 text-xs text-muted sm:text-sm">
           {["Vault", "APY", "Yield Earned", "Your shares"].map((h) => (
-            <div key={h} className="flex items-center gap-1 py-2">
-              {h}
-              <ArrowUpDown className="size-3.5" />
+            <div key={h} className="flex min-w-0 items-center gap-1 py-2">
+              <span className="truncate">{h}</span>
+              <ArrowUpDown className="hidden size-3.5 shrink-0 sm:block" />
             </div>
           ))}
         </div>
-        <div className="mt-2 flex min-h-[320px] min-w-[640px] flex-col items-center justify-center gap-3 rounded-2xl bg-card text-center">
+        <div className="mt-2 flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-2xl bg-card text-center sm:min-h-[320px]">
           <p className="text-sm text-muted">No active positions yet.</p>
           <Link href="/?earn=vaults" className="inline-flex h-9 items-center rounded-full border border-line px-4 text-sm font-medium text-accent hover:border-accent">
             Explore Vaults
@@ -106,16 +106,16 @@ export function ActivityView() {
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <div className="grid min-w-[640px] grid-cols-4 px-1 text-sm text-muted">
+      <div className="mt-4">
+        <div className="grid grid-cols-4 gap-2 px-1 text-xs text-muted sm:text-sm">
           {["Action", "Vault", "Network", "Date"].map((h) => (
-            <div key={h} className="flex items-center gap-1 py-2">
-              {h}
-              <ArrowUpDown className="size-3.5" />
+            <div key={h} className="flex min-w-0 items-center gap-1 py-2">
+              <span className="truncate">{h}</span>
+              <ArrowUpDown className="hidden size-3.5 shrink-0 sm:block" />
             </div>
           ))}
         </div>
-        <div className="mt-2 flex min-h-[320px] min-w-[640px] flex-col items-center justify-center gap-3 rounded-2xl bg-card text-center">
+        <div className="mt-2 flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-2xl bg-card text-center sm:min-h-[320px]">
           <p className="text-sm text-muted">{EMPTY[tab]}</p>
           <Link href="/portfolio" className="inline-flex h-9 items-center rounded-full border border-line px-4 text-sm font-medium text-accent hover:border-accent">
             Go to Portfolio

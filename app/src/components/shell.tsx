@@ -8,13 +8,12 @@ import {
   Layers,
   Lock,
   Menu,
-  Search,
   Wallet,
   Waves,
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { PlatformLogos } from "./ui";
 
@@ -42,6 +41,12 @@ export const NAV = [
   { href: "/?earn=stable", earn: "stable", label: "Stablecoin", icon: CircleDollarSign },
   { href: "/?earn=fixed", earn: "fixed", label: "Fixed yield", icon: Lock },
   { href: "/?earn=perps", earn: "perps", label: "Perps", icon: ArrowUpDown },
+] as const;
+
+const LEGAL_LINKS = [
+  { href: "/terms", label: "Terms" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/risk-disclosure", label: "Risk Disclosure" },
 ] as const;
 
 function useActive() {
@@ -91,14 +96,17 @@ function Frame({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-bg font-tight text-ink">
       {menuOpen && <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeMenu} />}
-      <Sidebar />
-      <div className="flex min-h-dvh min-w-0 flex-col lg:pl-60">
-        <Header />
-        <main
-          className={`mx-auto w-full max-w-[1240px] flex-1 px-4 pt-4 pb-[max(24px,env(safe-area-inset-bottom))] md:px-8 md:pb-16 md:pt-6 ${onVault ? "pb-32" : ""}`}
-        >
-          {children}
-        </main>
+      {/* Sidebar and page sit side by side; on desktop the sidebar sticks while you scroll. */}
+      <div className="flex">
+        <Sidebar />
+        <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+          <Header />
+          <main
+            className={`mx-auto w-full max-w-[1240px] flex-1 px-4 pt-4 pb-[max(24px,env(safe-area-inset-bottom))] md:px-8 md:pb-16 md:pt-6 ${onVault ? "pb-32" : ""}`}
+          >
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
@@ -132,7 +140,7 @@ function Sidebar() {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-rail transition-transform lg:w-60 lg:translate-x-0 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
+      className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-rail transition-transform lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:translate-x-0 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
     >
       <div className="flex h-14 shrink-0 items-center justify-between px-4">
         <Link href="/" aria-label="PECUN home" className="flex items-center gap-2">
@@ -155,10 +163,17 @@ function Sidebar() {
       <div className="shrink-0 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
           <div className="lime-banner overflow-hidden rounded-xl p-3.5">
             <span className="lb-pill inline-flex rounded-full px-2 py-0.5 font-sans text-[11px]">Every chain</span>
-            <p className="mt-2 text-sm font-medium leading-snug tracking-[-0.01em]">Put your money to work on EVM, Solana, Sui and Hyperliquid.</p>
+            <p className="mt-2 text-sm font-medium leading-snug tracking-[-0.01em]">Put your money to work.</p>
             <div className="mt-3"><PlatformLogos max={5} size={20} /></div>
           </div>
-          <p className="mt-4 px-1 font-sans text-xs text-faint">© 2026 PECUN Finance</p>
+          <nav aria-label="Legal" className="mt-4 flex flex-wrap gap-x-3 gap-y-1 px-1 font-sans text-xs">
+            {LEGAL_LINKS.map((l) => (
+              <Link key={l.href} href={l.href} onClick={closeMenu} className="text-muted hover:text-ink">
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+          <p className="mt-2 px-1 font-sans text-xs text-faint">© 2026 PECUN Finance</p>
         </div>
     </aside>
   );
@@ -185,7 +200,6 @@ function Header() {
         <span className="hidden h-5 w-px shrink-0 bg-line lg:block" />
         <Crumb />
         <div className="ml-auto flex items-center gap-2">
-          <HeaderSearch />
           <Link
             href="/portfolio"
             className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent hover:bg-accent-deep"
@@ -207,7 +221,15 @@ function Crumb() {
       ? [{ label: "Portfolio", href: "/portfolio" }, { label: "Activity" }]
       : path.startsWith("/portfolio")
         ? [{ label: "Portfolio" }]
-        : earn
+        : path.startsWith("/terms")
+          ? [{ label: "Terms" }]
+          : path.startsWith("/privacy")
+            ? [{ label: "Privacy" }]
+            : path.startsWith("/risk-disclosure")
+              ? [{ label: "Risk Disclosure" }]
+            : path.startsWith("/thank-you")
+              ? [{ label: "Thank you" }]
+              : earn
           ? [{ label: "Explore", href: "/" }, { label: NAV.find((n) => n.earn === earn)?.label ?? "Explore" }]
           : [{ label: "Explore" }];
   return (
@@ -225,36 +247,6 @@ function Crumb() {
         </span>
       ))}
     </p>
-  );
-}
-
-function HeaderSearch() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const [q, setQ] = useState(params.get("q") ?? "");
-  const submit = () => {
-    const v = q.trim();
-    router.push(v ? `/?q=${encodeURIComponent(v)}` : "/");
-  };
-  return (
-    <form
-      className="hidden lg:block"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <label className="relative block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search yields"
-          aria-label="Search yields"
-          className="h-9 w-56 rounded-lg border border-line bg-bg pl-9 pr-3 text-sm text-ink placeholder:text-faint focus:border-white/60"
-        />
-      </label>
-    </form>
   );
 }
 

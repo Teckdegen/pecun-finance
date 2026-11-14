@@ -103,16 +103,6 @@ export function VaultView({ o, deployments }: { o: Opportunity; deployments: Opp
         ) : (
           <Overview o={o} deployments={deployments} history={history} loading={loading} />
         )}
-        <section className="mt-10 text-xs leading-relaxed text-muted">
-          <h3 className="text-sm font-medium text-ink">Risk disclosure</h3>
-          <p className="mt-2">
-            This position is run by {o.manager === o.protocol ? o.protocol : `${o.manager} on ${o.protocol}`}, not by PECUN. PECUN lists it and will route
-            your transaction; it does not manage the strategy or hold your funds. Risks include smart-contract bugs, oracle or pricing errors, strategy
-            losses and assets losing their peg
-            {text(o.redemption) && !/^instant/i.test(o.redemption) ? ` and delayed withdrawals (${o.redemption.toLowerCase()})` : ""}. APY is variable and
-            past results do not guarantee future returns.
-          </p>
-        </section>
       </div>
       <DepositPanel o={o} />
       <PhoneDepositBar o={o} />
@@ -137,7 +127,13 @@ function PhoneDepositBar({ o }: { o: Opportunity }) {
         <span className="text-sm">
           Earn <b className="tabular">{pct(o.apy30d ?? o.apy7d ?? o.apy)}</b> <span className="text-muted">on {o.asset}</span>
         </span>
-        <span className="eyebrow rounded-lg bg-accent px-5 py-3 text-on-accent">Deposit</span>
+        {/* Deposits closed: the button greys out; the bar still opens the panel so holders can withdraw. */}
+        <span
+          aria-disabled={o.status && o.status !== "open" ? true : undefined}
+          className={`eyebrow rounded-lg px-5 py-3 ${o.status && o.status !== "open" ? "bg-card-2 text-muted" : "bg-accent text-on-accent"}`}
+        >
+          Deposit
+        </span>
       </a>
     </div>
   );
@@ -737,11 +733,6 @@ function AllocationTable({ rows }: { rows: AllocRow[] }) {
                 <span className="flex items-center gap-2 font-medium">
                   <Logo src={r.logo} label={r.asset} size={18} />
                   {r.asset}
-                  {r.url && (
-                    <a href={r.url} target="_blank" rel="noreferrer" aria-label={`View ${r.asset}`} className="text-muted hover:text-ink">
-                      <ExternalLink className="size-3.5" />
-                    </a>
-                  )}
                 </span>
               </td>
               {hasProtocol && <td className="px-3 py-3 text-muted">{r.protocol}</td>}
@@ -827,11 +818,28 @@ function Transparency({ o, history, loading, deployments, totalTvl }: { o: Oppor
 
 /* ---------------- Deposit / withdraw only ---------------- */
 
+/** Checks a typed amount. Returns the message to show, or null when it's fine. */
+function validateAmount(raw: string): string | null {
+  const v = raw.trim();
+  if (v === "") return "Enter an amount.";
+  if (!/^\d*\.?\d*$/.test(v) || v === ".") return "Use numbers only, like 100 or 0.5.";
+  if (Number(v) <= 0) return "Amount must be more than 0.";
+  return null;
+}
+
 function DepositPanel({ o }: { o: Opportunity }) {
+  // A closed vault only disables the button for the side that's unavailable.
+  const canDeposit = !o.status || o.status === "open";
+  const canWithdraw = o.status !== "paused";
   const [side, setSide] = useState<"deposit" | "withdraw">("deposit");
   const [instant, setInstant] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [touched, setTouched] = useState(false);
   const apy = o.apy30d ?? o.apy7d ?? o.apy;
   const exit = side === "withdraw" && instant ? o.instantExit : undefined;
+  const sideOpen = side === "deposit" ? canDeposit : canWithdraw;
+  const amountError = sideOpen && touched ? validateAmount(amount) : null;
+  const amountOk = sideOpen && amount !== "" && validateAmount(amount) === null;
   return (
     <aside id="deposit" className="scroll-mt-24 lg:sticky lg:top-20 lg:self-start">
       <div className="rounded-xl bg-card p-4">
@@ -841,6 +849,8 @@ function DepositPanel({ o }: { o: Opportunity }) {
               key={t}
               onClick={() => {
                 setSide(t);
+                setAmount("");
+                setTouched(false);
                 if (t === "deposit") setInstant(false);
               }}
               className={`h-8 rounded-full px-4 capitalize ${side === t ? "bg-white/15 font-medium text-ink" : "text-muted"}`}
@@ -854,16 +864,35 @@ function DepositPanel({ o }: { o: Opportunity }) {
             <Info className="size-3.5 shrink-0 text-muted" /> Withdrawals: <b className="font-medium">{o.redemption}</b>
           </div>
         )}
-        <div className="mt-3 rounded-2xl border border-line p-4">
-          <div className="text-xs text-muted">{side === "deposit" ? "Deposit" : "Withdraw"}</div>
+        <div className={`mt-3 rounded-2xl border p-4 ${amountError ? "border-red-400/70" : "border-line"}`}>
+          <label htmlFor="amount" className="text-xs text-muted">
+            {side === "deposit" ? "Deposit" : "Withdraw"}
+          </label>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <input id="amount" inputMode="decimal" placeholder="0" disabled className="w-1/2 bg-transparent text-3xl text-faint outline-none" />
+            <input
+              id="amount"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0"
+              value={amount}
+              disabled={!sideOpen}
+              onChange={(e) => setAmount(e.target.value.replace(",", "."))}
+              onBlur={() => setTouched(true)}
+              aria-invalid={!!amountError}
+              aria-describedby={amountError ? "amount-error" : undefined}
+              className="w-1/2 bg-transparent text-3xl text-ink outline-none placeholder:text-faint disabled:text-faint"
+            />
             <span className="flex items-center gap-1.5 text-base font-medium">
               <Logo src={side === "deposit" ? o.assetLogo : o.logoUrl ?? o.assetLogo} label={o.asset} size={22} />
               {side === "deposit" ? o.asset : (o.ticker ?? o.asset)}
             </span>
           </div>
         </div>
+        {amountError && (
+          <p id="amount-error" role="alert" className="mt-2 text-xs text-red-300">
+            {amountError}
+          </p>
+        )}
         {side === "withdraw" && o.instantExit && (
           <div className="mt-3 rounded-2xl border border-line p-3 text-xs">
             <button
@@ -906,8 +935,17 @@ function DepositPanel({ o }: { o: Opportunity }) {
           </div>
         )}
         <button disabled className="mt-3 h-11 w-full cursor-not-allowed rounded-xl bg-card-2 text-sm font-medium text-muted">
-          Enter amount
+          {side === "deposit" && !canDeposit
+            ? "Deposits closed"
+            : side === "withdraw" && !canWithdraw
+              ? "Withdrawals paused"
+              : amountOk
+                ? `${side === "deposit" ? "Deposits" : "Withdrawals"} open soon`
+                : "Enter amount"}
         </button>
+        {((side === "deposit" && !canDeposit) || (side === "withdraw" && !canWithdraw)) && o.statusReason && (
+          <p className="mt-2 text-center text-xs text-muted">{o.statusReason}</p>
+        )}
         <dl className="mt-4 grid gap-2.5 text-sm">
           {apy !== null && <Line label="APY" value={pct(apy)} accent />}
           {exit ? <Line label="Withdrawal" value={`Instant via ${exit.via}`} /> : text(o.redemption) ? <Line label="Withdrawal" value={o.redemption} /> : null}

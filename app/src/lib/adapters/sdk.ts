@@ -154,7 +154,6 @@ export async function gearbox(): Promise<Opportunity[]> {
     const register = (sdk as unknown as { onchain: { chain: (k: string) => { marketRegister: { pools: { pool: GearboxPool }[] } } } }).onchain
       .chain(n.network).marketRegister;
     for (const { pool } of register.pools) {
-      if (pool.isPaused) continue;
       const price = await getJson<{ priceUSD?: string; symbol?: string; logoURI?: string }>(
         `https://li.quest/v1/token?chain=${n.lifiChain}&token=${pool.underlying}`,
       ).catch(() => ({}) as { priceUSD?: string; symbol?: string; logoURI?: string });
@@ -162,6 +161,7 @@ export async function gearbox(): Promise<Opportunity[]> {
       const liquidity = num(String(pool.expectedLiquidity)) / 10 ** pool.decimals;
       out.push({
         id: `gearbox:${n.chainId}:${pool.address}`,
+        ...(pool.isPaused ? { status: "paused" as const, statusReason: "Paused by Gearbox: deposits and withdrawals are stopped for now." } : {}),
         protocol: "Gearbox",
         name: pool.name ?? `${symbol} pool`,
         asset: symbol,
@@ -211,7 +211,6 @@ export async function moonwell(): Promise<Opportunity[]> {
   });
   const markets = await mw.getMarkets();
   return markets
-    .filter((m) => !m.deprecated && !m.mintPaused)
     .map((m) => {
       const asset = m.underlyingToken.symbol;
       // The SDK reports rates in percent.
@@ -220,6 +219,9 @@ export async function moonwell(): Promise<Opportunity[]> {
       const borrowedUsd = m.totalBorrowsUsd;
       return {
         id: `moonwell:${m.chainId}:${m.marketToken.address}`,
+        ...(m.deprecated || m.mintPaused
+          ? { status: "withdraw-only" as const, statusReason: `${m.deprecated ? "Deprecated" : "Deposits paused"} by Moonwell. You can still withdraw.` }
+          : {}),
         protocol: "Moonwell",
         name: `${asset} lending`,
         ticker: m.marketToken.symbol,

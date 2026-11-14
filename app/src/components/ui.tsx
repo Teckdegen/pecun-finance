@@ -28,7 +28,8 @@ export function Mark({ label, size = 36, ring }: { label: string; size?: number;
   const hue = hueOf(label);
   return (
     <span
-      aria-hidden
+      role="img"
+      aria-label={`${label} logo`}
       className={`grid shrink-0 place-items-center rounded-full font-medium text-white ${ring ? "ring-2 ring-card" : ""}`}
       style={{ width: size, height: size, fontSize: size * 0.38, background: `radial-gradient(circle at 30% 25%, hsl(${hue} 55% 60%), hsl(${hue} 50% 34%))` }}
     >
@@ -51,7 +52,7 @@ export function Logo({ src, label, size = 36, ring, title }: { src?: string; lab
     <img
       key={url}
       src={url}
-      alt=""
+      alt={`${label} logo`}
       title={title}
       width={size}
       height={size}
@@ -175,7 +176,7 @@ export function AddressPill({ address, chain, label }: { address: string; chain:
           className="inline-flex size-7 items-center justify-center rounded-lg border border-line bg-card-2 transition hover:border-faint">
           {ex.logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={ex.logo} alt="" width={16} height={16} className="size-4 rounded-sm" />
+            <img src={ex.logo} alt={`${ex.name} logo`} width={16} height={16} className="size-4 rounded-sm" />
           ) : (
             <svg viewBox="0 0 24 24" className="size-3.5 text-muted" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>
           )}

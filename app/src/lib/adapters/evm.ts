@@ -219,7 +219,6 @@ export async function aave(): Promise<Opportunity[]> {
   const out: Opportunity[] = [];
   for (const m of data.markets) {
     for (const r of m.reserves) {
-      if (r.isFrozen || r.isPaused) continue;
       const asset = r.underlyingToken.symbol;
       const price = num(r.usdExchangeRate);
       const b = r.borrowInfo ?? undefined;
@@ -229,6 +228,11 @@ export async function aave(): Promise<Opportunity[]> {
       const supplied = num(r.size.usd);
       out.push({
         id: `aave:${m.chain.chainId}:${m.name}:${r.underlyingToken.address}`,
+        ...(r.isPaused
+          ? { status: "paused" as const, statusReason: "Paused by Aave: deposits and withdrawals are stopped for now." }
+          : r.isFrozen
+            ? { status: "withdraw-only" as const, statusReason: "Frozen by Aave governance: no new deposits. You can still withdraw." }
+            : {}),
         protocol: "Aave",
         name: `${asset} lending`,
         asset,
@@ -540,7 +544,7 @@ export async function upshift(): Promise<Opportunity[]> {
   const d = settled.filter((r): r is PromiseFulfilledResult<UpshiftVault> => r.status === "fulfilled").map((r) => r.value);
   if (d.length === 0 && addresses.length > 0) throw new Error("No Upshift vault records could be loaded");
   return d
-    .filter((v) => v.is_visible && v.status === "active" && !v.withdrawal_only)
+    .filter((v) => v.is_visible && v.status === "active")
     .map((v) => {
       const hist = (v.historical_apy ?? {}) as Record<string, unknown>;
       let apy = firstApy(v.reported_apy) ?? numOrNull(hist["30"]) ?? numOrNull(hist["7"]);
@@ -550,6 +554,7 @@ export async function upshift(): Promise<Opportunity[]> {
       const asset = (v.receipt_token_symbol ?? v.vault_name).replace(/^(up|xup|hb|ag|hg|gt|core)/i, "") || v.vault_name;
       return {
         id: `upshift:${v.chain}:${v.address}`,
+        ...(v.withdrawal_only ? { status: "withdraw-only" as const, statusReason: "Upshift has closed this vault to deposits. You can still withdraw." } : {}),
         protocol: "Upshift",
         name: v.vault_name,
         asset,
@@ -596,14 +601,20 @@ export async function aaveV4(): Promise<Opportunity[]> {
     { ids: chains.chains.map((c) => c.chainId) },
   );
   return data.reserves
-    .filter((r) => r.status.active && !r.status.frozen && !r.status.paused && r.canSupply)
     .map((r) => {
       const asset = r.asset.underlying.info.symbol;
+      const halted = r.status.paused || !r.status.active;
+      const closed = r.status.frozen || !r.canSupply;
       const supplied = num(r.summary.supplied.exchange?.value);
       const borrowed = num(r.summary.borrowed.exchange?.value);
       const cap = num(r.settings.supplyCap.exchange?.value);
       return {
         id: `aavev4:${r.chain.chainId}:${r.spoke.address}:${r.onChainId}`,
+        ...(halted
+          ? { status: "paused" as const, statusReason: "Paused by Aave: deposits and withdrawals are stopped for now." }
+          : closed
+            ? { status: "withdraw-only" as const, statusReason: "Aave has closed this reserve to new deposits. You can still withdraw." }
+            : {}),
         protocol: "Aave",
         name: `${asset} lending · ${r.spoke.name} spoke`,
         asset,
@@ -648,10 +659,10 @@ export async function savingsGho(): Promise<Opportunity[]> {
   const { sghoVault: v } = await gql<{
     sghoVault: { totalAssets: { usd: string }; supplyCap: { usd: string }; targetRate: { value: string }; paused: boolean };
   }>("https://api.v3.aave.com/graphql", "{ sghoVault(request:{chainId:1}){ totalAssets{usd} supplyCap{usd} targetRate{value} paused } }");
-  if (v.paused) return [];
   return [
     {
       id: `sgho:1:${SGHO}`,
+      ...(v.paused ? { status: "paused" as const, statusReason: "Paused by Aave: deposits and withdrawals are stopped for now." } : {}),
       protocol: "Aave",
       name: "Savings GHO (sGHO)",
       ticker: "sGHO",
@@ -692,7 +703,7 @@ type EulerVault = {
   borrowApy?: number;
   apy7d?: number;
   apy30d?: number;
-  visibility?: { status: string; explorableLend: boolean };
+  visibility?: { status: string; explorableLend: boolean; decidedBy?: string; reason?: string | null };
 };
 
 const EULER = "https://v3.euler.finance";
@@ -714,14 +725,18 @@ export async function euler(): Promise<Opportunity[]> {
   const all = (await mapLimit(jobs, 3, ([kind, c]) => eulerList(kind, c))).flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   if (all.length === 0) throw new Error("Euler API returned no vaults");
   return all
-    .filter((v) => v.visibility?.status === "visible" && v.visibility.explorableLend && !v.isEscrow)
+    // Listed vaults are open. Vaults Euler has deprecated stay reachable as withdraw-only.
+    // Anything else Euler hides (unverified, spam) is never shown.
+    .filter((v) => !v.isEscrow && ((v.visibility?.status === "visible" && v.visibility.explorableLend) || v.visibility?.decidedBy === "deprecated"))
     .map((v) => {
       const asset = v.asset.symbol;
       const earn = v.vaultType === "earn";
+      const open = v.visibility?.status === "visible" && v.visibility.explorableLend;
       // Euler's API reports rates in percent (5.03 = 5.03%).
       const pct = (x: number | undefined) => (x === undefined || x === null ? null : x / 100);
       return {
         id: `euler:${v.chainId}:${v.address}`,
+        ...(open ? {} : { status: "withdraw-only" as const, statusReason: `Deprecated by Euler${v.visibility?.reason ? `: ${v.visibility.reason.replace(/\.$/, "")}` : ""}. You can still withdraw.` }),
         protocol: "Euler",
         name: earn ? v.name : `${asset} lending · ${v.symbol}`,
         ticker: v.symbol,

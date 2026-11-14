@@ -19,9 +19,22 @@ export interface Integration {
   chain?: string;
 }
 
+/**
+ * open: deposits and withdrawals work.
+ * withdraw-only: no new deposits (frozen, deprecated, supply paused, or delisted by the protocol); exits still work.
+ * paused: the protocol has stopped deposits and withdrawals for now.
+ */
+export type VaultStatus = "open" | "withdraw-only" | "paused";
+
 export interface Opportunity {
   /** Stable unique id: protocol:chain:address */
   id: string;
+  /** Missing means open. */
+  status?: VaultStatus;
+  /** Why the vault isn't open, in plain words (e.g. "Frozen by Aave governance"). */
+  statusReason?: string;
+  /** When PECUN noticed the vault had dropped off its protocol's list (ISO time). */
+  delistedAt?: string;
   /** URL slug for /earn/[slug]; assigned by the catalog so it is unique */
   slug?: string;
   protocol: string;
@@ -84,7 +97,10 @@ export interface SourceStatus {
 }
 
 export interface Catalog {
+  /** Open vaults: what Explore lists. */
   opportunities: Opportunity[];
+  /** Withdraw-only, paused or delisted vaults: hidden from Explore, but their pages and withdrawals keep working. */
+  closed: Opportunity[];
   sources: SourceStatus[];
   updatedAt: string;
 }

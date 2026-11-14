@@ -173,7 +173,6 @@ export async function navi(): Promise<Opportunity[]> {
   const res = await getJson<{ data: NaviPool[] } | NaviPool[]>("https://open-api.naviprotocol.io/api/navi/pools");
   const pools = Array.isArray(res) ? res : res.data;
   return pools
-    .filter((p) => !p.isDeprecated)
     .map((p) => {
       // totalSupplyAmount is scaled by 1e9 on NAVI; supply rate is a ray (1e27).
       const tvlUsd = (num(p.totalSupplyAmount) / 1e9) * num(p.token.price);
@@ -183,6 +182,7 @@ export async function navi(): Promise<Opportunity[]> {
       const asset = p.token.symbol;
       return {
         id: `navi:sui:${p.id}`,
+        ...(p.isDeprecated ? { status: "withdraw-only" as const, statusReason: "Deprecated by NAVI. You can still withdraw." } : {}),
         protocol: "NAVI",
         name: `${asset} lending`,
         asset,

@@ -2,6 +2,7 @@ import { aave, aaveV4, beefy, euler, fluid, lagoon, lido, morpho, pendle, saving
 import { aftermath, ember, hyperliquid, jupiterLend, kamino, marinade, meteora, navi, scallop, solanaStaking } from "./adapters/nonevm.ts";
 import { compound, sky, spark } from "./adapters/onchain.ts";
 import { gearbox, moonwell, suilend } from "./adapters/sdk.ts";
+import { delistedVaults, reconcile } from "./listing-state.ts";
 import { getLogoIndex, withLogos } from "./logos.ts";
 import type { Catalog, Opportunity, SourceStatus } from "./types.ts";
 
@@ -63,11 +64,12 @@ function refresh(name: string, fn: () => Promise<Opportunity[]>): Promise<void> 
   if (running) return running;
   const t0 = Date.now();
   const p = fn()
-    .then((items) => {
+    .then(async (items) => {
       // An empty answer from a source that had data is treated as a glitch: keep the old data.
       const prev = cache.get(name);
       if (items.length === 0 && prev?.items.length) throw new Error("Source returned no data");
-      cache.set(name, { items, at: Date.now(), ms: Date.now() - t0 });
+      // Vaults that vanished from the source are kept until they count as delisted (see listing-state.ts).
+      cache.set(name, { items: await reconcile(name, items), at: Date.now(), ms: Date.now() - t0 });
     })
     .catch((e: unknown) => {
       const prev = cache.get(name);
@@ -105,13 +107,15 @@ async function readSource(name: string, fn: () => Promise<Opportunity[]>): Promi
 }
 
 export async function buildCatalog(): Promise<Catalog> {
-  const [settled, logos] = await Promise.all([
+  const [settled, logos, delisted] = await Promise.all([
     Promise.all(SOURCES.map(([name, fn]) => readSource(name, fn))),
     getLogoIndex(),
+    delistedVaults(),
   ]);
 
   const seen = new Set<string>();
   const opportunities: Opportunity[] = [];
+  const closed: Opportunity[] = [];
   const sources: SourceStatus[] = [];
   for (const { status, items } of settled) {
     let count = 0;
@@ -120,16 +124,31 @@ export async function buildCatalog(): Promise<Catalog> {
       if (!(raw.tvlUsd >= MIN_TVL_USD)) continue;
       if (TESTNET.test(raw.chain)) continue;
       const o = raw.apy !== null && (raw.apy < 0 || raw.apy > MAX_SANE_APY) ? { ...raw, apy: null } : raw;
+      seen.add(o.id);
+      // Closed vaults stay reachable (their page, withdrawals) but aren't listed, whatever their APY.
+      if (o.status && o.status !== "open") {
+        closed.push(o);
+        continue;
+      }
       // Only list things that actually pay: no 0% (or unpublished) APY.
       if (o.apy === null || o.apy < MIN_APY) continue;
-      seen.add(o.id);
       opportunities.push(o);
       count++;
     }
     sources.push({ ...status, count });
   }
+  // Vaults that dropped off their protocol's list: kept, withdraw-only, so holders can still exit.
+  for (const d of delisted) if (!seen.has(d.id)) closed.push(d);
   opportunities.sort((a, b) => b.tvlUsd - a.tvlUsd);
-  return { opportunities: assignSlugs(withLogos(opportunities, logos)), sources, updatedAt: new Date().toISOString() };
+  closed.sort((a, b) => b.tvlUsd - a.tvlUsd);
+  // Open vaults get slugs first, so closed ones never take an open vault's URL.
+  const slugged = assignSlugs([...withLogos(opportunities, logos), ...withLogos(closed, logos)]);
+  return {
+    opportunities: slugged.slice(0, opportunities.length),
+    closed: slugged.slice(opportunities.length),
+    sources,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 const slugify = (s: string) =>
@@ -151,5 +170,6 @@ function assignSlugs(list: Opportunity[]): Opportunity[] {
 /** Look up one opportunity by slug (uses the same in-memory catalog). */
 export async function findBySlug(slug: string): Promise<{ item: Opportunity | undefined; catalog: Catalog }> {
   const catalog = await buildCatalog();
-  return { item: catalog.opportunities.find((o) => o.slug === slug), catalog };
+  const item = catalog.opportunities.find((o) => o.slug === slug) ?? catalog.closed.find((o) => o.slug === slug);
+  return { item, catalog };
 }

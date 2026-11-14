@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { AppShell } from "@/components/shell";
+import { CookieBanner } from "@/components/cookie-banner";
+import { TermsGate } from "@/components/terms-gate";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = localFont({
@@ -25,9 +28,13 @@ const robotoMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "PECUN Finance",
-  description: "Every on-chain yield PECUN can execute, across EVM, Solana, Sui and Hyperliquid.",
+  metadataBase: new URL(SITE_URL),
+  // Pages set their own title; the template adds the brand.
+  title: { default: `${SITE_NAME} · ${SITE_TAGLINE}`, template: "%s · PECUN" },
+  description: SITE_DESCRIPTION,
   applicationName: "PECUN",
+  openGraph: { type: "website", siteName: SITE_NAME, title: SITE_NAME, description: SITE_DESCRIPTION, url: "/" },
+  twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESCRIPTION },
   appleWebApp: { capable: true, title: "PECUN", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },
 };
@@ -44,6 +51,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${inter.variable} ${interTight.variable} ${robotoMono.variable}`}>
       <body className="antialiased">
         <AppShell>{children}</AppShell>
+        <TermsGate />
+        <CookieBanner />
       </body>
     </html>
   );

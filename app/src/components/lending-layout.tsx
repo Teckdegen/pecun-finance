@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ExternalLink, Gauge, Info, Landmark, ShieldCheck, TrendingUp } from "lucide-react";
+import { Activity, Gauge, Info, Landmark, ShieldCheck, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { LendingInfo, Opportunity } from "@/lib/types.ts";
 import { AddressPill, ChainIcon, Logo, pct, usd } from "./ui";
@@ -198,9 +198,6 @@ export function LendingLayout({ o }: { o: Opportunity }) {
             </div>
           ))}
         </dl>
-        <a href={o.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:bg-accent-deep">
-          <Logo src={o.protocolLogo} label={o.protocol} size={16} /> Open on {o.protocol} <ExternalLink className="size-3.5 opacity-70" />
-        </a>
       </Tile>
     </div>
   );
