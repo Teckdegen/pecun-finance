@@ -1,0 +1,517 @@
+<title>PECUN Build Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column with wide tables, a sticky section index on desktop, ledger-style tables */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #16202e;
+  --muted: #5a6577;
+  --line: #dde2ea;
+  --accent: #1f5f8b;
+  --accent-soft: #e3eef6;
+  --brass: #9a6b12;
+  --brass-soft: #f7efdc;
+  --ok: #1d7a4c;
+  --ok-soft: #e2f3ea;
+  --warn: #9a5b00;
+  --warn-soft: #fbefd9;
+  --risk: #a3322a;
+  --risk-soft: #f9e4e1;
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141c; --surface: #161d28; --ink: #e4e9f0; --muted: #98a3b4; --line: #2a3443;
+    --accent: #7db7e0; --accent-soft: #1a2c3d; --brass: #e0b45a; --brass-soft: #2e2512;
+    --ok: #6cc99a; --ok-soft: #15291f; --warn: #e6a94a; --warn-soft: #2e2311;
+    --risk: #ee8a80; --risk-soft: #331a18; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141c; --surface: #161d28; --ink: #e4e9f0; --muted: #98a3b4; --line: #2a3443;
+  --accent: #7db7e0; --accent-soft: #1a2c3d; --brass: #e0b45a; --brass-soft: #2e2512;
+  --ok: #6cc99a; --ok-soft: #15291f; --warn: #e6a94a; --warn-soft: #2e2311;
+  --risk: #ee8a80; --risk-soft: #331a18; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body);
+  font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 80px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 13px; }
+nav.toc p { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-size: 11px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+main { min-width: 0; }
+header.top { margin-bottom: 40px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brass); margin: 0 0 8px; }
+h1 { font-family: var(--font-display); font-size: clamp(30px, 5vw, 42px); line-height: 1.15; margin: 0 0 14px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-size: 24px; margin: 56px 0 12px; text-wrap: balance; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-family: var(--font-display); font-size: 17px; margin: 28px 0 8px; }
+p, li { max-width: 68ch; }
+.lede { font-size: 18px; color: var(--muted); }
+a { color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: .88em; }
+code { background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+.decision { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.decision b { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+.tbl { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--bg); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.mono { white-space: nowrap; }
+.pill { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.risk { background: var(--risk-soft); color: var(--risk); }
+.pill.info { background: var(--accent-soft); color: var(--accent); }
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0; font-size: 14px; }
+.flow span.step { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; }
+.flow span.step.fee { border-color: var(--brass); background: var(--brass-soft); }
+.flow span.arrow { color: var(--muted); font-family: var(--font-mono); }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.55; }
+.callout { border-left: 3px solid var(--brass); background: var(--brass-soft); padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; }
+.callout.risk { border-color: var(--risk); background: var(--risk-soft); }
+.callout p { margin: 0; }
+.callout p + p { margin-top: 8px; }
+ol.phases { padding-left: 22px; display: grid; gap: 14px; }
+ol.phases li::marker { font-family: var(--font-mono); color: var(--brass); }
+ul.check { list-style: none; padding: 0; display: grid; gap: 8px; }
+ul.check li { padding-left: 26px; position: relative; }
+ul.check li::before { content: ""; position: absolute; left: 0; top: 5px; width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 820px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  nav.toc { display: none; }
+}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Sections">
+  <p>Sections</p>
+  <ol>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#flows">Deposit, withdraw, gas</a></li>
+    <li><a href="#sources">Sources &amp; adapters</a></li>
+    <li><a href="#phases">Build phases</a></li>
+    <li><a href="#structure">Folder structure</a></li>
+    <li><a href="#legal">Legal plan</a></li>
+    <li><a href="#registry">Per-vault legal registry</a></li>
+    <li><a href="#terms">Terms review results</a></li>
+    <li><a href="#licenses">SDK licenses</a></li>
+    <li><a href="#launch">Pre-launch checklist</a></li>
+    <li><a href="#open">Open questions</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="top">
+  <p class="eyebrow">PECUN Finance · Plan v1 · 13 Nov 2026</p>
+  <h1>One app for every on-chain APY, executable on any chain</h1>
+  <p class="lede">PECUN lists every yield opportunity on-chain, and lets users deposit and withdraw from one Turnkey wallet. PECUN pays the gas and takes a fee on each deposit and withdrawal.</p>
+</header>
+
+<section id="decisions">
+<h2>Decisions locked</h2>
+<div class="decisions">
+  <div class="decision"><b>Scope</b>Anything on-chain that earns APY: staking, LSTs, restaking, lending, vaults, LP, fixed yield, RWA, perp vaults, BTC yield.</div>
+  <div class="decision"><b>Chains</b>EVM (Ethereum + L2s), Solana and Sui first, then more chains.</div>
+  <div class="decision"><b>Sources</b>Only protocols whose data and execution APIs or SDKs are free. No paid or application-gated APIs.</div>
+  <div class="decision"><b>Wallets</b>Turnkey embedded wallets for users. A Turnkey server wallet is the treasury and pays gas.</div>
+  <div class="decision"><b>Revenue</b>A fee on deposit and on withdrawal, sent straight to the treasury in the same transaction.</div>
+  <div class="decision"><b>Gas</b>PECUN pays gas for users on every chain.</div>
+  <div class="decision"><b>Policies</b>No Turnkey policy rules for now.</div>
+  <div class="decision"><b>Catalog</b>We list only what we can execute. No DefiLlama.</div>
+  <div class="decision"><b>Regions</b>One published list of unsupported regions, shown as a disclaimer.</div>
+</div>
+</section>
+
+<section id="architecture">
+<h2>Architecture</h2>
+<p>Four layers. The UI only talks to one common interface, so adding a protocol means adding one adapter file.</p>
+
+<h3>Layer 1: Catalog (only what we can execute)</h3>
+<p>The catalog is built from our own adapters. Every adapter's <code>getOpportunities()</code> returns the vaults it can deposit into and withdraw from, with APY and TVL from that protocol's own API or on-chain reads. Merkl adds reward APRs on top. If we can't execute it, it isn't listed. A server job refreshes the data every few minutes and caches it; browsers never call these APIs directly.</p>
+
+<h3>Layer 2: Generic executors</h3>
+<p>One piece of code per standard covers hundreds of protocols:</p>
+<ul>
+  <li><b>ERC-4626 vaults</b> (Yearn v3, Morpho vaults, Euler, Ember EVM, Upshift, Lagoon, sUSDS, sUSDe and more)</li>
+  <li><b>Aave-style lending</b> (Aave and its forks)</li>
+  <li><b>Compound-style lending</b> (Compound v2/v3 and forks)</li>
+  <li><b>Uniswap v2/v3 and Curve-style LP</b></li>
+  <li><b>Simple liquid staking</b> (stake() / mint calls)</li>
+</ul>
+
+<h3>Layer 3: Protocol adapters</h3>
+<p>Dedicated adapters for protocols that don't follow a standard, all using the same interface:</p>
+<pre>interface YieldAdapter {
+  getOpportunities(): Promise&lt;Opportunity[]&gt;
+  planDeposit(user, opportunity, amount): Promise&lt;Plan&gt;
+  planWithdraw(user, position, amount): Promise&lt;Plan&gt;
+  getPositions(user): Promise&lt;Position[]&gt;
+}
+
+// Same shape as Sentora's Plan type:
+interface Plan {
+  steps: UnsignedTx[]   // in order; the fee transfer is added to these
+  blockers: Blocker[]   // reasons the action would fail (balance, cap, paused…)
+}</pre>
+<p>Every adapter returns a <code>Plan</code>: the transactions to sign, in order, plus a list of <b>blockers</b>, the reasons the action would fail (not enough balance, vault cap reached, vault paused). The UI shows blockers before the wallet opens, so users never sign a transaction that will fail. One shared <code>send</code> function then handles every protocol and every chain. This copies Sentora's design.</p>
+
+<h3>Layer 4: Routing (best and cheapest route wins)</h3>
+<p>Turns "any token, any chain" into the token the vault needs. For every deposit, PECUN asks several providers for a quote at the same time and picks the one that delivers the most to the vault after all fees and gas, with speed as the tie-breaker.</p>
+<div class="tbl"><table>
+  <thead><tr><th>Provider</th><th>Role</th><th>Coverage (checked 13 Nov 2026)</th><th>Key needed?</th></tr></thead>
+  <tbody>
+    <tr><td>Relay</td><td>Primary bridge</td><td>58 chains incl. Solana and Hyperliquid. <b>No Sui.</b></td><td>No (quote worked)</td></tr>
+    <tr><td>LI.FI</td><td>Bridge + swap aggregator</td><td>68 chains incl. Sui and Solana</td><td>No</td></tr>
+    <tr><td>Across</td><td>Fast EVM bridge</td><td>EVM chains</td><td>No (quote worked)</td></tr>
+    <tr><td>deBridge (DLN)</td><td>Bridge</td><td>EVM and Solana</td><td>No (quote worked)</td></tr>
+    <tr><td>Mayan</td><td>Bridge</td><td>EVM, Solana, Sui</td><td>No key; requires its SDK version in requests</td></tr>
+    <tr><td>KyberSwap, Velora</td><td>Same-chain swaps</td><td>EVM</td><td>No</td></tr>
+    <tr><td>Jupiter</td><td>Same-chain swaps</td><td>Solana</td><td>Check its API license (page was down)</td></tr>
+    <tr><td>Cetus, 7k</td><td>Same-chain swaps</td><td>Sui</td><td>Cetus SDK has no license declared</td></tr>
+  </tbody>
+</table></div>
+<p>For Sui, the bridge candidates are LI.FI and Mayan, since Relay doesn't cover it. Bungee's old public API is shut down (it moved to Socket V3), so it's left out.</p>
+
+<h3>Execution badge on every listing</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Badge</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill ok">Execute</span></td><td>We have an adapter for it. Deposit and withdraw happen in the app.</td></tr>
+    <tr><td><span class="pill info">Execute via route</span></td><td>The vault is supported, but the deposit needs a swap or bridge first.</td></tr>
+  </tbody>
+</table></div>
+</section>
+
+<section id="flows">
+<h2>Deposit, withdraw and gas</h2>
+<p>The fee transfer and the vault action happen in <b>one atomic transaction</b>. If the deposit fails, the fee is not taken.</p>
+
+<h3>Deposit</h3>
+<div class="flow">
+  <span class="step">User picks vault + amount</span><span class="arrow">→</span>
+  <span class="step">Route (swap/bridge if needed)</span><span class="arrow">→</span>
+  <span class="step fee">Fee → treasury</span><span class="arrow">→</span>
+  <span class="step">Deposit the rest</span><span class="arrow">→</span>
+  <span class="step">PECUN co-signs as gas payer</span>
+</div>
+
+<h3>Withdraw</h3>
+<div class="flow">
+  <span class="step">User picks position</span><span class="arrow">→</span>
+  <span class="step">Redeem from vault</span><span class="arrow">→</span>
+  <span class="step fee">Fee → treasury</span><span class="arrow">→</span>
+  <span class="step">Rest → user</span>
+</div>
+<p><b>Delayed withdrawals</b> (Ember, Upshift, unstaking on many chains) pay out later, straight to the user. For these, the fee is taken in vault shares when the withdrawal is requested. The portfolio page shows pending withdrawals and when they're expected.</p>
+
+<h3>How it's made atomic, by chain</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Chain</th><th>Fee + action in one transaction</th><th>Gas paid by PECUN</th></tr></thead>
+  <tbody>
+    <tr><td>Sui</td><td>One programmable transaction block (PTB): split the fee coin, transfer it, deposit the rest.</td><td>Sponsored transaction: the server wallet is the gas owner and co-signs.</td></tr>
+    <tr><td>Solana</td><td>One transaction with several instructions: fee transfer + deposit.</td><td>The server wallet is the fee payer and co-signs.</td></tr>
+    <tr><td>EVM</td><td>EIP-7702 batching from the user's Turnkey wallet, or a small PECUN fee router contract as a fallback.</td><td>Turnkey gas sponsorship (already used in the reference demo).</td></tr>
+    <tr><td>Cross-chain</td><td>LI.FI integrator fee is taken during the bridge or swap; the vault fee is still taken on the destination chain.</td><td>Paid on both chains.</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout">
+  <p><b>Gas economics.</b> Because PECUN pays gas, small deposits on Ethereum mainnet lose money. Example: a $20 deposit at a 0.2% fee earns $0.04, but gas can cost over $1. Use a minimum fee per chain (for example, 0.2% or $0.50, whichever is higher) or a minimum deposit on expensive chains.</p>
+  <p><b>Treasury float.</b> The server wallet must hold ETH on each EVM chain, plus SOL and SUI. Add low-balance alerts and an automatic top-up from fee income.</p>
+</div>
+</section>
+
+<section id="sources">
+<h2>Sources and adapters</h2>
+<p>Each SDK below was confirmed to exist on npm on 13 Nov 2026. Data APIs marked "no key" answered without a key from a test machine. End-to-end deposits through Turnkey still need testing, one adapter at a time.</p>
+<div class="tbl"><table>
+  <thead><tr><th>Protocol</th><th>Chains</th><th>Yield types</th><th>Data</th><th>Execution</th></tr></thead>
+  <tbody>
+    <tr><td>Ember</td><td>EVM, Sui</td><td>Strategy vaults</td><td>SDK</td><td class="mono">@ember-finance/sdk</td></tr>
+    <tr><td>Upshift (August Digital)</td><td>EVM, Sui, Solana, Stellar</td><td>Strategy vaults</td><td>SDK, key optional</td><td class="mono">@augustdigital/sdk</td></tr>
+    <tr><td>Sentora</td><td>Ethereum, Ink (+ Solana vaults via Kamino)</td><td>Curated Morpho, Boring (Veda) and Upshift vaults</td><td>No Sentora key. Morpho and Kamino vaults come from those protocols' open APIs; Upshift vaults from the Upshift SDK; Boring vaults from a small address list we keep, read live on-chain</td><td class="mono">@sentora/vaults-morpho, -boring, -upshift-financial</td></tr>
+    <tr><td>Morpho</td><td>EVM</td><td>Lending, vaults</td><td>GraphQL, no key</td><td class="mono">@morpho-org/blue-sdk-viem</td></tr>
+    <tr><td>Aave v3</td><td>EVM</td><td>Lending</td><td>GraphQL, no key</td><td class="mono">@aave/client</td></tr>
+    <tr><td>Pendle</td><td>EVM</td><td>Fixed yield, LP</td><td>API, no key</td><td>Hosted API builds transactions</td></tr>
+    <tr><td>Yearn, Beefy</td><td>EVM</td><td>Vaults</td><td>API, no key</td><td>Generic ERC-4626 / vault calls</td></tr>
+    <tr><td>Lido</td><td>EVM</td><td>Liquid staking</td><td>API, no key</td><td class="mono">@lidofinance/lido-ethereum-sdk</td></tr>
+    <tr><td>Lagoon</td><td>EVM</td><td>Curated vaults</td><td>SDK</td><td class="mono">@lagoon-protocol/v0-viem</td></tr>
+    <tr><td>Gearbox</td><td>EVM</td><td>Lending pools</td><td>SDK</td><td class="mono">@gearbox-protocol/sdk</td></tr>
+    <tr><td>NAVI</td><td>Sui</td><td>Lending</td><td>API, no key</td><td class="mono">@naviprotocol/lending</td></tr>
+    <tr><td>Scallop</td><td>Sui</td><td>Lending</td><td>SDK</td><td class="mono">@scallop-io/sui-scallop-sdk</td></tr>
+    <tr><td>Suilend / SpringSui</td><td>Sui</td><td>Lending, liquid staking</td><td>SDK</td><td class="mono">@suilend/sdk</td></tr>
+    <tr><td>Aftermath</td><td>Sui</td><td>Liquid staking, pools</td><td>SDK</td><td class="mono">aftermath-ts-sdk</td></tr>
+    <tr><td>Kamino</td><td>Solana</td><td>Lending, LP vaults</td><td>API, no key</td><td class="mono">@kamino-finance/klend-sdk</td></tr>
+    <tr><td>Jupiter Lend</td><td>Solana</td><td>Lending</td><td>SDK</td><td class="mono">@jup-ag/lend</td></tr>
+    <tr><td>SPL stake pools (Jito etc.)</td><td>Solana</td><td>Liquid staking</td><td>On-chain</td><td class="mono">@solana/spl-stake-pool</td></tr>
+    <tr><td>Hyperliquid</td><td>Hyperliquid</td><td>HLP / vaults</td><td>API, no key</td><td class="mono">@nktkas/hyperliquid <span class="pill warn">community</span></td></tr>
+  </tbody>
+</table></div>
+<h3>How many opportunities this gives us</h3>
+<p>Live counts pulled from each protocol's own API on 13 Nov 2026. These count everything currently open; many are small, so a TVL filter will show fewer by default.</p>
+<div class="tbl"><table>
+  <thead><tr><th>Protocol</th><th>Open opportunities</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Kamino</td><td class="mono">494</td><td>298 lending reserves across 52 markets + 196 earn vaults</td></tr>
+    <tr><td>Beefy</td><td class="mono">377</td><td>Active vaults, all chains</td></tr>
+    <tr><td>Morpho</td><td class="mono">326</td><td>94 v1 + 232 v2 listed vaults. Another 710 listed lending markets could be added for direct supply.</td></tr>
+    <tr><td>Yearn</td><td class="mono">310</td><td>Official vaults indexed across 10 chains; includes older v2 vaults, so the active number is lower</td></tr>
+    <tr><td>Aave v3</td><td class="mono">197</td><td>Active supply reserves across 25 markets</td></tr>
+    <tr><td>Pendle</td><td class="mono">146</td><td>73 active markets, each with a fixed-rate PT and an LP position</td></tr>
+    <tr><td>Upshift</td><td class="mono">105</td><td>Open vaults (174 total incl. closed)</td></tr>
+    <tr><td>Hyperliquid</td><td class="mono">75</td><td>Open vaults with at least $100k TVL (3,054 open in total)</td></tr>
+    <tr><td>NAVI</td><td class="mono">35</td><td>Lending pools</td></tr>
+    <tr><td>Ember</td><td class="mono">27</td><td>Vaults, all chains</td></tr>
+    <tr><td>Lagoon</td><td class="mono">59</td><td>Curated vaults (from Lagoon's app API)</td></tr>
+    <tr><td>Sentora</td><td class="mono">21</td><td>Listed on vaults.sentora.com (about $2.8B total). Some are Morpho, Upshift or Kamino vaults already counted above; the Boring (Veda) smart vaults on Ink are new for us.</td></tr>
+    <tr><td>Suilend</td><td class="mono">45</td><td>Reserves in the main lending market (read through the Suilend SDK)</td></tr>
+    <tr><td>Solana staking (SPL pools, incl. Jito)</td><td class="mono">33</td><td>Liquid staking tokens on the standard SPL stake pool program. Another 208 run on Sanctum's version of it, for 245 in total.</td></tr>
+    <tr><td>Scallop</td><td class="mono">33</td><td>Lending pools</td></tr>
+    <tr><td>Gearbox</td><td class="mono">12</td><td>Lending pools on Ethereum (read on-chain through the Gearbox SDK); other chains not counted</td></tr>
+    <tr><td>Jupiter Lend</td><td class="mono">8</td><td>Earn tokens</td></tr>
+    <tr><td>Lido</td><td class="mono">1</td><td>stETH / wstETH staking (2.67% APR today); Lido Earn vaults not counted</td></tr>
+    <tr><td>Aftermath</td><td class="mono">1,902</td><td>1,901 liquidity pools + afSUI staking. The pool API has no TVL field, so most of these are probably tiny.</td></tr>
+    <tr><td><b>Total (vaults, lending, staking)</b></td><td class="mono"><b>≈ 2,280</b></td><td>Everything above except Aftermath's pools and Morpho's direct markets</td></tr>
+    <tr><td><b>Total with everything</b></td><td class="mono"><b>≈ 5,100</b></td><td>Adds Aftermath's 1,901 pools, Morpho's 710 markets and the 212 Sanctum stake pools</td></tr>
+  </tbody>
+</table></div>
+<p>How each one gets listed in the UI: if a protocol has an execution SDK, the same SDK (or the protocol's own app API) returns its list of vaults, markets or pools. That list is the adapter's <code>getOpportunities()</code>. Lagoon, Suilend and Gearbox have no public list endpoint, so their adapters read the list through the SDK or on-chain.</p>
+
+<p>Not usable under the "free" rule: Yield.xyz and Enso (both need an API key). Odos could not be confirmed. ether.fi, Haedal, Rocket Pool and Veda have no SDK on npm, so they need direct contract calls.</p>
+</section>
+
+<section id="phases">
+<h2>Build phases</h2>
+<ol class="phases">
+  <li><b>Foundation.</b> Fork the Turnkey demo pattern into the PECUN app: login, EVM + Solana wallets, then add Sui wallets. Set up the treasury server wallet and gas sponsorship on all three chains.</li>
+  <li><b>Catalog.</b> The explore page fed by adapters plus Merkl, with filters (chain, asset, type, TVL, APY) and risk labels.</li>
+  <li><b>Legal.</b> The unsupported-regions disclaimer, PECUN terms, and the per-protocol legal record (below), before any deposit button goes live.</li>
+  <li><b>Fee and gas engine.</b> Atomic fee + action builders for Sui PTBs, Solana multi-instruction transactions and EVM 7702 batches, with tests on testnets.</li>
+  <li><b>First adapters.</b> The generic ERC-4626 adapter, then Ember, Upshift, Morpho, Aave, NAVI, Suilend and Kamino.</li>
+  <li><b>Portfolio.</b> Positions across chains, pending withdrawals, fee and earnings history.</li>
+  <li><b>Routing.</b> A quote engine that asks Relay, LI.FI, Across, deBridge and Mayan (cross-chain) plus Kyber, Velora, Jupiter and Cetus/7k (same-chain) in parallel and picks the best net route.</li>
+  <li><b>Breadth.</b> Pendle, Lido, Scallop, Aftermath, Jupiter Lend, Hyperliquid, LP adapters, native staking per chain, then more chains.</li>
+</ol>
+</section>
+
+<section id="structure">
+<h2>Folder structure</h2>
+<pre>pecun/
+  app/                    Next.js routes: explore, vault/[id], portfolio
+  components/
+  lib/
+    catalog/              aggregates adapter opportunities + Merkl rewards, cache
+    adapters/
+      generic/            erc4626, aave-like, compound-like, univ3, curve
+      ember/  upshift/  morpho/  aave/  pendle/  navi/  suilend/  kamino/ ...
+    routing/              quote engine + relay, lifi, across, debridge, mayan, kyber, velora, jupiter, cetus
+    execution/
+      evm/                7702 batch builder, fee router fallback
+      solana/             fee-payer co-sign, multi-instruction builder
+      sui/                PTB builder, sponsored gas
+    fees/                 fee calculation, minimums per chain
+    legal/                registry, geo/KYC gating, disclosures
+  legal-registry/         one JSON file per protocol (reviewed, dated)
+  reference/              demo-embedded-wallet (Turnkey reference, read only)</pre>
+</section>
+
+<section id="legal">
+<h2>Legal plan</h2>
+<div class="callout">
+  <p>PECUN is a licensed operator. This section tracks what PECUN's own terms must cover and what each integrated partner's terms require.</p>
+</div>
+
+<h3>Platform-level issues (apply to PECUN itself)</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Topic</th><th>Why it matters</th><th>What we do</th></tr></thead>
+  <tbody>
+    <tr><td>Custody</td><td>Holding user funds can trigger money-transmitter or custody licensing.</td><td>Stay non-custodial: users control their Turnkey wallets. The server wallet only ever holds PECUN's own fees and gas money. No contract of ours holds user balances between steps.</td></tr>
+    <tr><td>Fees on transactions</td><td>Covered by PECUN's license.</td><td>Show the exact fee before every signature and keep a fee history per user.</td></tr>
+    <tr><td>Investment advice</td><td>Ranking or recommending yields can read as advice.</td><td>Present data, not recommendations. Label APY as variable and historical.</td></tr>
+    <tr><td>Unsupported regions</td><td>Integrated protocols exclude certain regions.</td><td>Publish the unsupported-regions list and disclaimer (below).</td></tr>
+    <tr><td>Privacy</td><td>Email and social login collect personal data.</td><td>Privacy policy, data-protection compliance for each market (for example GDPR in the EU), and Turnkey's data processing terms.</td></tr>
+    <tr><td>Tax</td><td>Some countries require reporting from platforms that facilitate crypto transactions.</td><td>Keep full fee and transaction records. Offer users a CSV export of their history.</td></tr>
+    <tr><td>Third-party terms</td><td>LI.FI, Turnkey and each protocol have their own terms.</td><td>Reference them in PECUN's terms where required (LI.FI requires this). Licenses are summarized below.</td></tr>
+  </tbody>
+</table></div>
+</section>
+
+<section id="registry">
+<h2>Per-vault legal registry</h2>
+<p>Every integrated protocol gets a reviewed legal record. Every vault inherits its protocol's record and can override it. The app reads this registry to decide what each user can see and execute.</p>
+
+<h3>Fields per protocol (and per vault where it differs)</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Field</th><th>Example value</th><th>Used for</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">termsUrl</td><td>Link to the protocol's terms of use</td><td>Shown before deposit; user accepts it</td></tr>
+    <tr><td class="mono">restrictedRegions</td><td>Country codes the protocol excludes</td><td>Geo-gating</td></tr>
+    <tr><td class="mono">kycRequired</td><td>none / protocol KYC / accredited only</td><td>Marks the vault Restricted unless the user qualifies</td></tr>
+    <tr><td class="mono">integratorAgreement</td><td>Whether front ends must sign up or follow rules</td><td>Go / no-go for the adapter</td></tr>
+    <tr><td class="mono">withdrawalType</td><td>instant / queued / epoch / unbonding (days)</td><td>Disclosure and withdrawal fee timing</td></tr>
+    <tr><td class="mono">audits</td><td>Auditor names and report links</td><td>Risk label</td></tr>
+    <tr><td class="mono">adminControls</td><td>Upgradeable contracts, pause rights, curator</td><td>Risk disclosure</td></tr>
+    <tr><td class="mono">riskDisclosures</td><td>Smart contract, depeg, impermanent loss, liquidation, counterparty</td><td>Shown in the deposit screen</td></tr>
+    <tr><td class="mono">sdkLicense</td><td>MIT / Apache-2.0 / none</td><td>Whether we can use the SDK commercially</td></tr>
+    <tr><td class="mono">reviewedBy, reviewedAt</td><td>Name, date</td><td>Records are re-reviewed every quarter and when terms change</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Unsupported regions: one published list</h3>
+<p>PECUN publishes a single list of countries and regions it does not support, shown in a disclaimer at sign-up and in the terms. The list is every region blocked by any protocol or provider we integrate, combined. When we add a protocol, its blocked regions are added to the list.</p>
+<p>Current list, from the terms review below:</p>
+<div class="tbl"><table>
+  <thead><tr><th>Region</th><th>Blocked by</th></tr></thead>
+  <tbody>
+    <tr><td>United States</td><td>Ember, Upshift, Hyperliquid, Jupiter, Kamino, LI.FI, Lido Earn</td></tr>
+    <tr><td>United Kingdom</td><td>Kamino (UK persons), Lido Earn; Ember may block UK-linked addresses</td></tr>
+    <tr><td>Ontario, Canada</td><td>Hyperliquid</td></tr>
+    <tr><td>Panama (persons)</td><td>Kamino</td></tr>
+    <tr><td>Singapore</td><td>Jupiter</td></tr>
+    <tr><td>China (listed as "Republic of China")</td><td>Jupiter</td></tr>
+    <tr><td>Russia, Belarus</td><td>Kamino, Pendle, Aave</td></tr>
+    <tr><td>Venezuela</td><td>Pendle, Aave</td></tr>
+    <tr><td>Myanmar, Sudan, Zimbabwe</td><td>Jupiter, Kamino, Pendle, Aave</td></tr>
+    <tr><td>Côte d'Ivoire, Iraq, Libya</td><td>Jupiter, Kamino, Aave</td></tr>
+    <tr><td>DR Congo, Mali, Nicaragua, Somalia, Yemen</td><td>Jupiter, Kamino</td></tr>
+    <tr><td>Liberia</td><td>Aave</td></tr>
+    <tr><td>Cuba, Iran, North Korea, Syria</td><td>All (sanctions)</td></tr>
+    <tr><td>Crimea, Sevastopol, Donetsk, Luhansk, Kherson, Zaporizhzhia</td><td>All (sanctions)</td></tr>
+    <tr><td>FATF high-risk jurisdictions, and anywhere under OFAC, EU, UN or UK sanctions</td><td>Pendle, and all (sanctions)</td></tr>
+  </tbody>
+</table></div>
+<p>Disclaimer text (draft): <i>"PECUN is not available to residents of, or persons located in, the regions listed above. By using PECUN you confirm you are not one of them."</i></p>
+
+<h3>Category notes to check during review</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Category</th><th>Typical legal points</th></tr></thead>
+  <tbody>
+    <tr><td>RWA / tokenized treasuries (Ondo, BUIDL, Superstate)</td><td>Usually require KYC, and often accredited or non-US investors only. Only listed if PECUN can complete their KYC flow.</td></tr>
+    <tr><td>Strategy vaults (Ember, Upshift, Lagoon)</td><td>Curator or operator controls funds; delayed withdrawals; check each one's terms for restricted regions.</td></tr>
+    <tr><td>Lending (Aave, Morpho, Kamino, NAVI)</td><td>Interface terms usually restrict sanctioned regions; liquidation risk disclosures if borrowing is ever added.</td></tr>
+    <tr><td>Perp / market-making vaults (HLP, JLP)</td><td>Derivatives exposure; several perp venues block certain countries in their terms. Check each.</td></tr>
+    <tr><td>Staking and restaking</td><td>Slashing and unbonding-period disclosures; some regions treat staking-as-a-service as regulated.</td></tr>
+    <tr><td>LP positions</td><td>Impermanent loss disclosure; incentive tokens can be volatile.</td></tr>
+    <tr><td>Yield-bearing stablecoins (sUSDe, sUSDS)</td><td>Some issuers block regions or restrict direct minting; depeg disclosure.</td></tr>
+  </tbody>
+</table></div>
+<p>Protocol-specific findings from the live terms are in the next section.</p>
+</section>
+
+<section id="terms">
+<h2>Terms review results</h2>
+<p>Read from each protocol's own terms on 13 Nov 2026. "Sanctioned" means the usual list: Cuba, Iran, North Korea, Syria, and Russian-occupied regions of Ukraine, plus anything on OFAC, EU, UN or UK lists. A blank or "not stated" means the terms didn't say, not that it's allowed.</p>
+
+<h3>Key points</h3>
+<div class="callout">
+  <p><b>US is excluded.</b> Ember, Upshift, Hyperliquid, Jupiter, Kamino, LI.FI and Lido Earn all exclude the US, so it's on the unsupported list.</p>
+  <p><b>Ember and Upshift terms say "internal use only"</b> for their own website. Ember is already a partner; confirm the integration with both in writing as a formality.</p>
+  <p><b>Turnkey</b> requires PECUN to screen users under its own compliance policy, which PECUN's licensed setup covers.</p>
+  <p><b>VPN clauses.</b> Nearly every protocol bans using a VPN to get around its region rules; PECUN's terms should say the same.</p>
+</div>
+
+<h3>Per-protocol results</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Protocol</th><th>Entity · terms date</th><th>Blocked</th><th>KYC / eligibility</th><th>Integrators, API, automation</th><th>VPN ban</th></tr></thead>
+  <tbody>
+    <tr><td>Ember</td><td>Ember Protocol Inc. · 29 Sep 2026</td><td><span class="pill risk">US</span> UK-linked addresses may be blocked; OFAC lists; senior political figures</td><td>18+, must have technical and financial expertise</td><td>"Internal use only"; no commercial exploitation of the services</td><td>Yes</td></tr>
+    <tr><td>Upshift</td><td>Fractal Network Ltd (BVI) · 3 Sep 2026</td><td><span class="pill risk">US</span> OFAC lists; senior political figures</td><td>18+; some vaults are permissioned with their own KYC</td><td>"Internal use only"; no commercial exploitation</td><td>Yes</td></tr>
+    <tr><td>Hyperliquid</td><td>Hyperliquid Corp. · 15 Jun 2026</td><td><span class="pill risk">US</span> <span class="pill risk">Ontario</span> Sanctioned; citizens of sanctioned places anywhere</td><td>Not stated</td><td>Covers the web interface only</td><td>Yes</td></tr>
+    <tr><td>Jupiter</td><td>Block Raccoon S.A. · undated</td><td><span class="pill risk">US</span> plus Singapore, Myanmar, Côte d'Ivoire, DR Congo, Iraq, Libya, Mali, Nicaragua, Somalia, Sudan, Yemen, Zimbabwe, "Republic of China", sanctioned</td><td>May run KYC on users</td><td>SDK/API license page returned 404; unresolved</td><td>Yes</td></tr>
+    <tr><td>Kamino</td><td>StroudGlobal S.A. (Panama) · 7 Aug 2026</td><td><span class="pill risk">US persons</span> <span class="pill risk">UK persons</span> Panama persons; Belarus, Russia, Côte d'Ivoire, DR Congo, Iraq, Libya, Mali, Myanmar, Nicaragua, Somalia, Sudan, Yemen, Zimbabwe, sanctioned</td><td>18+, "financially sophisticated"</td><td>Transactions are built via API and signed by the user's wallet</td><td>No explicit ban; may block VPN providers</td></tr>
+    <tr><td>Pendle</td><td>Univerum Innovations Inc (Panama) · 1 Oct 2026</td><td>Sanctioned, plus Russia, Belarus, Myanmar, Sudan, Zimbabwe, Venezuela, FATF high-risk</td><td>18+</td><td>SDK / direct access allowed; scraping the website banned</td><td>Yes</td></tr>
+    <tr><td>Aave (app)</td><td>Aave Interfaces Ltd · 14 Aug 2026</td><td>Sanctioned, plus Belarus, Russia, Venezuela, Iraq, Liberia, Libya, Myanmar, Sudan, Côte d'Ivoire, occupied Ukraine</td><td>18+</td><td>Bans automated access and commercial exploitation of the app; confirm the Aave API has separate terms</td><td>Yes</td></tr>
+    <tr><td>Morpho</td><td>Morpho Association (France) · 11 Sep 2026</td><td>Sanctioned (no named list)</td><td>Not stated</td><td>Says the protocol can be used through "other independent interfaces"</td><td>Yes</td></tr>
+    <tr><td>Lido</td><td>Interface maintainers (Cayman law) · 23 Sep 2026</td><td>Sanctioned; <span class="pill risk">US</span> <span class="pill risk">UK</span> for Lido Earn vaults only</td><td>Self-declaration only</td><td>Interface hands transactions to third-party wallets</td><td>Yes</td></tr>
+    <tr><td>NAVI</td><td>Navi Protocol Labs, Inc. · 18 Sep 2025</td><td>Sanctioned (no named list)</td><td>18+; may request documents</td><td>Expects third-party interfaces that charge their own fees; bans bots on its site</td><td>Yes</td></tr>
+    <tr><td>Scallop</td><td>Scallop Labs Ltd. (Seychelles) · 24 Aug 2026</td><td>Sanctioned</td><td>18+</td><td>Not stated</td><td>Not found</td></tr>
+    <tr><td>Sentora</td><td>Sentora Digital Holdings (BVI) Ltd · Mar 2026</td><td>Sanctioned (OFAC and other lists); does not name the US</td><td>Legal age</td><td>Its "Offerings" include APIs and integrations; no integrator rules found in the main terms</td><td>Not found</td></tr>
+    <tr><td>Jito (JitoSOL)</td><td>Jito Foundation (Cayman) · 2025</td><td>Sanctioned</td><td>18+</td><td>Allows building its features into your own apps</td><td>No</td></tr>
+    <tr><td>Suilend</td><td colspan="5"><span class="pill warn">No terms found</span> No terms page or link on the site or docs. Ask Suilend directly before integrating.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Infrastructure and data providers</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Provider</th><th>Entity · date</th><th>What it means for PECUN</th></tr></thead>
+  <tbody>
+    <tr><td>LI.FI (public API)</td><td>LI.FI Service GmbH (Berlin) · 4 Sep 2025</td><td><span class="pill ok">Free for commercial use</span> PECUN must tell its own users about LI.FI terms in PECUN's terms. Bars US persons.</td></tr>
+    <tr><td>LI.FI (commercial API)</td><td>Ultima Liquiditas Core Ltd (BVI) · 13 May 2026</td><td>Only applies if PECUN takes a paid key. Then PECUN must KYC its users, keep their IP addresses for 30 days, and block sanctioned regions. PECUN may charge its own fees if disclosed.</td></tr>
+    <tr><td>Turnkey</td><td>Turnkey Global, Inc. · 12 Nov 2026</td><td>PECUN screens users under its own compliance policy. Turnkey may switch off DeFi actions in any region.</td></tr>
+  </tbody>
+</table></div>
+</section>
+
+<section id="licenses">
+<h2>SDK licenses</h2>
+<p>Checked on npm on 13 Nov 2026. All permissive, except one with no license declared.</p>
+<div class="tbl"><table>
+  <thead><tr><th>Package</th><th>License</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">@ember-finance/sdk</td><td>ISC</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@augustdigital/sdk</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@sentora/vaults-* (morpho, boring, upshift-financial, plan), yields-client</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@morpho-org/blue-sdk-viem, bundler-sdk-viem</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@aave/client</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@lidofinance/lido-ethereum-sdk</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@lagoon-protocol/v0-viem</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@gearbox-protocol/sdk</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@naviprotocol/lending</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@scallop-io/sui-scallop-sdk</td><td>Apache-2.0</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@suilend/sdk, @suilend/springsui-sdk</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">aftermath-ts-sdk</td><td>Apache-2.0</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@kamino-finance/klend-sdk / kliquidity-sdk</td><td>MIT / Apache-2.0</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@jup-ag/lend</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@nktkas/hyperliquid</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@lifi/sdk</td><td>Apache-2.0</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@turnkey/sdk-server, react-wallet-kit</td><td>Apache-2.0 / MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@cetusprotocol/aggregator-sdk</td><td>None declared</td><td><span class="pill warn">Check</span> Ask Cetus or use another Sui router</td></tr>
+  </tbody>
+</table></div>
+<p>A permissive SDK license only covers the code. Using a protocol's API and front-end integration is still governed by its terms of use, which the registry tracks.</p>
+</section>
+
+<section id="launch">
+<h2>Pre-launch checklist</h2>
+<ul class="check">
+  <li>PECUN terms of service, risk disclosures and privacy policy published</li>
+  <li>Unsupported-regions list and disclaimer live at sign-up</li>
+  <li>Registry record completed and reviewed for every protocol with an Execute badge</li>
+  <li>Fee shown before every signature, with a fee history in the portfolio</li>
+  <li>Integrator terms accepted where protocols require them (and LI.FI integrator fee set up)</li>
+  <li>Treasury low-balance alerts and top-up process on every chain</li>
+  <li>Testnet runs of deposit and withdraw for every adapter</li>
+  <li>Contract audit if a PECUN fee router contract is deployed</li>
+</ul>
+</section>
+
+<section id="open">
+<h2>Open questions</h2>
+<ul>
+  <li>Fee rate: flat percentage, tiered by size, or different per chain?</li>
+  <li>Minimum fee or minimum deposit on Ethereum mainnet?</li>
+  <li>Suilend publishes no terms: ask them before integrating, or skip it?</li>
+  <li>Will PECUN run its own KYC to unlock KYC-gated vaults (RWA), or leave them out?</li>
+  <li>Which chains come after EVM, Solana and Sui?</li>
+</ul>
+</section>
+</main>
+</div>
