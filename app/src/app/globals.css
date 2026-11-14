@@ -164,3 +164,33 @@ textarea:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Lime banner: pale-to-lime wash with a fine dot grid and dark text (Hood "Savings" style). */
+.lime-banner {
+  position: relative;
+  color: #0a0b0d;
+  background:
+    radial-gradient(rgba(10, 11, 13, 0.1) 0.8px, transparent 0.8px) 0 0 / 14px 14px,
+    radial-gradient(60% 120% at 0% 0%, #f6ffe2 0%, transparent 60%),
+    radial-gradient(50% 140% at 55% 100%, #c6f58b 0%, transparent 70%),
+    linear-gradient(100deg, #eefdd0 0%, #d9f9a6 45%, #b8ff9d 100%);
+}
+.lime-banner .lb-muted {
+  color: rgba(10, 11, 13, 0.62);
+}
+.lime-banner .lb-pill {
+  background: rgba(255, 255, 255, 0.75);
+  color: #0a0b0d;
+}
+.lime-banner .lb-btn {
+  background: #0a0b0d;
+  color: var(--accent);
+}
+.lime-banner .lb-btn:hover {
+  background: #1b1d21;
+}

@@ -566,3 +566,245 @@ export async function upshift(): Promise<Opportunity[]> {
       } satisfies Opportunity;
     });
 }
+
+/* ---------------- Aave V4 (hub-and-spoke supply reserves) ---------------- */
+// Execution: @aave/client (V4) `supply` / `withdraw`, which return ready-to-sign transactions.
+
+type AaveV4Amount = { amount?: { value: string }; exchange?: { value: string } };
+type AaveV4Reserve = {
+  onChainId: string;
+  chain: { chainId: number; name: string };
+  status: { frozen: boolean; paused: boolean; active: boolean };
+  canSupply: boolean;
+  spoke: { name: string; address: string };
+  asset: { hub: { name: string }; underlying: { address: string; info: { symbol: string } } };
+  summary: { supplied: AaveV4Amount; borrowed: AaveV4Amount; supplyApy: { value: string }; borrowApy: { value: string } };
+  settings: { collateral: boolean; collateralFactor: { value: string }; supplyCap: AaveV4Amount };
+};
+
+const AAVE_V4 = "https://api.aave.com/graphql";
+
+export async function aaveV4(): Promise<Opportunity[]> {
+  const chains = await gql<{ chains: { chainId: number }[] }>(AAVE_V4, "{ chains(request:{query:{filter:MAINNET_ONLY}}){ chainId } }");
+  const data = await gql<{ reserves: AaveV4Reserve[] }>(
+    AAVE_V4,
+    `query($ids:[ChainId!]!){ reserves(request:{query:{chainIds:$ids}, filter:SUPPLY, orderBy:{supplyApy:DESC}}){
+      onChainId chain{chainId name} status{frozen paused active} canSupply spoke{name address}
+      asset{ hub{name} underlying{ address info{symbol} } }
+      summary{ supplied{ amount{value} exchange(currency:USD){value} } borrowed{ exchange(currency:USD){value} } supplyApy{value} borrowApy{value} }
+      settings{ collateral collateralFactor{value} supplyCap{ exchange(currency:USD){value} } } } }`,
+    { ids: chains.chains.map((c) => c.chainId) },
+  );
+  return data.reserves
+    .filter((r) => r.status.active && !r.status.frozen && !r.status.paused && r.canSupply)
+    .map((r) => {
+      const asset = r.asset.underlying.info.symbol;
+      const supplied = num(r.summary.supplied.exchange?.value);
+      const borrowed = num(r.summary.borrowed.exchange?.value);
+      const cap = num(r.settings.supplyCap.exchange?.value);
+      return {
+        id: `aavev4:${r.chain.chainId}:${r.spoke.address}:${r.onChainId}`,
+        protocol: "Aave",
+        name: `${asset} lending · ${r.spoke.name} spoke`,
+        asset,
+        kind: "Lending",
+        category: "Aave V4",
+        chain: r.chain.name || evmChainName(r.chain.chainId),
+        apy: num(r.summary.supplyApy.value),
+        apy7d: null,
+        apy30d: null,
+        tvlUsd: supplied,
+        manager: `Aave V4 · ${r.asset.hub.name} hub`,
+        redemption: "Instant (if liquidity)",
+        stablecoin: isStable(asset),
+        url: "https://app.aave.com/",
+        address: r.asset.underlying.address,
+        lending: {
+          totalSuppliedUsd: supplied,
+          totalBorrowedUsd: borrowed,
+          liquidityUsd: Math.max(0, supplied - borrowed),
+          utilization: supplied > 0 ? borrowed / supplied : 0,
+          supplyApy: num(r.summary.supplyApy.value),
+          borrowApy: num(r.summary.borrowApy.value),
+          supplyCapUsd: cap > 0 ? cap : undefined,
+          maxLtv: num(r.settings.collateralFactor.value) || undefined,
+          canBeCollateral: r.settings.collateral,
+        },
+        details: [
+          { label: "Hub", value: r.asset.hub.name },
+          { label: "Spoke", value: `${r.spoke.name} (${r.spoke.address})` },
+        ],
+      } satisfies Opportunity;
+    });
+}
+
+/* ---------------- Savings GHO (sGHO, Ethereum) ---------------- */
+// Execution: Aave's API builds the deposit/redeem transactions (`sghoVaultDeposit` / `sghoVaultRedeemShares`, no key).
+// sGHO is an ERC-4626 vault, so a plain deposit/redeem works too.
+
+const SGHO = "0xE1753F2e00940cC31213dd92013cF019DFE4ca1d";
+
+export async function savingsGho(): Promise<Opportunity[]> {
+  const { sghoVault: v } = await gql<{
+    sghoVault: { totalAssets: { usd: string }; supplyCap: { usd: string }; targetRate: { value: string }; paused: boolean };
+  }>("https://api.v3.aave.com/graphql", "{ sghoVault(request:{chainId:1}){ totalAssets{usd} supplyCap{usd} targetRate{value} paused } }");
+  if (v.paused) return [];
+  return [
+    {
+      id: `sgho:1:${SGHO}`,
+      protocol: "Aave",
+      name: "Savings GHO (sGHO)",
+      ticker: "sGHO",
+      asset: "GHO",
+      kind: "Vault",
+      category: "Savings rate",
+      chain: "Ethereum",
+      apy: num(v.targetRate.value),
+      apyNote: "Target rate set by Aave governance",
+      apy7d: null,
+      apy30d: null,
+      tvlUsd: num(v.totalAssets.usd),
+      capUsd: num(v.supplyCap.usd) || undefined,
+      manager: "Aave",
+      redemption: "Instant",
+      stablecoin: true,
+      url: "https://app.aave.com/",
+      address: SGHO,
+    },
+  ];
+}
+
+/* ---------------- Euler V2 (EVK lending vaults + Euler Earn) ---------------- */
+// Execution: @eulerxyz/euler-v2-sdk plans deposit/withdraw as one EVC batch. Vaults are ERC-4626.
+
+type EulerVault = {
+  chainId: number;
+  address: string;
+  vaultType: "evk" | "earn";
+  isEscrow?: boolean;
+  name: string;
+  symbol: string;
+  asset: { address: string; symbol: string };
+  totalSupplyUsd: number;
+  totalBorrowsUsd?: number;
+  utilization?: number;
+  supplyApy: number;
+  borrowApy?: number;
+  apy7d?: number;
+  apy30d?: number;
+  visibility?: { status: string; explorableLend: boolean };
+};
+
+const EULER = "https://v3.euler.finance";
+const EULER_CHAINS = [1, 8453, 42161, 43114, 56, 130, 999, 59144, 9745];
+
+async function eulerList(kind: "evk" | "earn", chainId: number): Promise<EulerVault[]> {
+  const out: EulerVault[] = [];
+  for (let offset = 0; offset < 5000; offset += 100) {
+    const page = await getJson<{ data: EulerVault[] }>(`${EULER}/v3/${kind}/vaults?chainId=${chainId}&offset=${offset}&limit=100`);
+    out.push(...page.data);
+    if (page.data.length < 100) break;
+  }
+  return out;
+}
+
+export async function euler(): Promise<Opportunity[]> {
+  // A few requests at a time: Euler's API drops requests when all 18 lists are asked for at once.
+  const jobs = EULER_CHAINS.flatMap((c) => [["evk", c], ["earn", c]] as const);
+  const all = (await mapLimit(jobs, 3, ([kind, c]) => eulerList(kind, c))).flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  if (all.length === 0) throw new Error("Euler API returned no vaults");
+  return all
+    .filter((v) => v.visibility?.status === "visible" && v.visibility.explorableLend && !v.isEscrow)
+    .map((v) => {
+      const asset = v.asset.symbol;
+      const earn = v.vaultType === "earn";
+      // Euler's API reports rates in percent (5.03 = 5.03%).
+      const pct = (x: number | undefined) => (x === undefined || x === null ? null : x / 100);
+      return {
+        id: `euler:${v.chainId}:${v.address}`,
+        protocol: "Euler",
+        name: earn ? v.name : `${asset} lending · ${v.symbol}`,
+        ticker: v.symbol,
+        asset,
+        kind: earn ? "Vault" : "Lending",
+        category: earn ? "Euler Earn" : "Lending vault",
+        chain: evmChainName(v.chainId),
+        apy: pct(v.supplyApy),
+        apy7d: pct(v.apy7d),
+        apy30d: pct(v.apy30d),
+        tvlUsd: v.totalSupplyUsd,
+        manager: "Euler",
+        redemption: "Instant (if liquidity)",
+        stablecoin: isStable(asset),
+        url: "https://app.euler.finance/",
+        address: v.address,
+        lending: earn
+          ? undefined
+          : {
+              totalSuppliedUsd: v.totalSupplyUsd,
+              totalBorrowedUsd: v.totalBorrowsUsd,
+              liquidityUsd: Math.max(0, v.totalSupplyUsd - (v.totalBorrowsUsd ?? 0)),
+              utilization: v.utilization,
+              supplyApy: pct(v.supplyApy) ?? undefined,
+              borrowApy: pct(v.borrowApy) ?? undefined,
+            },
+      } satisfies Opportunity;
+    });
+}
+
+/* ---------------- Fluid (fTokens on EVM) ---------------- */
+// Execution: fTokens are ERC-4626, so deposit/redeem are direct contract calls (no npm package needed).
+// On Solana, Fluid's lending runs as Jupiter Lend, which is listed separately.
+
+type FluidToken = {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  isNativeUnderlying: boolean;
+  asset: { address: string; symbol: string; decimals: number; price: string; logoUrl?: string };
+  totalAssets: string;
+  supplyRate: string;
+  rewardsRate: string;
+  totalRate: string;
+};
+
+const FLUID_CHAINS = [1, 42161, 8453, 137, 56, 9745];
+
+export async function fluid(): Promise<Opportunity[]> {
+  const res = await Promise.allSettled(
+    FLUID_CHAINS.map((c) => getJson<{ data: FluidToken[] }>(`https://api.fluid.instadapp.io/v2/lending/${c}/tokens`).then((d) => ({ c, d: d.data }))),
+  );
+  const out: Opportunity[] = [];
+  for (const r of res) {
+    if (r.status !== "fulfilled") continue;
+    for (const t of r.value.d) {
+      const asset = t.asset.symbol;
+      // Rates come in basis points × 100 (575 = 5.75%).
+      const apy = num(t.totalRate) / 1e4;
+      out.push({
+        id: `fluid:${r.value.c}:${t.address}`,
+        protocol: "Fluid",
+        name: `${asset} lending (${t.symbol})`,
+        ticker: t.symbol,
+        asset,
+        kind: "Lending",
+        category: "Lending (fToken)",
+        chain: evmChainName(r.value.c),
+        apy,
+        rewardApy: num(t.rewardsRate) / 1e4 || null,
+        apy7d: null,
+        apy30d: null,
+        tvlUsd: (num(t.totalAssets) / 10 ** t.asset.decimals) * num(t.asset.price),
+        manager: "Fluid",
+        redemption: "Instant (if liquidity)",
+        stablecoin: isStable(asset),
+        url: "https://fluid.io/",
+        address: t.address,
+        assetLogo: t.asset.logoUrl,
+      });
+    }
+  }
+  if (out.length === 0) throw new Error("Fluid API returned no tokens");
+  return out;
+}

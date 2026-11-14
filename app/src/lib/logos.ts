@@ -1,4 +1,5 @@
 import { getJson } from "./http.ts";
+import { PLATFORM_LOGO } from "./platforms.ts";
 import type { Opportunity } from "./types.ts";
 
 /**
@@ -9,25 +10,7 @@ import type { Opportunity } from "./types.ts";
  *    own API already gave us one.
  */
 
-const PROTOCOL_LOGO: Record<string, string> = {
-  Ember: "/logos/protocols/ember.png",
-  Upshift: "/logos/protocols/upshift.png",
-  Morpho: "/logos/protocols/morpho.ico",
-  Aave: "/logos/protocols/aave.png",
-  Pendle: "/logos/protocols/pendle.ico",
-  Yearn: "/logos/protocols/yearn.png",
-  Beefy: "/logos/protocols/beefy.png",
-  Lagoon: "/logos/protocols/lagoon.png",
-  Lido: "/logos/protocols/lido.png",
-  Kamino: "/logos/protocols/kamino.png",
-  "Jupiter Lend": "/logos/protocols/jupiter-lend.png",
-  NAVI: "/logos/protocols/navi.png",
-  Scallop: "/logos/protocols/scallop.png",
-  Hyperliquid: "/logos/protocols/hyperliquid.png",
-  Aftermath: "https://aftermath.finance/coins/afsui.svg",
-  Suilend: "/logos/protocols/suilend.png",
-  Gearbox: "/logos/protocols/gearbox.png",
-};
+const PROTOCOL_LOGO = PLATFORM_LOGO;
 
 /** Our chain names → LI.FI's chain names where they differ. */
 const CHAIN_ALIAS: Record<string, string> = {

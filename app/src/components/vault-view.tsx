@@ -7,7 +7,7 @@ import type { History, Opportunity } from "@/lib/types.ts";
 import { LineChart } from "./line-chart";
 import { LendingLayout } from "./lending-layout";
 import { MorphoLayout } from "./morpho-layout";
-import { AddressPill, display, Logo, pct, short, usd, VaultMark } from "./ui";
+import { AddressPill, display, Logo, pct, PlatformLogos, short, usd, VaultMark } from "./ui";
 
 type Win = "7d" | "30d" | "60d" | "90d";
 const WINS: Win[] = ["7d", "30d", "60d", "90d"];
@@ -77,20 +77,21 @@ export function VaultView({ o, deployments }: { o: Opportunity; deployments: Opp
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0">
         {/* Hood image strip: photo under a dark wash, back link and the vault's kind + chain */}
-        <div className="relative h-24 overflow-hidden rounded-xl border border-line md:h-28">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={STRIP[o.kind] ?? "/hero/banner.jpg"} alt="" className="absolute inset-0 size-full object-cover object-[50%_70%]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/10" />
-          <nav className="relative flex h-full items-center justify-between gap-3 px-4 md:px-6" aria-label="Breadcrumb">
-            <span className="flex min-w-0 items-center gap-2 text-sm text-muted">
-              <Link href="/" aria-label="Back" className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/15 bg-black/40 text-ink hover:bg-black/70">
+        {/* Lime strip, Hood "Savings" style: back link and the vault's kind + chain */}
+        <div className="lime-banner h-16 overflow-hidden rounded-xl md:h-20">
+          <nav className="flex h-full items-center justify-between gap-3 px-4 md:px-6" aria-label="Breadcrumb">
+            <span className="lb-muted flex min-w-0 items-center gap-2 font-sans text-sm">
+              <Link href="/" aria-label="Back" className="lb-btn grid size-8 shrink-0 place-items-center rounded-lg">
                 <ArrowLeft className="size-4" />
               </Link>
-              <Link href="/" className="hover:text-ink">Explore</Link>
-              <ChevronRight className="size-3.5 shrink-0" />
-              <span className="truncate text-ink">{o.kind}</span>
+              <Link href="/" className="hidden hover:text-[#0a0b0d] sm:inline">Explore</Link>
+              <ChevronRight className="hidden size-3.5 shrink-0 sm:block" />
+              <span className="truncate font-medium text-[#0a0b0d]">{o.kind}</span>
             </span>
-            <span className="eyebrow shrink-0 rounded-full bg-accent px-2.5 py-1 text-[10px] text-on-accent">{o.chain}</span>
+            <span className="flex shrink-0 items-center gap-2">
+              <PlatformLogos max={4} size={20} label={false} />
+              <span className="lb-pill rounded-full px-3 py-1 font-sans text-xs">{o.chain}</span>
+            </span>
           </nav>
         </div>
         {o.ref?.source.startsWith("morpho") ? (
@@ -119,11 +120,7 @@ export function VaultView({ o, deployments }: { o: Opportunity; deployments: Opp
   );
 }
 
-const STRIP: Record<string, string> = {
-  Lending: "/hero/skyline.jpg",
-};
-
-/** Phones: takes the tab bar's place on vault pages and jumps to the deposit panel. Hidden once the panel is on screen. */
+/** Phones: a deposit shortcut pinned to the bottom of vault pages. Hidden once the panel is on screen. */
 function PhoneDepositBar({ o }: { o: Opportunity }) {
   const [panelVisible, setPanelVisible] = useState(false);
   useEffect(() => {

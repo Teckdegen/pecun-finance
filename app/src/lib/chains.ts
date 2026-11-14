@@ -14,6 +14,7 @@ const EVM: Record<number, string> = {
   480: "World Chain",
   999: "HyperEVM",
   1135: "Lisk",
+  5042: "Arc",
   1329: "Sei",
   1868: "Soneium",
   1923: "Swellchain",

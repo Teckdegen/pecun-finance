@@ -1,6 +1,7 @@
-import { aave, beefy, lagoon, lido, morpho, pendle, upshift, yearn } from "./adapters/evm.ts";
-import { aftermath, ember, hyperliquid, jupiterLend, kamino, navi, scallop, solanaStaking } from "./adapters/nonevm.ts";
-import { gearbox, suilend } from "./adapters/sdk.ts";
+import { aave, aaveV4, beefy, euler, fluid, lagoon, lido, morpho, pendle, savingsGho, upshift, yearn } from "./adapters/evm.ts";
+import { aftermath, ember, hyperliquid, jupiterLend, kamino, marinade, meteora, navi, scallop, solanaStaking } from "./adapters/nonevm.ts";
+import { compound, sky, spark } from "./adapters/onchain.ts";
+import { gearbox, moonwell, suilend } from "./adapters/sdk.ts";
 import { getLogoIndex, withLogos } from "./logos.ts";
 import type { Catalog, Opportunity, SourceStatus } from "./types.ts";
 
@@ -23,6 +24,16 @@ const SOURCES: [string, () => Promise<Opportunity[]>][] = [
   ["Aftermath", aftermath],
   ["Suilend", suilend],
   ["Gearbox", gearbox],
+  ["Aave V4", aaveV4],
+  ["Savings GHO", savingsGho],
+  ["Euler", euler],
+  ["Compound", compound],
+  ["Moonwell", moonwell],
+  ["Fluid", fluid],
+  ["Spark", spark],
+  ["Sky", sky],
+  ["Marinade", marinade],
+  ["Meteora", meteora],
 ];
 
 /** Testnet deployments sometimes appear in protocol lists; never show them. */

@@ -1,90 +1,142 @@
 "use client";
 
-import { Compass, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Clock, Info } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-type Tab = "positions" | "activity";
-
 /**
- * Portfolio: total worth and every open position across chains.
- * Positions are read per protocol once a Turnkey wallet is connected (arrives with execution);
- * until then this shows the empty state.
+ * Portfolio overview. Positions arrive once a wallet is connected;
+ * until then the account is empty and every figure stays at zero.
  */
 export function PortfolioView() {
-  const [tab, setTab] = useState<Tab>("positions");
+  const [book, setBook] = useState<"vaults" | "defi">("vaults");
 
   return (
     <div>
-      <h1 className="text-[1.65rem] font-medium tracking-[-0.03em] md:text-[2rem]">Portfolio</h1>
-      <p className="mt-1 font-sans text-sm text-muted">Every position you hold, across EVM, Solana, Sui and Hyperliquid.</p>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="text-[1.7rem] font-medium leading-tight tracking-[-0.03em] md:text-[2rem]">Your Capital. At A Glance.</h1>
+        <Link
+          href="/portfolio/activity"
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-line px-3.5 text-sm text-ink hover:bg-card"
+        >
+          <Clock className="size-4 text-muted" />
+          Activity
+        </Link>
+      </div>
 
-      {/* Worth banner */}
-      <section className="relative mt-5 overflow-hidden rounded-xl border border-line">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/hero/banner.jpg" alt="" className="absolute inset-0 size-full object-cover object-[50%_85%] opacity-80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/30" />
-        <div className="relative px-5 py-6 md:px-7 md:py-8">
-          <p className="eyebrow text-muted">Total worth</p>
-          <div className="tabular mt-2 text-[2.5rem] font-medium leading-none tracking-[-0.04em] md:text-6xl">$0.00</div>
-          <div className="mt-6 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 md:max-w-xl">
-            <Stat label="Deposited" value="$0.00" />
-            <Stat label="Per year" value="$0.00" />
-            <Stat label="Pending" value="0" />
-          </div>
-        </div>
-      </section>
+      <div className="mt-6 flex flex-wrap items-end gap-x-8 gap-y-5">
+        <Money label="Supplied" value="$0.00" />
+        <Money label="Lifetime Earned" value="$0.00" hint="Yield already paid to this account." />
+        <Money label="Next Accrual" value="—" hint="When the next yield payment is due. Nothing is scheduled." />
+      </div>
 
-      <section className="mt-6 overflow-hidden rounded-xl border border-line bg-card">
-        <div role="tablist" aria-label="Portfolio view" className="flex gap-6 border-b border-line px-5">
-          {(["positions", "activity"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              role="tab"
-              aria-selected={tab === t}
-              onClick={() => setTab(t)}
-              className={`eyebrow -mb-px border-b-2 py-3.5 transition ${tab === t ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}
-            >
-              {t}
-            </button>
+      <div role="tablist" aria-label="Holdings" className="mt-8 flex gap-6 border-b border-line">
+        {(
+          [
+            ["vaults", "Vaults", "$0.00"],
+            ["defi", "DeFi", "$0.00"],
+          ] as const
+        ).map(([id, label, amount]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={book === id}
+            onClick={() => setBook(id)}
+            className={`-mb-px border-b-2 pb-3 text-sm ${book === id ? "border-ink font-medium text-ink" : "border-transparent text-muted hover:text-ink"}`}
+          >
+            {label} <span className="tabular">{amount}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <div className="grid min-w-[640px] grid-cols-4 px-1 text-sm text-muted">
+          {["Vault", "APY", "Yield Earned", "Your shares"].map((h) => (
+            <div key={h} className="flex items-center gap-1 py-2">
+              {h}
+              <ArrowUpDown className="size-3.5" />
+            </div>
           ))}
         </div>
-
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[720px] text-left">
-            <thead>
-              <tr className="eyebrow text-muted">
-                {(tab === "positions" ? ["Position", "APY", "Balance", "Worth", "Status"] : ["Action", "Vault", "Amount", "Fee", "Date"]).map((h, i) => (
-                  <th key={h} className={`py-3 font-medium ${i === 0 ? "pl-5" : ""}`}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-          </table>
-        </div>
-
-        <div className="flex flex-col items-center gap-3 border-t border-line px-6 py-16 text-center">
-          <span className="grid size-12 place-items-center rounded-xl border border-line bg-card-2 text-accent">
-            <Wallet className="size-5" />
-          </span>
-          <p className="text-[17px] tracking-[-0.02em]">{tab === "positions" ? "No open positions" : "No activity yet"}</p>
-          <p className="max-w-md font-sans text-sm leading-6 text-muted">
-            Once your wallet is connected, every vault, lending and staking position shows here with its live worth, across all chains.
-          </p>
-          <Link href="/" className="eyebrow mt-2 inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-on-accent hover:bg-accent-deep">
-            <Compass className="size-4" /> Explore yields
+        <div className="mt-2 flex min-h-[320px] min-w-[640px] flex-col items-center justify-center gap-3 rounded-2xl bg-card text-center">
+          <p className="text-sm text-muted">No active positions yet.</p>
+          <Link href="/?earn=vaults" className="inline-flex h-9 items-center rounded-full border border-line px-4 text-sm font-medium text-accent hover:border-accent">
+            Explore Vaults
           </Link>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+const ACTIVITY = ["History", "Pending Deposits", "Pending Withdrawals", "Pending Holdbacks"] as const;
+
+const EMPTY: Record<(typeof ACTIVITY)[number], string> = {
+  History: "No activity history yet.",
+  "Pending Deposits": "No pending deposits.",
+  "Pending Withdrawals": "No pending withdrawals.",
+  "Pending Holdbacks": "No pending holdbacks.",
+};
+
+/** Activity reached from the portfolio Activity button. */
+export function ActivityView() {
+  const [tab, setTab] = useState<(typeof ACTIVITY)[number]>("History");
+
   return (
-    <div className="bg-black/55 px-3 py-3 backdrop-blur md:px-4">
-      <div className="eyebrow text-[10px] text-muted md:text-[11px]">{label}</div>
+    <div>
+      <Link href="/portfolio" className="inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
+        <span className="grid size-7 place-items-center rounded-full border border-line">
+          <ArrowLeft className="size-3.5" />
+        </span>
+        Portfolio <span className="text-faint">&gt;</span> <span className="text-ink">Activity</span>
+      </Link>
+      <h1 className="mt-4 text-[1.7rem] font-medium tracking-[-0.03em] md:text-[2rem]">Activity</h1>
+
+      <div role="tablist" aria-label="Activity" className="mt-6 flex gap-6 overflow-x-auto border-b border-line">
+        {ACTIVITY.map((name) => (
+          <button
+            key={name}
+            role="tab"
+            aria-selected={tab === name}
+            onClick={() => setTab(name)}
+            className={`-mb-px shrink-0 border-b-2 pb-3 text-sm ${tab === name ? "border-ink font-medium text-ink" : "border-transparent text-muted hover:text-ink"}`}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <div className="grid min-w-[640px] grid-cols-4 px-1 text-sm text-muted">
+          {["Action", "Vault", "Network", "Date"].map((h) => (
+            <div key={h} className="flex items-center gap-1 py-2">
+              {h}
+              <ArrowUpDown className="size-3.5" />
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex min-h-[320px] min-w-[640px] flex-col items-center justify-center gap-3 rounded-2xl bg-card text-center">
+          <p className="text-sm text-muted">{EMPTY[tab]}</p>
+          <Link href="/portfolio" className="inline-flex h-9 items-center rounded-full border border-line px-4 text-sm font-medium text-accent hover:border-accent">
+            Go to Portfolio
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Money({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 text-sm text-muted">
+        {label}
+        {hint && (
+          <span title={hint} className="text-faint">
+            <Info className="size-3.5" />
+          </span>
+        )}
+      </div>
       <div className="tabular mt-1 text-lg font-medium tracking-[-0.02em]">{value}</div>
     </div>
   );

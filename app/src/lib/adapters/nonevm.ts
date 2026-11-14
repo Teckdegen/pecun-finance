@@ -441,7 +441,8 @@ export async function solanaStaking(): Promise<Opportunity[]> {
     Object.assign(apy, a.apys);
     Object.assign(tvl, t.tvls);
   });
-  return lsts.map((l) => {
+  // mSOL is listed by the Marinade adapter, which executes through Marinade's own SDK.
+  return lsts.filter((l) => l.symbol !== "mSOL").map((l) => {
     const program = typeof l.pool === "string" ? l.pool : (l.pool?.program ?? "");
     return {
       id: `solstake:solana:${l.mint}`,
@@ -509,4 +510,99 @@ export async function aftermath(): Promise<Opportunity[]> {
       ],
     },
   ];
+}
+
+/* ---------------- Marinade (mSOL liquid staking) ---------------- */
+// Execution: @marinade.finance/marinade-ts-sdk `deposit` (SOL → mSOL), `liquidUnstake` (instant) or `orderUnstake` (epoch end).
+
+const MSOL = "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So";
+
+export async function marinade(): Promise<Opportunity[]> {
+  const [apy, tlv] = await Promise.all([
+    getJson<{ value: number }>("https://api.marinade.finance/msol/apy/30d"),
+    getJson<{ staked_usd: number; staked_sol: number }>("https://api.marinade.finance/tlv"),
+  ]);
+  return [
+    {
+      id: `marinade:solana:${MSOL}`,
+      protocol: "Marinade",
+      name: "Marinade staked SOL (mSOL)",
+      ticker: "mSOL",
+      asset: "SOL",
+      kind: "Liquid staking",
+      category: "SOL Staking",
+      chain: "Solana",
+      apy: num(apy.value),
+      apyNote: "Last 30 days",
+      apy7d: null,
+      apy30d: num(apy.value),
+      tvlUsd: num(tlv.staked_usd),
+      manager: "Marinade",
+      redemption: "Instant (liquid unstake, fee) or unstake at epoch end",
+      stablecoin: false,
+      url: "https://app.marinade.finance/",
+      address: MSOL,
+      details: [{ label: "SOL staked", value: Math.round(num(tlv.staked_sol)).toLocaleString("en-US") }],
+    },
+  ];
+}
+
+/* ---------------- Meteora (DLMM liquidity pools) ---------------- */
+// Execution: @meteora-ag/dlmm opens a position (initializePositionAndAddLiquidityByStrategy) and closes it
+// (remove liquidity, then close the position). The yield is the pool's trading fees, not a fixed vault rate.
+
+type MeteoraToken = { address: string; symbol: string; is_verified?: boolean };
+type MeteoraPool = {
+  address: string;
+  name: string;
+  token_x: MeteoraToken;
+  token_y: MeteoraToken;
+  tvl: number;
+  is_blacklisted?: boolean;
+  pool_config?: { bin_step?: number; base_fee_pct?: number };
+  fee_tvl_ratio?: { "24h"?: number };
+  volume?: { "24h"?: number };
+};
+
+/** Smaller pools are too thin to enter and leave cleanly. */
+const METEORA_MIN_TVL = 100_000;
+
+export async function meteora(): Promise<Opportunity[]> {
+  const pools: MeteoraPool[] = [];
+  for (let page = 1; page <= 5; page++) {
+    const d = await getJson<{ data: MeteoraPool[] }>(`https://dlmm.datapi.meteora.ag/pools?page=${page}&page_size=200&sort_by=tvl:desc`);
+    pools.push(...d.data);
+    if (d.data.length < 200 || d.data[d.data.length - 1].tvl < METEORA_MIN_TVL) break;
+  }
+  return pools
+    .filter((p) => p.tvl >= METEORA_MIN_TVL && !p.is_blacklisted && p.token_x.is_verified && p.token_y.is_verified)
+    .map((p) => {
+      const pair = `${p.token_x.symbol}-${p.token_y.symbol}`;
+      // Fees earned over the last day, as a share of TVL, annualized without compounding.
+      const apr = num(p.fee_tvl_ratio?.["24h"]) * 365;
+      return {
+        id: `meteora:solana:${p.address}`,
+        protocol: "Meteora",
+        name: `${pair} DLMM pool`,
+        asset: pair,
+        kind: "Liquidity",
+        category: "DLMM pool",
+        chain: "Solana",
+        apy: apr,
+        apyNote: "Last 24h trading fees, annualized",
+        apy7d: null,
+        apy30d: null,
+        tvlUsd: p.tvl,
+        manager: "Meteora",
+        redemption: "Instant (withdraw liquidity)",
+        stablecoin: isStable(p.token_x.symbol) && isStable(p.token_y.symbol),
+        url: `https://app.meteora.ag/dlmm/${p.address}`,
+        address: p.address,
+        details: [
+          { label: "Bin step", value: String(p.pool_config?.bin_step ?? "?") },
+          { label: "Base fee", value: `${p.pool_config?.base_fee_pct ?? "?"}%` },
+          { label: "24h volume", value: `$${Math.round(num(p.volume?.["24h"])).toLocaleString("en-US")}` },
+        ],
+      } satisfies Opportunity;
+    });
 }

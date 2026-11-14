@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PLATFORMS } from "@/lib/platforms.ts";
 import { CHAIN_COLOR } from "@/lib/chains.ts";
 import type { Opportunity } from "@/lib/types.ts";
 
@@ -175,5 +176,23 @@ export function AddressPill({ address, chain, label }: { address: string; chain:
         </a>
       )}
     </span>
+  );
+}
+
+/** Logos of the platforms PECUN integrates, overlapped, then "+N platforms". Sized for the lime banners. */
+export function PlatformLogos({ max = 7, size = 26, label = true }: { max?: number; size?: number; label?: boolean }) {
+  const shown = PLATFORMS.slice(0, max);
+  const rest = PLATFORMS.length - shown.length;
+  return (
+    <div className="flex items-center gap-2" title={PLATFORMS.map((p) => p.name).join(", ")}>
+      <span className="flex items-center">
+        {shown.map((p, k) => (
+          <span key={p.name} className={`rounded-full bg-white ring-2 ring-white/80 ${k ? "-ml-1.5" : ""}`}>
+            <Logo src={p.logo} label={p.name} size={size} />
+          </span>
+        ))}
+      </span>
+      {label && rest > 0 && <span className="lb-muted shrink-0 font-sans text-xs">+{rest} platforms</span>}
+    </div>
   );
 }

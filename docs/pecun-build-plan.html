@@ -263,6 +263,16 @@ interface Plan {
     <tr><td>Jupiter Lend</td><td>Solana</td><td>Lending</td><td>SDK</td><td class="mono">@jup-ag/lend</td></tr>
     <tr><td>SPL stake pools (Jito etc.)</td><td>Solana</td><td>Liquid staking</td><td>On-chain</td><td class="mono">@solana/spl-stake-pool</td></tr>
     <tr><td>Hyperliquid</td><td>Hyperliquid</td><td>HLP / vaults</td><td>API, no key</td><td class="mono">@nktkas/hyperliquid <span class="pill warn">community</span></td></tr>
+    <tr><td>Aave V4</td><td>Ethereum, Base, Avalanche, Arc</td><td>Lending (hub and spoke)</td><td>GraphQL api.aave.com, no key</td><td class="mono">@aave/client 7.1 (V4 supply / withdraw)</td></tr>
+    <tr><td>Savings GHO (sGHO)</td><td>Ethereum</td><td>Savings rate</td><td>GraphQL api.v3.aave.com, no key</td><td>Aave API builds the deposit / redeem transactions; sGHO is also a plain ERC-4626 vault</td></tr>
+    <tr><td>Euler V2</td><td>Ethereum, Base, Arbitrum, Avalanche, BNB, Unichain, HyperEVM, Linea, Plasma</td><td>Lending vaults, Euler Earn</td><td>v3.euler.finance public API, no key</td><td class="mono">@eulerxyz/euler-v2-sdk (deposit / withdraw as one EVC batch)</td></tr>
+    <tr><td>Compound III</td><td>Ethereum, Base, Arbitrum, Optimism, Polygon, Unichain, Linea, Scroll, Mantle</td><td>Lending (Comet)</td><td>On-chain reads, verified market addresses</td><td>Comet <code>supply</code> / <code>withdraw</code> with viem</td></tr>
+    <tr><td>Moonwell</td><td>Base, Optimism</td><td>Lending (mTokens)</td><td>SDK reads on-chain</td><td class="mono">@moonwell-fi/moonwell-sdk</td></tr>
+    <tr><td>Fluid</td><td>Ethereum, Arbitrum, Base, Polygon, BNB, Plasma</td><td>Lending (fTokens)</td><td>api.fluid.instadapp.io, no key</td><td>fTokens are ERC-4626: direct <code>deposit</code> / <code>redeem</code></td></tr>
+    <tr><td>Spark</td><td>Ethereum (+ sUSDS on Base, Arbitrum, Optimism, Unichain)</td><td>Lending (SparkLend), savings vaults</td><td>On-chain reads</td><td>SparkLend: Aave-style Pool <code>supply</code> / <code>withdraw</code>. sUSDC / spUSDC / spUSDT: ERC-4626. L2 sUSDS: PSM3 <code>swapExactIn</code></td></tr>
+    <tr><td>Sky</td><td>Ethereum</td><td>Savings rate (sUSDS, sDAI)</td><td>On-chain reads (SSR / DSR)</td><td>ERC-4626 <code>deposit</code> / <code>redeem</code></td></tr>
+    <tr><td>Marinade</td><td>Solana</td><td>Liquid staking (mSOL)</td><td>api.marinade.finance, no key</td><td class="mono">@marinade.finance/marinade-ts-sdk</td></tr>
+    <tr><td>Meteora</td><td>Solana</td><td>Liquidity (DLMM pools)</td><td>dlmm.datapi.meteora.ag, no key</td><td class="mono">@meteora-ag/dlmm</td></tr>
   </tbody>
 </table></div>
 <h3>How many opportunities this gives us</h3>
@@ -296,6 +306,16 @@ interface Plan {
 <p>How each one gets listed in the UI: if a protocol has an execution SDK, the same SDK (or the protocol's own app API) returns its list of vaults, markets or pools. That list is the adapter's <code>getOpportunities()</code>. Lagoon, Suilend and Gearbox have no public list endpoint, so their adapters read the list through the SDK or on-chain.</p>
 
 <p>Not usable under the "free" rule: Yield.xyz and Enso (both need an API key). Odos could not be confirmed. ether.fi, Haedal, Rocket Pool and Veda have no SDK on npm, so they need direct contract calls.</p>
+
+<p>Checked on 14 Nov 2026 and left out on purpose:</p>
+<ul>
+  <li><b>Drift</b>: drained for about $285M in April 2026. Its main spot markets (USDC, SOL, JLP) still sit at 100% utilization with borrow rates at their maximum, so deposits can't be withdrawn. Not listed.</li>
+  <li><b>Fluid on Solana and Sui</b>: on Solana, Fluid's lending runs as Jupiter Lend, which is already listed (the program IDs in <code>@instadapp/fluid-solana-sdk</code> don't exist on mainnet). The Sui deployment holds only a few dollars. Neither SDK is installed.</li>
+  <li><b>Aave "Simple Earn" vaults</b>: neither Aave API offers a list of them; vaults can only be looked up by address or owner.</li>
+  <li><b>compound-js</b>: not installed. It pins ethers v5 as a peer dependency, which conflicts with <code>@aave/client</code>'s ethers v6 and breaks <code>npm install</code>. Comet calls are made with viem instead.</li>
+  <li><b>Moonwell and Spark Morpho vaults</b>: already listed through the Morpho adapter, so they are not repeated.</li>
+  <li><b>SparkLend on Gnosis</b>: read, but every reserve is frozen, so nothing is shown.</li>
+</ul>
 </section>
 
 <section id="phases">
@@ -481,6 +501,11 @@ interface Plan {
     <tr><td class="mono">@kamino-finance/klend-sdk / kliquidity-sdk</td><td>MIT / Apache-2.0</td><td><span class="pill ok">OK</span></td></tr>
     <tr><td class="mono">@jup-ag/lend</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
     <tr><td class="mono">@nktkas/hyperliquid</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@aave/client 7.1.0 (V4)</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@eulerxyz/euler-v2-sdk 4.4.0</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@moonwell-fi/moonwell-sdk 0.25.2</td><td>MIT</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@marinade.finance/marinade-ts-sdk 6.1.0</td><td>ISC</td><td><span class="pill ok">OK</span></td></tr>
+    <tr><td class="mono">@meteora-ag/dlmm 1.9.14</td><td>ISC</td><td><span class="pill ok">OK</span></td></tr>
     <tr><td class="mono">@lifi/sdk</td><td>Apache-2.0</td><td><span class="pill ok">OK</span></td></tr>
     <tr><td class="mono">@turnkey/sdk-server, react-wallet-kit</td><td>Apache-2.0 / MIT</td><td><span class="pill ok">OK</span></td></tr>
     <tr><td class="mono">@cetusprotocol/aggregator-sdk</td><td>None declared</td><td><span class="pill warn">Check</span> Ask Cetus or use another Sui router</td></tr>

@@ -196,3 +196,60 @@ export async function gearbox(): Promise<Opportunity[]> {
   }
   return out;
 }
+
+/* ---------------- Moonwell (mToken lending markets on Base + Optimism) ---------------- */
+// Execution: @moonwell-fi/moonwell-sdk; supply is mToken `mint(amount)` (native ETH via the router), withdraw is `redeemUnderlying`.
+// Moonwell's Morpho vaults are already listed through the Morpho adapter, so only the core markets are read here.
+
+export async function moonwell(): Promise<Opportunity[]> {
+  const { createMoonwellClient } = await import("@moonwell-fi/moonwell-sdk");
+  const mw = createMoonwellClient({
+    networks: {
+      base: { rpcUrls: ["https://base-rpc.publicnode.com"] },
+      optimism: { rpcUrls: ["https://optimism-rpc.publicnode.com"] },
+    },
+  });
+  const markets = await mw.getMarkets();
+  return markets
+    .filter((m) => !m.deprecated && !m.mintPaused)
+    .map((m) => {
+      const asset = m.underlyingToken.symbol;
+      // The SDK reports rates in percent.
+      const rewards = m.rewards.reduce((s, r) => s + r.supplyApr, 0) / 100;
+      const base = m.baseSupplyApy / 100;
+      const borrowedUsd = m.totalBorrowsUsd;
+      return {
+        id: `moonwell:${m.chainId}:${m.marketToken.address}`,
+        protocol: "Moonwell",
+        name: `${asset} lending`,
+        ticker: m.marketToken.symbol,
+        asset,
+        kind: "Lending",
+        category: "Lending market",
+        chain: evmChainName(m.chainId),
+        apy: base + rewards,
+        rewardApy: rewards || null,
+        apy7d: null,
+        apy30d: null,
+        tvlUsd: m.totalSupplyUsd,
+        manager: "Moonwell",
+        redemption: "Instant (if liquidity)",
+        stablecoin: isStable(asset),
+        url: "https://moonwell.fi/markets",
+        address: m.marketToken.address,
+        lending: {
+          totalSuppliedUsd: m.totalSupplyUsd,
+          totalBorrowedUsd: borrowedUsd,
+          liquidityUsd: m.cash.value * m.underlyingPrice,
+          utilization: m.totalSupplyUsd > 0 ? borrowedUsd / m.totalSupplyUsd : 0,
+          supplyApy: base,
+          borrowApy: m.baseBorrowApy / 100,
+          supplyCapUsd: m.supplyCapsUsd > 0 ? m.supplyCapsUsd : undefined,
+          maxLtv: m.collateralFactor || undefined,
+          canBeCollateral: m.collateralFactor > 0,
+          reserveFactor: m.reserveFactor,
+          priceUsd: m.underlyingPrice,
+        },
+      } satisfies Opportunity;
+    });
+}
