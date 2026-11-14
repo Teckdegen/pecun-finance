@@ -127,117 +127,150 @@ export function Explorer({ catalog, initialQuery = "", initialCat }: { catalog: 
   }, [all, filters, query, sort]);
 
   const toggleSort = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: (s.dir * -1) as 1 | -1 } : { key, dir: key === "name" ? 1 : -1 }));
-  const active = (Object.keys(DEFAULTS) as (keyof Filters)[]).filter((k) => filters[k] !== DEFAULTS[k]).length;
+  // The category is picked by the chips above the table, so it does not count as an extra filter.
+  const active = (Object.keys(DEFAULTS) as (keyof Filters)[]).filter((k) => k !== "cat" && filters[k] !== DEFAULTS[k]).length;
+  const catMeta = CATS.find((c) => c.id === filters.cat)!;
+
+  const stats = useMemo(() => {
+    const list = all.filter(catMeta.test);
+    const tvl = list.reduce((s, o) => s + o.tvlUsd, 0);
+    const big = list.filter((o) => o.tvlUsd >= 1e7 && (apyOf(o, "30d") ?? 0) <= 0.4);
+    const best = (big.length ? big : list).reduce<Opportunity | undefined>((b, o) => ((apyOf(o, "30d") ?? -1) > (b ? (apyOf(b, "30d") ?? -1) : -1) ? o : b), undefined);
+    return { tvl, count: list.length, chains: new Set(list.map((o) => o.chain)).size, best };
+  }, [all, catMeta]);
 
   return (
     <div className="w-full">
-      {/* Hero: title + search */}
-      <header className="pt-4 text-center md:pt-6">
-        <h1 className="text-[34px] font-medium tracking-tight sm:text-[46px]">{filters.cat === "all" ? "Explore Yields" : CATS.find((c) => c.id === filters.cat)!.label}</h1>
+      {/* Page title, Hood style: left-aligned, tight, with a one-line description */}
+      <header>
+        <h1 className="text-[1.65rem] font-medium tracking-[-0.03em] md:text-[2rem]">{catMeta.label === "All Products" ? "Explore yields" : catMeta.label}</h1>
+        <p className="mt-1 font-sans text-sm text-muted">{CAT_TEXT[filters.cat]}</p>
+      </header>
 
-        <div className="relative mx-auto mt-4 w-full max-w-[760px] md:mt-8">
-          <Search className="pointer-events-none absolute left-5 top-1/2 z-10 size-5 -translate-y-1/2 text-muted" />
+      <YieldBanner stats={stats} />
+
+      {/* Category chips: scroll sideways on phones */}
+      <div className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+        {CATS.map((c) => {
+          const on = filters.cat === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setFilters((f) => ({ ...f, cat: c.id }))}
+              aria-pressed={on}
+              className={`flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-[13px] transition ${on ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-muted hover:text-ink"}`}
+            >
+              <c.icon className="size-4" />
+              {c.id === "all" ? "All" : c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Toolbar: search + filters */}
+      <div className="mt-4 flex items-center gap-2">
+        <label className="relative block min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint" />
           <input
             id="search"
             ref={searchRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search yields"
-            className="h-[52px] w-full scroll-mt-24 rounded-full border border-line bg-card pl-14 pr-12 text-base placeholder:text-faint focus:border-faint focus:outline-none md:h-[60px] md:pr-[88px]"
+            placeholder="Search vaults, assets, protocols"
+            className="h-11 w-full scroll-mt-24 rounded-lg border border-line bg-card pl-10 pr-10 text-[15px] placeholder:text-faint focus:border-white/60 md:pr-20"
           />
           {query ? (
-            <button onClick={() => setQuery("")} aria-label="Clear search" className="absolute right-3 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-muted hover:bg-card-2">
+            <button onClick={() => setQuery("")} aria-label="Clear search" className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted hover:bg-card-2">
               <X className="size-4" />
             </button>
           ) : (
-            <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 gap-1.5 text-muted md:flex">
-              <kbd className="grid size-8 place-items-center rounded-lg border border-line bg-card text-sm">⌘</kbd>
-              <kbd className="grid size-8 place-items-center rounded-lg border border-line bg-card text-sm">K</kbd>
+            <span className="absolute right-2.5 top-1/2 hidden -translate-y-1/2 gap-1 text-faint md:flex">
+              <kbd className="grid h-6 min-w-6 place-items-center rounded border border-line px-1 font-mono text-[11px]">Ctrl</kbd>
+              <kbd className="grid size-6 place-items-center rounded border border-line font-mono text-[11px]">K</kbd>
             </span>
           )}
+        </label>
+        <button
+          onClick={() => setModalOpen(true)}
+          aria-label={active ? `Filters, ${active} active` : "Filters"}
+          className={`eyebrow flex h-11 shrink-0 items-center gap-2 rounded-lg border px-3.5 transition ${active ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-ink hover:border-white/30"}`}
+        >
+          <SlidersHorizontal className="size-4" />
+          <span className="hidden sm:inline">Filters</span>
+          {active > 0 && <span className="grid size-4 place-items-center rounded-full bg-on-accent text-[10px] text-accent">{active}</span>}
+        </button>
+      </div>
+
+      {/* Table panel */}
+      <section className="mt-4 overflow-hidden rounded-xl border border-line bg-card">
+        {/* Phone: sort row */}
+        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5 text-xs text-muted md:hidden">
+          <SortHead label="Vault" onClick={() => toggleSort("name")} on={sort.key === "name"} />
+          <span className="flex items-center gap-4">
+            <SortHead label="APY" onClick={() => toggleSort("apy")} on={sort.key === "apy"} />
+            <SortHead label="TVL" onClick={() => toggleSort("tvl")} on={sort.key === "tvl"} />
+          </span>
         </div>
-      </header>
 
-      {/* Header */}
-      {/* Phone: sort + Filters on one line; categories live inside Filters */}
-      <div className="mt-5 flex items-center justify-between gap-3 px-1 text-xs text-muted md:hidden">
-        <SortHead label="Vault" onClick={() => toggleSort("name")} />
-        <span className="flex items-center gap-3">
-          <SortHead label="APY" onClick={() => toggleSort("apy")} />
-          <SortHead label="TVL" onClick={() => toggleSort("tvl")} />
-          <button onClick={() => setModalOpen(true)} aria-label={active ? `Filters, ${active} active` : "Filters"}
-            className={`flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium ${active ? "bg-ink text-white" : "border border-line bg-card text-ink"}`}>
-            <SlidersHorizontal className="size-4" /> Filters
-            {active > 0 && <span className="grid size-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-white">{active}</span>}
-          </button>
-        </span>
-      </div>
+        <div className={`${COLS.replace(/^grid /, "")} hidden border-b border-line px-5 py-3 text-xs text-muted md:grid`}>
+          <SortHead label="Vault" onClick={() => toggleSort("name")} on={sort.key === "name"} />
+          <SortHead label={`APY ${filters.apyMode}`} onClick={() => toggleSort("apy")} on={sort.key === "apy"} />
+          <span className="eyebrow hidden md:block">Manager</span>
+          <SortHead label="TVL" onClick={() => toggleSort("tvl")} on={sort.key === "tvl"} />
+          <span className="eyebrow hidden lg:block">Redemption</span>
+          <span />
+        </div>
 
-      <div className={`${COLS.replace(/^grid /, "")} mt-12 hidden border-b border-line px-3 pb-3 text-[13px] text-muted md:grid md:px-5`}>
-        <SortHead label="Vault" onClick={() => toggleSort("name")} />
-        <SortHead label="APY" onClick={() => toggleSort("apy")} />
-        <span className="hidden md:block">Manager</span>
-        <SortHead label="TVL" onClick={() => toggleSort("tvl")} />
-        <span className="hidden lg:block">Redemption</span>
-        <span className="flex justify-end">
-          <button
-            onClick={() => setModalOpen(true)}
-            aria-label={active ? `Filters, ${active} active` : "Filters"}
-            className={`flex h-9 items-center gap-1.5 rounded-full text-[13px] font-medium transition lg:px-3.5 ${active ? "bg-ink text-white" : "border border-line bg-card text-ink hover:border-faint"} w-9 justify-center lg:w-auto`}
-          >
-            <SlidersHorizontal className="size-4 shrink-0" />
-            <span className="hidden lg:inline">Filters</span>
-            {active > 0 && <span className="grid size-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-white">{active}</span>}
-          </button>
-        </span>
-      </div>
-
-      {/* Card rows */}
-      {rows.slice(0, limit).map((o) => (
-        <Link key={o.id} href={`/earn/${o.slug}`}
-          className={`${COLS} mt-2.5 min-h-[76px] rounded-[22px] border border-line bg-card px-3.5 py-3.5 transition hover:border-faint md:mt-3 md:min-h-[84px] md:px-6 md:py-4`}>
-          <div className="flex min-w-0 items-center gap-3 md:gap-4">
-            <span className="md:hidden"><VaultMark o={o} size={44} /></span>
-            <span className="hidden md:block"><VaultMark o={o} size={52} /></span>
-            <div className="min-w-0">
-              <div className="truncate text-[15px] font-medium md:text-base">{display(o)}</div>
-              <div className="mt-0.5 truncate text-xs text-muted md:text-sm">{subtitle(o)}</div>
+        {/* Rows */}
+        {rows.slice(0, limit).map((o) => (
+          <Link key={o.id} href={`/earn/${o.slug}`}
+            className={`${COLS} group min-h-[72px] border-b border-line px-4 py-3 transition last:border-b-0 hover:bg-white/[0.03] md:min-h-[76px] md:px-5`}>
+            <div className="flex min-w-0 items-center gap-3 md:gap-4">
+              <span className="md:hidden"><VaultMark o={o} size={40} /></span>
+              <span className="hidden md:block"><VaultMark o={o} size={44} /></span>
+              <div className="min-w-0">
+                <div className="truncate text-[15px] font-medium tracking-[-0.01em]">{display(o)}</div>
+                <div className="mt-0.5 truncate font-sans text-xs text-muted md:text-[13px]">{subtitle(o)}</div>
+              </div>
             </div>
-          </div>
-          {/* Phone: APY over TVL on the right */}
-          <span className="flex flex-col items-end md:hidden">
-            <span className="tabular flex items-center gap-1 text-[15px] font-semibold text-accent" title={o.apyNote}>
+            {/* Phone: APY over TVL on the right */}
+            <span className="flex flex-col items-end md:hidden">
+              <span className="tabular flex items-center gap-1 text-[15px] font-medium text-accent" title={o.apyNote}>
+                {pct(apyOf(o, filters.apyMode))}
+                {!!o.rewardApy && <Sparkles className="size-3.5" aria-label="Includes rewards" />}
+              </span>
+              <span className="tabular mt-0.5 font-mono text-[11px] text-muted">{usd(o.tvlUsd)}</span>
+            </span>
+            <span className="tabular hidden items-center gap-1 text-[15px] font-medium text-accent md:flex" title={o.apyNote}>
               {pct(apyOf(o, filters.apyMode))}
               {!!o.rewardApy && <Sparkles className="size-3.5" aria-label="Includes rewards" />}
             </span>
-            <span className="tabular mt-0.5 text-xs text-muted">{usd(o.tvlUsd)}</span>
-          </span>
-          <span className="tabular hidden items-center gap-1 text-base font-medium text-accent md:flex" title={o.apyNote}>
-            {pct(apyOf(o, filters.apyMode))}
-            {!!o.rewardApy && <Sparkles className="size-4" aria-label="Includes rewards" />}
-          </span>
-          <span className="hidden md:block"><SmallStack items={managerItems(o, managerLogo)} /></span>
-          <span className="tabular hidden text-base font-medium md:block">{usd(o.tvlUsd)}</span>
-          <span className="hidden truncate text-base text-ink/80 lg:block" title={o.redemption}>{o.redemption}</span>
-          <ChevronRight className="hidden size-5 justify-self-end text-muted md:block" />
-        </Link>
-      ))}
+            <span className="hidden md:block"><SmallStack items={managerItems(o, managerLogo)} /></span>
+            <span className="tabular hidden font-mono text-[13px] md:block">{usd(o.tvlUsd)}</span>
+            <span className="hidden truncate font-sans text-sm text-muted lg:block" title={o.redemption}>{o.redemption}</span>
+            <span className="hidden justify-self-end md:block">
+              <span className="eyebrow hidden rounded-md border border-line px-2.5 py-1.5 text-ink transition group-hover:border-accent group-hover:bg-accent group-hover:text-on-accent lg:inline-flex">Earn</span>
+              <ChevronRight className="size-5 text-muted lg:hidden" />
+            </span>
+          </Link>
+        ))}
 
-      {rows.length === 0 && (
-        <div className="py-14 text-center text-sm text-muted">
-          Nothing matches.{" "}
-          <button onClick={() => { setFilters(DEFAULTS); setQuery(""); }} className="font-medium text-ink underline">Reset</button>
-        </div>
-      )}
+        {rows.length === 0 && (
+          <div className="py-14 text-center font-sans text-sm text-muted">
+            Nothing matches.{" "}
+            <button onClick={() => { setFilters(DEFAULTS); setQuery(""); }} className="font-medium text-accent underline">Reset</button>
+          </div>
+        )}
+      </section>
       {rows.length > limit && (
         <div className="flex justify-center pt-5">
-          <button onClick={() => setLimit((l) => l + 40)} className="flex h-10 items-center gap-1 rounded-full border border-line bg-card px-5 text-sm hover:border-faint">
+          <button onClick={() => setLimit((l) => l + 40)} className="eyebrow flex h-10 items-center gap-1.5 rounded-lg border border-line bg-card px-4 text-ink hover:border-white/30">
             Show more · {(rows.length - limit).toLocaleString()} left <ChevronDown className="size-4" />
           </button>
         </div>
       )}
 
-      <p className="mt-10 text-xs leading-relaxed text-muted">
+      <p className="mt-10 font-sans text-xs leading-relaxed text-faint">
         Live from each protocol&apos;s own API · updated {new Date(catalog.updatedAt).toLocaleTimeString()}. Every positive-APY yield over $1,000 TVL from our sources is listed.
         APYs are variable and not a promise of future returns. Not available in unsupported regions, including the United States, the United Kingdom, Ontario
         and sanctioned jurisdictions.
@@ -290,11 +323,11 @@ function FilterModal({ all, query, initial, managerLogo, onClose, onApply }: {
   const resultCount = useMemo(() => applyFilters(all, f, query).length, [all, f, query]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 p-0 backdrop-blur-sm sm:items-center sm:p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="filters-title"
-        className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[28px] glass-strong shadow-[0_30px_80px_rgba(20,30,60,0.25)] outline-none sm:rounded-[28px]">
+        className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-2xl glass-strong outline-none sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
-          <h2 id="filters-title" className="text-lg font-semibold">Filters</h2>
+          <h2 id="filters-title" className="text-lg font-medium">Filters</h2>
           <button onClick={onClose} aria-label="Close filters" className="grid size-8 place-items-center rounded-full hover:bg-card"><X className="size-4" /></button>
         </div>
 
@@ -302,7 +335,7 @@ function FilterModal({ all, query, initial, managerLogo, onClose, onApply }: {
           {/* Listed stat */}
           <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
             <div>
-              <div className="tabular text-xl font-semibold text-accent">{usd(listedTvl)}</div>
+              <div className="tabular text-xl font-medium text-accent">{usd(listedTvl)}</div>
               <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
                 listed across
                 <span className="flex">
@@ -314,7 +347,7 @@ function FilterModal({ all, query, initial, managerLogo, onClose, onApply }: {
             </div>
             <div className="flex h-10 items-end gap-1" aria-hidden>
               {tvlByProtocol.slice(0, 6).map(([p, v]) => (
-                <span key={p} className="w-2 rounded-sm bg-ink/10" style={{ height: `${Math.max(16, (v / tvlByProtocol[0][1]) * 100)}%` }} />
+                <span key={p} className="w-2 rounded-sm bg-accent/40" style={{ height: `${Math.max(16, (v / tvlByProtocol[0][1]) * 100)}%` }} />
               ))}
             </div>
           </div>
@@ -359,7 +392,7 @@ function FilterModal({ all, query, initial, managerLogo, onClose, onApply }: {
 
         <div className="flex items-center justify-between gap-3 border-t border-line px-6 py-4">
           <button onClick={() => setF(DEFAULTS)} className="text-sm text-muted hover:text-ink">Reset all</button>
-          <button onClick={() => onApply(f)} className="h-11 rounded-full bg-ink px-6 text-sm font-medium text-white">
+          <button onClick={() => onApply(f)} className="eyebrow h-11 rounded-lg bg-accent px-5 text-on-accent hover:bg-accent-deep">
             Show {resultCount.toLocaleString()} {resultCount === 1 ? "yield" : "yields"}
           </button>
         </div>
@@ -408,7 +441,7 @@ function OneLine({ anyLabel, value, onChange, items, shown, withLabels }: {
       {top.map((i) => (
         <button key={i.value} onClick={() => onChange(value === i.value ? "" : i.value)} aria-pressed={value === i.value} title={i.label} aria-label={i.label}
           className={`flex h-8 shrink-0 items-center gap-1.5 rounded-full transition ${withLabels ? "px-3 text-[13px]" : "w-8 justify-center"} ${
-            value === i.value ? "bg-accent-soft font-medium text-accent ring-1 ring-accent/40" : "text-ink hover:bg-card-2"}`}>
+            value === i.value ? "bg-accent-soft font-medium text-accent ring-1 ring-accent/50" : "text-ink hover:bg-card-2"}`}>
           {i.icon}{withLabels && i.label}
         </button>
       ))}
@@ -449,11 +482,65 @@ function OneLine({ anyLabel, value, onChange, items, shown, withLabels }: {
 
 /* ---------- small pieces ---------- */
 
-function SortHead({ label, onClick }: { label: string; onClick: () => void }) {
+function SortHead({ label, onClick, on }: { label: string; onClick: () => void; on?: boolean }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-1.5 text-left hover:text-ink">
-      {label} <ArrowUpDown className="size-3" />
+    <button onClick={onClick} className={`eyebrow flex items-center gap-1.5 text-left hover:text-ink ${on ? "text-ink" : ""}`}>
+      {label} <ArrowUpDown className={`size-3 ${on ? "text-accent" : ""}`} />
     </button>
+  );
+}
+
+const CAT_TEXT: Record<Cat, string> = {
+  all: "Every on-chain yield PECUN can execute, across EVM, Solana, Sui and Hyperliquid.",
+  featured: "Hand-picked vaults with deep liquidity and a clean track record.",
+  stable: "Dollar-pegged yields. Your balance stays in stablecoins.",
+  lending: "Supply an asset to a lending market and earn what borrowers pay.",
+  vaults: "Curated strategies that allocate your deposit across markets for you.",
+  fixed: "Lock a rate today and hold to maturity.",
+  staking: "Stake to secure a network and keep a liquid token that grows.",
+  perps: "Provide liquidity to perpetuals exchanges and earn from trading.",
+};
+
+/** Hood savings banner: photo under a dark wash, a headline and three live numbers. */
+function YieldBanner({ stats }: { stats: { tvl: number; count: number; chains: number; best?: Opportunity } }) {
+  const b = stats.best;
+  return (
+    <section className="relative mt-5 overflow-hidden rounded-xl border border-line">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/hero/banner.jpg" alt="" className="absolute inset-0 size-full object-cover object-[50%_75%]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.18) 0.7px, transparent 0.7px)", backgroundSize: "12px 12px" }}
+      />
+      <div className="relative flex flex-col gap-6 px-5 py-6 md:flex-row md:items-end md:justify-between md:px-7 md:py-8">
+        <div className="max-w-lg">
+          <p className="inline-flex rounded-full bg-accent px-2.5 py-1 font-sans text-xs text-on-accent">Earn</p>
+          <h2 className="mt-3 text-xl font-medium leading-tight tracking-[-0.03em] md:text-[1.75rem]">
+            Put idle money to work, on any chain.
+          </h2>
+          {b ? (
+            <Link href={`/earn/${b.slug}`} className="mt-3 inline-flex max-w-full items-center gap-2 rounded-lg bg-black/50 py-1.5 pl-1.5 pr-3 font-sans text-sm text-ink/85 backdrop-blur hover:bg-black/70">
+              <VaultMark o={b} size={24} />
+              <span className="truncate">Top pick: {display(b)}</span>
+              <b className="tabular shrink-0 font-medium text-accent">{pct(apyOf(b, "30d"))}</b>
+            </Link>
+          ) : null}
+        </div>
+        <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 md:min-w-[380px]">
+          {[
+            ["Listed TVL", usd(stats.tvl, 1)],
+            ["Yields", stats.count.toLocaleString()],
+            ["Chains", String(stats.chains)],
+          ].map(([k, v]) => (
+            <div key={k} className="bg-black/55 px-3 py-3 backdrop-blur md:px-4">
+              <dt className="eyebrow text-[10px] text-muted md:text-[11px]">{k}</dt>
+              <dd className="tabular mt-1 text-lg font-medium tracking-[-0.02em] md:text-xl">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
   );
 }
 

@@ -76,14 +76,23 @@ export function VaultView({ o, deployments }: { o: Opportunity; deployments: Opp
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0">
-        <nav className="flex items-center gap-2 text-sm text-muted" aria-label="Breadcrumb">
-          <Link href="/" aria-label="Back" className="grid size-7 place-items-center rounded-full bg-card hover:bg-card-2">
-            <ArrowLeft className="size-4" />
-          </Link>
-          <Link href="/" className="hover:text-ink">Earn</Link>
-          <ChevronRight className="size-3.5" />
-          <span className="truncate text-ink">{display(o)}</span>
-        </nav>
+        {/* Hood image strip: photo under a dark wash, back link and the vault's kind + chain */}
+        <div className="relative h-24 overflow-hidden rounded-xl border border-line md:h-28">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={STRIP[o.kind] ?? "/hero/banner.jpg"} alt="" className="absolute inset-0 size-full object-cover object-[50%_70%]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/10" />
+          <nav className="relative flex h-full items-center justify-between gap-3 px-4 md:px-6" aria-label="Breadcrumb">
+            <span className="flex min-w-0 items-center gap-2 text-sm text-muted">
+              <Link href="/" aria-label="Back" className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/15 bg-black/40 text-ink hover:bg-black/70">
+                <ArrowLeft className="size-4" />
+              </Link>
+              <Link href="/" className="hover:text-ink">Explore</Link>
+              <ChevronRight className="size-3.5 shrink-0" />
+              <span className="truncate text-ink">{o.kind}</span>
+            </span>
+            <span className="eyebrow shrink-0 rounded-full bg-accent px-2.5 py-1 text-[10px] text-on-accent">{o.chain}</span>
+          </nav>
+        </div>
         {o.ref?.source.startsWith("morpho") ? (
           <MorphoLayout o={o} history={history} loading={loading} />
         ) : o.kind === "Lending" && o.lending ? (
@@ -94,7 +103,7 @@ export function VaultView({ o, deployments }: { o: Opportunity; deployments: Opp
           <Overview o={o} deployments={deployments} history={history} loading={loading} />
         )}
         <section className="mt-10 text-xs leading-relaxed text-muted">
-          <h3 className="text-sm font-semibold text-ink">Risk disclosure</h3>
+          <h3 className="text-sm font-medium text-ink">Risk disclosure</h3>
           <p className="mt-2">
             This position is run by {o.manager === o.protocol ? o.protocol : `${o.manager} on ${o.protocol}`}, not by PECUN. PECUN lists it and will route
             your transaction; it does not manage the strategy or hold your funds. Risks include smart-contract bugs, oracle or pricing errors, strategy
@@ -110,6 +119,10 @@ export function VaultView({ o, deployments }: { o: Opportunity; deployments: Opp
   );
 }
 
+const STRIP: Record<string, string> = {
+  Lending: "/hero/skyline.jpg",
+};
+
 /** Phones: takes the tab bar's place on vault pages and jumps to the deposit panel. Hidden once the panel is on screen. */
 function PhoneDepositBar({ o }: { o: Opportunity }) {
   const [panelVisible, setPanelVisible] = useState(false);
@@ -123,11 +136,11 @@ function PhoneDepositBar({ o }: { o: Opportunity }) {
   if (panelVisible) return null;
   return (
     <div className="fixed inset-x-3 z-30 lg:hidden" style={{ bottom: "max(12px, env(safe-area-inset-bottom))" }}>
-      <a href="#deposit" className="flex h-[60px] items-center justify-between rounded-full bg-ink pl-5 pr-2 text-white shadow-[0_12px_30px_rgba(20,30,60,0.3)]">
+      <a href="#deposit" className="flex h-[60px] items-center justify-between rounded-xl border border-line bg-[#161616] pl-5 pr-2 text-ink shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
         <span className="text-sm">
-          Earn <b className="tabular">{pct(o.apy30d ?? o.apy7d ?? o.apy)}</b> <span className="text-white/60">on {o.asset}</span>
+          Earn <b className="tabular">{pct(o.apy30d ?? o.apy7d ?? o.apy)}</b> <span className="text-muted">on {o.asset}</span>
         </span>
-        <span className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-ink">Deposit</span>
+        <span className="eyebrow rounded-lg bg-accent px-5 py-3 text-on-accent">Deposit</span>
       </a>
     </div>
   );
@@ -206,7 +219,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
       <div className="mt-5 flex items-center gap-4">
         <VaultMark o={o} size={60} />
         <div className="min-w-0">
-          <h1 className="truncate text-[28px] font-semibold leading-tight tracking-tight">{display(o)}</h1>
+          <h1 className="truncate text-[24px] font-medium leading-tight tracking-[-0.03em] md:text-[28px]">{display(o)}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {text(o.category) && <span className="text-xs text-muted">{text(o.category)}</span>}
             {managers.map((m) => (
@@ -216,27 +229,27 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
         </div>
       </div>
 
-      <div className="mt-7 flex flex-wrap gap-x-16 gap-y-5">
+      <div className="mt-7 flex flex-wrap gap-x-8 gap-y-5 md:gap-x-16">
         {statApy !== null && (
           <div>
             <div className="flex items-center gap-2 text-sm text-muted">
               Avg. APY
               {statOptions.length > 1 && statChoice && <Seg value={statChoice} options={statOptions} onChange={(v) => setStatWin(v as Win)} />}
             </div>
-            <div className="tabular mt-1.5 text-[32px] font-semibold text-accent">{pct(statApy)}</div>
+            <div className="tabular mt-1.5 text-[24px] md:text-[32px] font-medium text-accent">{pct(statApy)}</div>
             {o.apyNote && <div className="mt-1 text-xs text-muted">{o.apyNote}</div>}
           </div>
         )}
         {totalTvl > 0 && (
           <div>
             <div className="text-sm text-muted">TVL</div>
-            <div className="tabular mt-1.5 text-[32px] font-semibold">{usd(totalTvl)}</div>
+            <div className="tabular mt-1.5 text-[24px] md:text-[32px] font-medium">{usd(totalTvl)}</div>
           </div>
         )}
         {o.sharePrice !== undefined && (
           <div>
             <div className="text-sm text-muted">Share price</div>
-            <div className="tabular mt-1.5 text-[32px] font-semibold">{formatShare(o.sharePrice)}</div>
+            <div className="tabular mt-1.5 text-[24px] md:text-[32px] font-medium">{formatShare(o.sharePrice)}</div>
           </div>
         )}
       </div>
@@ -244,7 +257,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
       <SectionNav items={nav} />
 
       {showOverview && (
-        <section id="overview" className="scroll-mt-6 pt-5">
+        <section id="overview" className="scroll-mt-20 pt-5">
           {description && (
             <>
               <p className={`max-w-3xl text-sm leading-relaxed text-ink/80 ${more ? "" : "line-clamp-2"}`}>{description}</p>
@@ -274,8 +287,8 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
 
       {showPerformance && (
         <>
-          <h2 className="mt-12 text-lg font-semibold">Vault performance</h2>
-          <section className={`mt-4 grid gap-5 rounded-[22px] bg-card p-5 ${showChart && showComposition ? "md:grid-cols-[minmax(0,1.5fr)_minmax(240px,1fr)]" : ""}`}>
+          <h2 className="mt-12 text-lg font-medium">Vault performance</h2>
+          <section className={`mt-4 grid gap-5 rounded-xl bg-card p-5 ${showChart && showComposition ? "md:grid-cols-[minmax(0,1.5fr)_minmax(240px,1fr)]" : ""}`}>
             {showChart && (
               <div>
                 <div className="flex items-center justify-between">
@@ -284,7 +297,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
                   </span>
                   {perfOptions.length > 1 && <Seg value={perfChoice} options={perfOptions} onChange={(v) => setPerfWin(v as Win)} />}
                 </div>
-                {perfApy !== null && <div className="tabular mt-3 text-2xl font-semibold">{pct(perfApy)}</div>}
+                {perfApy !== null && <div className="tabular mt-3 text-2xl font-medium">{pct(perfApy)}</div>}
                 {perfSeries.length >= 2 && <div className="text-xs text-muted">{DAYS[perfChoice]} day avg. APY</div>}
                 <div className="mt-3">
                   <LineChart data={perfSeries} format={(v) => pct(v)} height={180} color="var(--accent)" loading={loading && perfSeries.length < 2} />
@@ -346,10 +359,10 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
 
       {showEarnings && (
         <>
-          <h2 className="mt-12 text-lg font-semibold">{showShareCard && showTvlCard ? "TVL and earnings" : showShareCard ? "Share price" : "TVL"}</h2>
+          <h2 className="mt-12 text-lg font-medium">{showShareCard && showTvlCard ? "TVL and earnings" : showShareCard ? "Share price" : "TVL"}</h2>
           <section className={`mt-4 grid gap-4 ${showTvlCard && showShareCard ? "md:grid-cols-2" : ""}`}>
             {showTvlCard && (
-              <div className="rounded-[22px] bg-card p-5">
+              <div className="rounded-xl bg-card p-5">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-sm text-muted">
                     <ShieldCheck className="size-4" /> TVL
@@ -359,7 +372,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
                 <div className="mt-4 flex items-center gap-3">
                   {capPct !== null && <Ring pct={capPct} />}
                   <div>
-                    <div className="tabular text-2xl font-semibold">{usd(totalTvl)}</div>
+                    <div className="tabular text-2xl font-medium">{usd(totalTvl)}</div>
                     {o.capUsd && <div className="text-xs text-muted">Out of {usd(o.capUsd)} cap</div>}
                   </div>
                 </div>
@@ -371,7 +384,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
               </div>
             )}
             {showShareCard && (
-              <div className="rounded-[22px] bg-card p-5">
+              <div className="rounded-xl bg-card p-5">
                 {spSeries.length >= 2 && (
                   <div className="flex rounded-full bg-card-2 p-0.5 text-xs" style={{ width: "fit-content" }}>
                     {(
@@ -380,17 +393,17 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
                         ["yield", "Yield earned"],
                       ] as const
                     ).map(([k, l]) => (
-                      <button key={k} onClick={() => setSpTab(k)} className={`h-7 rounded-full px-3 ${spTab === k ? "bg-card font-medium shadow-sm" : "text-muted"}`}>
+                      <button key={k} onClick={() => setSpTab(k)} className={`h-7 rounded-full px-3 ${spTab === k ? "bg-white/15 font-medium text-ink" : "text-muted"}`}>
                         {l}
                       </button>
                     ))}
                   </div>
                 )}
                 {spLast !== undefined && (spTab === "price" || spSeries.length < 2) && (
-                  <div className={`tabular text-2xl font-semibold ${spSeries.length >= 2 ? "mt-4" : ""}`}>{formatShare(spLast)}</div>
+                  <div className={`tabular text-2xl font-medium ${spSeries.length >= 2 ? "mt-4" : ""}`}>{formatShare(spLast)}</div>
                 )}
                 {spTab === "yield" && spSeries.length >= 2 && yieldSeries.at(-1) && (
-                  <div className="tabular mt-4 text-2xl font-semibold">{pct(yieldSeries.at(-1)![1])}</div>
+                  <div className="tabular mt-4 text-2xl font-medium">{pct(yieldSeries.at(-1)![1])}</div>
                 )}
                 {(spLast !== undefined || (spTab === "yield" && spSeries.length >= 2)) && (
                   <div className="text-xs">
@@ -426,7 +439,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
 
       {facts.length > 0 && (
         <>
-          <h2 id="details" className="mt-12 scroll-mt-6 text-lg font-semibold">Vault details</h2>
+          <h2 id="details" className="mt-12 scroll-mt-20 text-lg font-medium">Vault details</h2>
           <FactGrid rows={facts} />
         </>
       )}
@@ -531,7 +544,7 @@ function Overview({ o, deployments, history, loading }: { o: Opportunity; deploy
       <div className="mt-5 flex items-center gap-4">
         <VaultMark o={o} size={52} />
         <div className="min-w-0">
-          <h1 className="truncate text-[32px] font-semibold leading-tight tracking-tight">{display(o)}</h1>
+          <h1 className="truncate text-[26px] font-medium leading-tight tracking-[-0.03em] md:text-[32px]">{display(o)}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {text(o.asset) && o.asset !== "?" && <Chip logo={o.assetLogo} label={o.asset} />}
             <Chip logo={o.protocolLogo} label={o.protocol} />
@@ -546,25 +559,25 @@ function Overview({ o, deployments, history, loading }: { o: Opportunity; deploy
         {totalTvl > 0 && (
           <div>
             <div className="text-sm text-muted">Total value</div>
-            <div className="tabular mt-1 text-[32px] font-semibold">{usd(totalTvl)}</div>
+            <div className="tabular mt-1 text-[24px] md:text-[32px] font-medium">{usd(totalTvl)}</div>
           </div>
         )}
         {liquidity && (
           <div>
             <div className="text-sm text-muted">Available liquidity</div>
-            <div className="tabular mt-1 text-[32px] font-semibold">{liquidity.replace(/^\$/, "$")}</div>
+            <div className="tabular mt-1 text-[24px] md:text-[32px] font-medium">{liquidity.replace(/^\$/, "$")}</div>
           </div>
         )}
         {o.sharePrice !== undefined && (
           <div>
             <div className="text-sm text-muted">Share price</div>
-            <div className="tabular mt-1 text-[32px] font-semibold">{formatShare(o.sharePrice)}</div>
+            <div className="tabular mt-1 text-[24px] md:text-[32px] font-medium">{formatShare(o.sharePrice)}</div>
           </div>
         )}
         {headlineApy !== null && (
           <div>
             <div className="text-sm text-muted">APY</div>
-            <div className="tabular mt-1 text-[32px] font-semibold text-accent">{pct(headlineApy)}</div>
+            <div className="tabular mt-1 text-[24px] md:text-[32px] font-medium text-accent">{pct(headlineApy)}</div>
             {o.apyNote && <div className="mt-1 text-xs text-muted">{o.apyNote}</div>}
           </div>
         )}
@@ -573,16 +586,16 @@ function Overview({ o, deployments, history, loading }: { o: Opportunity; deploy
       <SectionNav items={nav} />
 
       {(facts.length > 0 || yieldWindows.length > 1 || showTvlChart || showApyChart) && (
-        <section id="overview" className="scroll-mt-6 pt-8">
-          <h2 className="text-lg font-semibold">Overview</h2>
+        <section id="overview" className="scroll-mt-20 pt-8">
+          <h2 className="text-lg font-medium">Overview</h2>
           {yieldWindows.length > 1 && (
-            <div className="mt-4 rounded-[22px] bg-card p-5">
+            <div className="mt-4 rounded-xl bg-card p-5">
               <div className="text-sm font-medium">Yield</div>
               <div className="mt-4 grid gap-4 sm:grid-cols-3">
                 {yieldWindows.map(([label, value]) => (
                   <div key={label}>
                     <div className="text-xs text-muted">{label}</div>
-                    <div className="tabular mt-1 text-2xl font-semibold text-accent">{pct(value)}</div>
+                    <div className="tabular mt-1 text-2xl font-medium text-accent">{pct(value)}</div>
                   </div>
                 ))}
               </div>
@@ -591,7 +604,7 @@ function Overview({ o, deployments, history, loading }: { o: Opportunity; deploy
           )}
 
           {facts.length > 0 && (
-            <div className="mt-4 rounded-[22px] bg-card p-5">
+            <div className="mt-4 rounded-xl bg-card p-5">
               <div className="text-sm font-medium">{factsTitle}</div>
               <dl className="mt-2">
                 {facts.map((f) => (
@@ -605,11 +618,11 @@ function Overview({ o, deployments, history, loading }: { o: Opportunity; deploy
           )}
 
           {showTvlChart && (
-            <div className="mt-4 rounded-[22px] bg-card p-5">
+            <div className="mt-4 rounded-xl bg-card p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm text-muted">Total value</div>
-                  {totalTvl > 0 && <div className="tabular mt-1 text-2xl font-semibold">{usd(totalTvl)}</div>}
+                  {totalTvl > 0 && <div className="tabular mt-1 text-2xl font-medium">{usd(totalTvl)}</div>}
                 </div>
                 {tvlSeries.length >= 2 && tvlOptions.length > 1 && <Seg value={tvlChoice} options={tvlOptions} onChange={(v) => setTvlWin(v as Win)} />}
               </div>
@@ -620,11 +633,11 @@ function Overview({ o, deployments, history, loading }: { o: Opportunity; deploy
           )}
 
           {showApyChart && (
-            <div className="mt-4 rounded-[22px] bg-card p-5">
+            <div className="mt-4 rounded-xl bg-card p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm text-muted">APY</div>
-                  {headlineApy !== null && <div className="tabular mt-1 text-2xl font-semibold">{pct(headlineApy)}</div>}
+                  {headlineApy !== null && <div className="tabular mt-1 text-2xl font-medium">{pct(headlineApy)}</div>}
                 </div>
                 {apySeries.length >= 2 && apyOptions.length > 1 && <Seg value={apyChoice} options={apyOptions} onChange={(v) => setApyWin(v as Win)} />}
               </div>
@@ -637,9 +650,9 @@ function Overview({ o, deployments, history, loading }: { o: Opportunity; deploy
       )}
 
       {showAllocation && (
-        <section id="allocation" className="scroll-mt-6 pt-8">
-          <h2 className="text-lg font-semibold">Allocation</h2>
-          {allocation.length > 0 ? <AllocationTable rows={allocation} /> : <div className="mt-4 h-40 animate-pulse rounded-[22px] bg-card" />}
+        <section id="allocation" className="scroll-mt-20 pt-8">
+          <h2 className="text-lg font-medium">Allocation</h2>
+          {allocation.length > 0 ? <AllocationTable rows={allocation} /> : <div className="mt-4 h-40 animate-pulse rounded-xl bg-card" />}
         </section>
       )}
     </>
@@ -710,7 +723,7 @@ function AllocationTable({ rows }: { rows: AllocRow[] }) {
   const hasPct = rows.some((r) => r.pct !== undefined);
   const hasUsd = rows.some((r) => r.usd !== undefined && r.usd > 0);
   return (
-    <div className="mt-4 overflow-x-auto rounded-[22px] bg-card">
+    <div className="mt-4 overflow-x-auto rounded-xl bg-card">
       <table className="w-full min-w-[520px] text-left text-sm">
         <thead>
           <tr className="text-xs text-muted">
@@ -756,8 +769,8 @@ function Transparency({ o, history, loading, deployments, totalTvl }: { o: Oppor
   if (!loading && slices.length === 0) return null;
   return (
     <>
-      <h2 id="transparency" className="mt-12 scroll-mt-6 text-lg font-semibold">Transparency</h2>
-      <section className="mt-4 grid gap-6 rounded-[22px] bg-card p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+      <h2 id="transparency" className="mt-12 scroll-mt-20 text-lg font-medium">Transparency</h2>
+      <section className="mt-4 grid gap-6 rounded-xl bg-card p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <div>
           <div className="flex items-center gap-1.5 text-sm text-muted">
             <ShieldCheck className="size-4" /> {r || loading ? "Proof of reserves" : "Where funds sit"}
@@ -796,7 +809,7 @@ function Transparency({ o, history, loading, deployments, totalTvl }: { o: Oppor
           <div className="flex flex-wrap items-center gap-6 md:border-l md:border-line md:pl-6">
             <div className="min-w-0 flex-1">
               <div className="text-xs text-muted">Total value locked</div>
-              {total > 0 && <div className="tabular mt-1 text-[28px] font-semibold">{usd(total)}</div>}
+              {total > 0 && <div className="tabular mt-1 text-[28px] font-medium">{usd(total)}</div>}
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {slices.map((s) => (
                   <span key={s.label} className="flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-xs">
@@ -823,8 +836,8 @@ function DepositPanel({ o }: { o: Opportunity }) {
   const apy = o.apy30d ?? o.apy7d ?? o.apy;
   const exit = side === "withdraw" && instant ? o.instantExit : undefined;
   return (
-    <aside id="deposit" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
-      <div className="rounded-[22px] bg-card p-4">
+    <aside id="deposit" className="scroll-mt-24 lg:sticky lg:top-20 lg:self-start">
+      <div className="rounded-xl bg-card p-4">
         <div className="flex rounded-full bg-card-2 p-0.5 text-sm" style={{ width: "fit-content" }}>
           {(["deposit", "withdraw"] as const).map((t) => (
             <button
@@ -833,7 +846,7 @@ function DepositPanel({ o }: { o: Opportunity }) {
                 setSide(t);
                 if (t === "deposit") setInstant(false);
               }}
-              className={`h-8 rounded-full px-4 capitalize ${side === t ? "bg-card font-medium shadow-sm" : "text-muted"}`}
+              className={`h-8 rounded-full px-4 capitalize ${side === t ? "bg-white/15 font-medium text-ink" : "text-muted"}`}
             >
               {t}
             </button>
@@ -848,7 +861,7 @@ function DepositPanel({ o }: { o: Opportunity }) {
           <div className="text-xs text-muted">{side === "deposit" ? "Deposit" : "Withdraw"}</div>
           <div className="mt-2 flex items-center justify-between gap-3">
             <input id="amount" inputMode="decimal" placeholder="0" disabled className="w-1/2 bg-transparent text-3xl text-faint outline-none" />
-            <span className="flex items-center gap-1.5 text-base font-semibold">
+            <span className="flex items-center gap-1.5 text-base font-medium">
               <Logo src={side === "deposit" ? o.assetLogo : o.logoUrl ?? o.assetLogo} label={o.asset} size={22} />
               {side === "deposit" ? o.asset : (o.ticker ?? o.asset)}
             </span>
@@ -864,7 +877,7 @@ function DepositPanel({ o }: { o: Opportunity }) {
               className="flex w-full items-center justify-between gap-3 text-left"
             >
               <span className="text-sm font-medium">Instant exit</span>
-              <span className={`relative h-6 w-10 shrink-0 rounded-full transition ${instant ? "bg-ink" : "bg-line"}`} aria-hidden>
+              <span className={`relative h-6 w-10 shrink-0 rounded-full transition ${instant ? "bg-accent" : "bg-white/15"}`} aria-hidden>
                 <span className={`absolute top-0.5 size-5 rounded-full bg-white transition ${instant ? "left-[18px]" : "left-0.5"}`} />
               </span>
             </button>
@@ -925,7 +938,7 @@ function SectionNav({ items }: { items: { id: string; label: string }[] }) {
           key={item.id}
           href={`#${item.id}`}
           onClick={() => setActive(item.id)}
-          className={`-mb-px border-b-2 pb-2.5 ${active === item.id ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"}`}
+          className={`-mb-px border-b-2 pb-2.5 ${active === item.id ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}
         >
           {item.label}
         </a>
@@ -961,7 +974,7 @@ function Seg({ value, options, onChange }: { value: string; options: string[]; o
           key={w}
           onClick={() => onChange(w)}
           aria-pressed={value === w}
-          className={`h-6 rounded-full px-2.5 ${value === w ? "bg-card font-medium text-ink shadow-sm" : "text-muted hover:text-ink"}`}
+          className={`h-6 rounded-full px-2.5 ${value === w ? "bg-white/15 font-medium text-ink" : "text-muted hover:text-ink"}`}
         >
           {w.toUpperCase()}
         </button>
@@ -985,7 +998,7 @@ function Line({ label, value, icon, tone, strong, accent }: { label: string; val
         {icon}
         {label}
       </dt>
-      <dd className={`tabular text-right ${strong ? "font-semibold" : "font-medium"} ${tone === "pos" ? "text-mint" : accent ? "text-accent" : ""}`}>{value}</dd>
+      <dd className={`tabular text-right ${strong ? "font-medium" : "font-medium"} ${tone === "pos" ? "text-mint" : accent ? "text-accent" : ""}`}>{value}</dd>
     </div>
   );
 }
@@ -996,7 +1009,7 @@ function Ring({ pct: p }: { pct: number }) {
   return (
     <svg viewBox="0 0 44 44" className="size-12 shrink-0" role="img" aria-label={`${Math.round(p * 100)}% of cap`}>
       <circle cx="22" cy="22" r={r} fill="none" stroke="var(--line)" strokeWidth="4" />
-      <circle cx="22" cy="22" r={r} fill="none" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${c * p} ${c}`} transform="rotate(-90 22 22)" />
+      <circle cx="22" cy="22" r={r} fill="none" stroke="var(--accent)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${c * p} ${c}`} transform="rotate(-90 22 22)" />
       <text x="22" y="25.5" textAnchor="middle" fontSize="10" fontWeight="600" fill="var(--ink)">
         {Math.round(p * 100)}%
       </text>
@@ -1015,7 +1028,7 @@ function Bars({ data, loading }: { data: [number, number][]; loading: boolean })
     <div>
       <div className="flex h-40 items-end gap-1.5">
         {pts.map(([t, v]) => (
-          <div key={t} title={`${fmt(t)} · ${usd(v)}`} className="flex-1 rounded-t-md bg-ink/80 transition hover:bg-accent" style={{ height: `${Math.max(4, (v / max) * 100)}%` }} />
+          <div key={t} title={`${fmt(t)} · ${usd(v)}`} className="flex-1 rounded-t-sm bg-accent/70 transition hover:bg-accent" style={{ height: `${Math.max(4, (v / max) * 100)}%` }} />
         ))}
       </div>
       <div className="mt-2 flex justify-between text-[11px] text-faint">
@@ -1026,7 +1039,7 @@ function Bars({ data, loading }: { data: [number, number][]; loading: boolean })
   );
 }
 
-const DONUT_COLORS = ["var(--ink)", "#7c5cf0", "#12976b", "#f0b45a", "#e2622e", "#8a90a2"];
+const DONUT_COLORS = ["var(--accent)", "#6fd3ff", "#c49bff", "#f3c463", "#ff8a65", "#5b5b5b"];
 function Donut({ slices, total }: { slices: { label: string; value: number }[]; total: number }) {
   const r = 52;
   const c = 2 * Math.PI * r;

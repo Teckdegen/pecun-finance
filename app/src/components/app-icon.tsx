@@ -1,8 +1,8 @@
-/** The PECUN app mark, drawn for next/og image generation. */
+/** The PECUN app mark in Hood colours (lime tile, black letter), drawn for next/og image generation. */
 export function Icon({ size, pad = 0 }: { size: number; pad?: number }) {
   const inner = size * (1 - pad * 2);
   return (
-    <div style={{ width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center", background: "#15171c" }}>
+    <div style={{ width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center", background: "#0c0c0c" }}>
       <div
         style={{
           width: inner,
@@ -11,11 +11,11 @@ export function Icon({ size, pad = 0 }: { size: number; pad?: number }) {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: pad ? inner * 0.22 : 0,
-          background: "linear-gradient(140deg, #3d6df2 0%, #8a6bff 55%, #15171c 100%)",
-          color: "white",
+          background: "#b8ff9d",
+          color: "#0a0b0d",
           fontSize: inner * 0.56,
-          fontWeight: 700,
-          letterSpacing: -inner * 0.02,
+          fontWeight: 600,
+          letterSpacing: -inner * 0.03,
         }}
       >
         P

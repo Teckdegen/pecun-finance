@@ -36,13 +36,13 @@ export function LendingLayout({ o }: { o: Opportunity }) {
         {coll ? (
           <span className="flex shrink-0">
             <Logo src={coll.logo} label={coll.symbol} size={48} />
-            <span className="-ml-3 rounded-full ring-4 ring-white/70"><Logo src={o.assetLogo} label={o.asset} size={48} /></span>
+            <span className="-ml-3 rounded-full ring-4 ring-bg"><Logo src={o.assetLogo} label={o.asset} size={48} /></span>
           </span>
         ) : (
           <Logo src={o.assetLogo} label={o.asset} size={52} />
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-[28px] font-semibold leading-tight tracking-tight">
+          <h1 className="truncate text-[24px] font-medium leading-tight tracking-[-0.03em] md:text-[28px]">
             {coll ? <>{coll.symbol} <span className="text-faint">/</span> {o.asset}</> : o.asset}
             <span className="ml-2 text-base font-normal text-muted">{coll ? "market" : "lending"}</span>
           </h1>
@@ -61,12 +61,12 @@ export function LendingLayout({ o }: { o: Opportunity }) {
           <Label icon={<TrendingUp className="size-3.5" />}>Interest rate model</Label>
           <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-2">
             <div>
-              <div className="tabular text-[26px] font-semibold leading-none text-accent">{pct(supplyApy)}</div>
+              <div className="tabular text-[26px] font-medium leading-none text-accent">{pct(supplyApy)}</div>
               <div className="mt-1.5 text-xs text-muted">Supply APY</div>
             </div>
             {l.borrowApy !== undefined && (
               <div>
-                <div className="tabular text-[26px] font-semibold leading-none">{pct(l.borrowApy)}</div>
+                <div className="tabular text-[26px] font-medium leading-none">{pct(l.borrowApy)}</div>
                 <div className="mt-1.5 text-xs text-muted">Borrow APY</div>
               </div>
             )}
@@ -165,7 +165,7 @@ export function LendingLayout({ o }: { o: Opportunity }) {
             <div className="flex items-center justify-between gap-4 border-t border-line p-5 md:border-l md:border-t-0">
               <div className="min-w-0">
                 <div className="text-xs text-muted">Total value supplied</div>
-                <div className="tabular mt-1 text-[26px] font-semibold leading-none">{usd(supplied)}</div>
+                <div className="tabular mt-1 text-[26px] font-medium leading-none">{usd(supplied)}</div>
                 <p className="mt-3 text-xs leading-relaxed text-muted">What lenders have deposited, split by what&apos;s lent out and what can be withdrawn right now.</p>
                 {borrowed !== undefined && available !== undefined && (
                   <div className="mt-3 space-y-1 text-xs">
@@ -198,7 +198,7 @@ export function LendingLayout({ o }: { o: Opportunity }) {
             </div>
           ))}
         </dl>
-        <a href={o.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+        <a href={o.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:bg-accent-deep">
           <Logo src={o.protocolLogo} label={o.protocol} size={16} /> Open on {o.protocol} <ExternalLink className="size-3.5 opacity-70" />
         </a>
       </Tile>
@@ -208,10 +208,10 @@ export function LendingLayout({ o }: { o: Opportunity }) {
 
 /* ---------- pieces ---------- */
 
-const Heading = ({ children }: { children: ReactNode }) => <h2 className="mb-3 mt-9 text-base font-semibold">{children}</h2>;
+const Heading = ({ children }: { children: ReactNode }) => <h2 className="mb-3 mt-9 text-base font-medium">{children}</h2>;
 
 function Tile({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`overflow-hidden rounded-[22px] border border-line bg-card p-5 ${className}`}>{children}</section>;
+  return <section className={`overflow-hidden rounded-xl border border-line bg-card p-5 ${className}`}>{children}</section>;
 }
 
 function Label({ icon, children }: { icon: ReactNode; children: ReactNode }) {
@@ -239,7 +239,7 @@ function Mini({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="text-xs leading-tight text-muted">{label}</div>
-      <div className="tabular mt-1 text-lg font-semibold">{value}</div>
+      <div className="tabular mt-1 text-lg font-medium">{value}</div>
     </div>
   );
 }
@@ -250,7 +250,7 @@ function CapFigure({ use, value, cap }: { use?: number; value: string; cap?: num
     <div className="mt-4 flex items-center gap-4">
       {use !== undefined && <Ring value={use} />}
       <div>
-        <div className="tabular text-[26px] font-semibold leading-none">{value}</div>
+        <div className="tabular text-[26px] font-medium leading-none">{value}</div>
         <div className="mt-1.5 text-xs text-muted">{cap ? `Out of ${usd(cap)} cap` : "No cap set"}</div>
       </div>
     </div>
@@ -334,11 +334,11 @@ function RateCurve({ points, current, reserveFactor }: { points: [number, number
       {current !== undefined && (
         <>
           <line x1={x(current)} x2={x(current)} y1={P.t} y2={H - P.b} stroke="var(--ink)" strokeOpacity="0.25" strokeDasharray="2 3" />
-          <circle cx={x(current)} cy={y(rateAt(current))} r="4.5" fill="#fff" stroke="var(--accent)" strokeWidth="2.5" />
-          <circle cx={x(current)} cy={y(supplyAt(current))} r="4.5" fill="#fff" stroke="var(--mint)" strokeWidth="2.5" />
+          <circle cx={x(current)} cy={y(rateAt(current))} r="4.5" fill="var(--bg)" stroke="var(--accent)" strokeWidth="2.5" />
+          <circle cx={x(current)} cy={y(supplyAt(current))} r="4.5" fill="var(--bg)" stroke="var(--mint)" strokeWidth="2.5" />
           <g transform={`translate(${Math.min(Math.max(x(current), P.l + 46), W - P.r - 46)}, ${P.t + 6})`}>
-            <rect x="-44" y="-11" width="88" height="20" rx="10" fill="var(--ink)" />
-            <text x="0" y="3" fontSize="11" fill="#fff" textAnchor="middle">{`Now · ${(current * 100).toFixed(1)}%`}</text>
+            <rect x="-44" y="-11" width="88" height="20" rx="10" fill="var(--accent)" />
+            <text x="0" y="3" fontSize="11" fill="var(--on-accent)" textAnchor="middle">{`Now · ${(current * 100).toFixed(1)}%`}</text>
           </g>
         </>
       )}

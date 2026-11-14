@@ -128,12 +128,12 @@ export function MorphoLayout({ o, history, loading }: { o: Opportunity; history:
 
       <nav className="mt-8 flex gap-6 border-b border-line text-sm">
         {[["overview", "Overview"], ["allocation", "Allocation"], ["performance", "Performance"], ["risk", "Risk"]].map(([id, label], i) => (
-          <a key={id} href={`#${id}`} className={`-mb-px border-b-2 pb-2.5 ${i === 0 ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"}`}>{label}</a>
+          <a key={id} href={`#${id}`} className={`-mb-px border-b-2 pb-2.5 ${i === 0 ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}>{label}</a>
         ))}
       </nav>
 
       {/* Overview */}
-      <section id="overview" className="scroll-mt-6">
+      <section id="overview" className="scroll-mt-20">
         <H2>Overview</H2>
         <Table rows={[
           ["Morpho vault version", p?.version ?? "—"],
@@ -190,13 +190,13 @@ export function MorphoLayout({ o, history, loading }: { o: Opportunity; history:
 
       {/* Allocation */}
       {alloc.length > 0 && (
-        <section id="allocation" className="scroll-mt-6">
+        <section id="allocation" className="scroll-mt-20">
           <H2>Allocation</H2>
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-medium">Exposure</div>
             <div className="flex rounded-full bg-card-2 p-0.5 text-xs">
               {([["markets", "Markets"], ["collateral", "Collateral"]] as const).map(([k, l]) => (
-                <button key={k} onClick={() => setAllocTab(k)} className={`h-7 rounded-full px-3 ${allocTab === k ? "bg-card font-medium shadow-sm" : "text-muted"}`}>{l}</button>
+                <button key={k} onClick={() => setAllocTab(k)} className={`h-7 rounded-full px-3 ${allocTab === k ? "bg-white/15 font-medium text-ink" : "text-muted"}`}>{l}</button>
               ))}
             </div>
           </div>
@@ -221,7 +221,7 @@ export function MorphoLayout({ o, history, loading }: { o: Opportunity; history:
 
       {/* Performance */}
       {(loading || spSeries.length > 1 || returns.length > 0 || p?.fees?.length) && (
-        <section id="performance" className="scroll-mt-6">
+        <section id="performance" className="scroll-mt-20">
           <H2>Performance</H2>
           {(loading || spSeries.length > 1) && (
             <Card>
@@ -230,7 +230,7 @@ export function MorphoLayout({ o, history, loading }: { o: Opportunity; history:
                   <div className="flex items-center gap-1 text-xs text-muted">Position Unit Price ({o.asset}) <Info className="size-3" /></div>
                   <div className="tabular mt-1 flex items-center gap-2 text-2xl font-medium">
                     {(spHover ?? spSeries.at(-1))?.[1].toFixed(6) ?? "—"}
-                    {!spHover && spChange !== null && <span className={`rounded-full px-1.5 py-0.5 text-xs ${spChange >= 0 ? "bg-[#dcf3e8] text-mint" : "bg-[#f9e4e1] text-neg"}`}>{spChange >= 0 ? "+" : ""}{(spChange * 100).toFixed(2)}%</span>}
+                    {!spHover && spChange !== null && <span className={`rounded-full px-1.5 py-0.5 text-xs ${spChange >= 0 ? "bg-accent-soft text-accent" : "bg-neg/15 text-neg"}`}>{spChange >= 0 ? "+" : ""}{(spChange * 100).toFixed(2)}%</span>}
                   </div>
                 </div>
                 <WinPick value={spWin} onChange={setSpWin} />
@@ -245,7 +245,7 @@ export function MorphoLayout({ o, history, loading }: { o: Opportunity; history:
 
       {/* Risk */}
       {(p?.roles?.length || p?.allocators?.length || p?.timelocks?.length) && (
-        <section id="risk" className="scroll-mt-6">
+        <section id="risk" className="scroll-mt-20">
           <H2>Risk</H2>
           {!!p?.roles?.length && <AddrTable title="Vault Roles" chain={o.chain} rows={p.roles.map((r) => [r.label, r.address])} />}
           {!!p?.allocators?.length && <AddrTable className="mt-6" title="Allocators" chain={o.chain} rows={p.allocators.map((a, i) => [`Allocator ${i + 1}`, a])} />}
@@ -309,7 +309,7 @@ function H2({ children }: { children: React.ReactNode }) {
 }
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-[22px] border border-line bg-card p-5 ${className}`}>{children}</div>;
+  return <div className={`rounded-xl border border-line bg-card p-5 ${className}`}>{children}</div>;
 }
 
 function Stat({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: boolean }) {
@@ -326,7 +326,7 @@ function WinPick({ value, onChange }: { value: Win; onChange: (w: Win) => void }
     <div className="flex rounded-full bg-card-2 p-0.5 text-xs">
       {(Object.keys(DAYS) as Win[]).map((w) => (
         <button key={w} onClick={() => onChange(w)} aria-pressed={value === w}
-          className={`h-7 rounded-full px-2.5 ${value === w ? "bg-card font-medium shadow-sm" : "text-muted hover:text-ink"}`}>{w.toUpperCase()}</button>
+          className={`h-7 rounded-full px-2.5 ${value === w ? "bg-white/15 font-medium text-ink" : "text-muted hover:text-ink"}`}>{w.toUpperCase()}</button>
       ))}
     </div>
   );
@@ -336,7 +336,7 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
   return (
     <div className="flex items-center justify-between">
       <dt className="text-muted">{label}</dt>
-      <dd className={`tabular ${strong ? "font-semibold" : ""}`}>{value}</dd>
+      <dd className={`tabular ${strong ? "font-medium" : ""}`}>{value}</dd>
     </div>
   );
 }
@@ -375,7 +375,7 @@ function AddrTable({ title, rows, chain, className = "" }: { title: string; rows
 }
 
 function Delta({ v }: { v: number }) {
-  return <span className={`rounded-full px-1.5 py-0.5 text-xs ${v >= 0 ? "bg-[#dcf3e8] text-mint" : "bg-[#f9e4e1] text-neg"}`}>{v >= 0 ? "+" : ""}{(v * 100).toFixed(2)}%</span>;
+  return <span className={`rounded-full px-1.5 py-0.5 text-xs ${v >= 0 ? "bg-accent-soft text-accent" : "bg-neg/15 text-neg"}`}>{v >= 0 ? "+" : ""}{(v * 100).toFixed(2)}%</span>;
 }
 
 const fmtFeePct = (f: number) => `${Number((f * 100).toFixed(2))}%`;

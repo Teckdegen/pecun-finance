@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
-/* PECUN light theme: soft pastel ground under frosted "liquid glass" surfaces, periwinkle accent for yield. */
+/* PECUN, Hood theme: near-black ground, flat charcoal panels, hairline borders, lime accent for yield. */
 :root {
-  --bg: #eef1f8;
-  --card: rgba(255, 255, 255, 0.56);
-  --card-2: rgba(110, 122, 170, 0.09);
-  --line: rgba(30, 40, 80, 0.08);
-  --glass-edge: rgba(255, 255, 255, 0.85);
-  --glass-shadow: 0 1px 1px rgba(30, 40, 90, 0.04), 0 10px 30px -8px rgba(40, 55, 120, 0.12);
-  --ink: #15171c;
-  --muted: #6b7080;
-  --faint: #a3a8b6;
-  --accent: #3d6df2;
-  --accent-soft: #e8eefd;
-  --mint: #12976b;
-  --amber: #a15c00;
-  --neg: #c2413b;
-  color-scheme: light;
+  --bg: #0c0c0c;
+  --rail: #141414;
+  --card: #121212;
+  --card-2: rgba(255, 255, 255, 0.05);
+  --line: rgba(255, 255, 255, 0.1);
+  --ink: #ffffff;
+  --muted: rgba(255, 255, 255, 0.55);
+  --faint: rgba(255, 255, 255, 0.32);
+  --accent: #b8ff9d;
+  --accent-deep: #9aee78;
+  --accent-soft: rgba(184, 255, 157, 0.1);
+  --on-accent: #0a0b0d;
+  --mint: #b8ff9d;
+  --amber: #f3c463;
+  --neg: #ff7a6b;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-rail: var(--rail);
   --color-card: var(--card);
   --color-card-2: var(--card-2);
   --color-line: var(--line);
@@ -28,107 +30,81 @@
   --color-muted: var(--muted);
   --color-faint: var(--faint);
   --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
   --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
   --color-mint: var(--mint);
   --color-amber: var(--amber);
   --color-neg: var(--neg);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-tight: var(--font-inter-tight);
+  --font-mono: var(--font-roboto-mono);
 }
 
 html,
 body {
   min-height: 100%;
   color: var(--ink);
-}
-html {
   background: var(--bg);
 }
-/* Transparent so the colour field below shows through every glass surface. */
+
 body {
-  background: transparent;
+  font-family: var(--font-inter-tight), var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Colour field behind the glass: soft blobs, fixed so surfaces refract it as you scroll. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -10%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(38% 42% at 12% 8%, rgba(140, 170, 255, 0.7), transparent 70%),
-    radial-gradient(34% 40% at 88% 14%, rgba(206, 172, 255, 0.62), transparent 70%),
-    radial-gradient(40% 44% at 78% 78%, rgba(255, 196, 170, 0.58), transparent 70%),
-    radial-gradient(36% 40% at 18% 86%, rgba(150, 226, 204, 0.58), transparent 70%),
-    var(--bg);
+::selection {
+  background: rgba(184, 255, 157, 0.35);
+  color: #fff;
 }
 
-/* Liquid glass: every card surface is translucent, blurred and lit along its top edge. */
-.bg-card,
-.glass,
-.glass-strong {
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.25),
-    var(--glass-shadow);
-}
-/* Clickable glass lifts a little on hover. */
-a.bg-card:hover,
-button.bg-card:hover {
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge),
-    0 2px 4px rgba(30, 40, 90, 0.05),
-    0 18px 40px -12px rgba(40, 55, 120, 0.22);
-}
+/* Kept as class names from the old glass theme so every surface picks up the flat Hood panel. */
 .glass {
   background: var(--card);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
 }
-/* Menus, sheets and other surfaces that sit on top of content need more body to stay readable. */
 .glass-strong {
-  background: rgba(250, 251, 255, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  -webkit-backdrop-filter: blur(30px) saturate(190%);
-  backdrop-filter: blur(30px) saturate(190%);
+  background: #161616;
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
 }
-/* Glass inside glass: drop the second blur and shadow, keep a light tint. */
 .bg-card .bg-card {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--card-2);
 }
-
-body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
+a.bg-card:hover,
+button.bg-card:hover {
+  background-color: #171717;
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
-/* Featured cards: soft frosted gradients with sculptural light, no imagery. */
+/* Small uppercase mono label, the Hood button / eyebrow voice. */
+.eyebrow {
+  font-family: var(--font-roboto-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Featured cards: Hood imagery under a dark wash. */
+.art-1,
+.art-2,
+.art-3 {
+  background-color: #151515;
+  background-size: cover;
+  background-position: center;
+}
 .art-1 {
-  background:
-    radial-gradient(110px 110px at 80% 62%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 70%),
-    radial-gradient(220px 160px at 70% 30%, rgba(255, 255, 255, 0.55), transparent 70%),
-    linear-gradient(140deg, #cfd3e4 0%, #b9bfd6 45%, #dfe2ee 100%);
+  background-image: linear-gradient(180deg, rgba(12, 12, 12, 0.1), rgba(12, 12, 12, 0.75)), url("/hero/banner.jpg");
 }
 .art-2 {
-  background:
-    radial-gradient(120px 120px at 68% 56%, rgba(255, 255, 255, 0.75), transparent 70%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 3px, transparent 3px 10px),
-    linear-gradient(140deg, #c9b8c8 0%, #b4a3b8 50%, #ddd1dc 100%);
+  background-image: linear-gradient(180deg, rgba(12, 12, 12, 0.35), rgba(12, 12, 12, 0.8)), url("/hero/skyline.jpg");
 }
 .art-3 {
-  background:
-    radial-gradient(100px 100px at 72% 40%, rgba(255, 255, 255, 0.9), transparent 70%),
-    linear-gradient(180deg, transparent 58%, rgba(255, 255, 255, 0.28) 58% 100%),
-    linear-gradient(140deg, #c3c8dc 0%, #aab1cb 50%, #d9dceb 100%);
+  background-image: linear-gradient(180deg, rgba(12, 12, 12, 0.35), rgba(12, 12, 12, 0.8)), url("/hero/banner.jpg");
 }
 
 select {
@@ -140,9 +116,51 @@ select {
   outline-offset: 2px;
 }
 
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* Thin dark scrollbars like the Hood app shell. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes hood-drift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -10px;
+  }
+}
+.hood-drift {
+  animation: hood-drift 7s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+    animation: none !important;
     scroll-behavior: auto !important;
   }
 }

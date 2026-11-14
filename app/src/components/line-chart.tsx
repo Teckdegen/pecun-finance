@@ -46,7 +46,7 @@ function timeTicks(t0: number, t1: number, width: number) {
 }
 
 /** Dependency-free line/area chart: real-pixel sizing, round axis values, date ticks by time, hover. */
-export function LineChart({ data, format, height = 200, color = "var(--ink)", loading, axis, onHover }: Props) {
+export function LineChart({ data, format, height = 200, color = "var(--accent)", loading, axis, onHover }: Props) {
   const id = useId().replace(/:/g, "");
   const box = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(760);
@@ -139,7 +139,7 @@ export function LineChart({ data, format, height = 200, color = "var(--ink)", lo
               <>
                 {hover !== null && <line x1={g.pts[i][0]} x2={g.pts[i][0]} y1={g.P.t} y2={g.H - g.P.b} stroke="var(--faint)" strokeDasharray="2 3" />}
                 <circle cx={g.pts[i][0]} cy={g.pts[i][1]} r="8" fill={color} fillOpacity="0.12" />
-                <circle cx={g.pts[i][0]} cy={g.pts[i][1]} r="3.5" fill={color} stroke="#fff" strokeWidth="1.5" />
+                <circle cx={g.pts[i][0]} cy={g.pts[i][1]} r="3.5" fill={color} stroke="var(--bg)" strokeWidth="1.5" />
               </>
             );
           })()}

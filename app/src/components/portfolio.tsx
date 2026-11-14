@@ -15,70 +15,65 @@ export function PortfolioView() {
   const [tab, setTab] = useState<Tab>("positions");
 
   return (
-    <div className="mx-auto max-w-[1240px]">
-      <h1 className="text-[30px] font-medium tracking-tight">Portfolio</h1>
+    <div>
+      <h1 className="text-[1.65rem] font-medium tracking-[-0.03em] md:text-[2rem]">Portfolio</h1>
+      <p className="mt-1 font-sans text-sm text-muted">Every position you hold, across EVM, Solana, Sui and Hyperliquid.</p>
 
-      <section className="mt-8 rounded-[24px] bg-card px-9 py-8">
-        <div className="text-sm text-muted">Total worth</div>
-        <div className="tabular mt-2 text-5xl font-medium tracking-tight">$0.00</div>
-        <div className="mt-3 text-muted">Across EVM, Solana, Sui and Hyperliquid</div>
-
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          <Stat label="Deposited" value="$0.00" />
-          <Stat label="Earning per year" value="$0.00" />
-          <Stat label="Pending withdrawals" value="0" />
+      {/* Worth banner */}
+      <section className="relative mt-5 overflow-hidden rounded-xl border border-line">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/hero/banner.jpg" alt="" className="absolute inset-0 size-full object-cover object-[50%_85%] opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/30" />
+        <div className="relative px-5 py-6 md:px-7 md:py-8">
+          <p className="eyebrow text-muted">Total worth</p>
+          <div className="tabular mt-2 text-[2.5rem] font-medium leading-none tracking-[-0.04em] md:text-6xl">$0.00</div>
+          <div className="mt-6 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 md:max-w-xl">
+            <Stat label="Deposited" value="$0.00" />
+            <Stat label="Per year" value="$0.00" />
+            <Stat label="Pending" value="0" />
+          </div>
         </div>
       </section>
 
-      <section className="mt-8 rounded-[24px] bg-card p-6 sm:p-8">
-        <div role="tablist" aria-label="Portfolio view" className="flex gap-6 px-1">
+      <section className="mt-6 overflow-hidden rounded-xl border border-line bg-card">
+        <div role="tablist" aria-label="Portfolio view" className="flex gap-6 border-b border-line px-5">
           {(["positions", "activity"] as Tab[]).map((t) => (
             <button
               key={t}
               role="tab"
               aria-selected={tab === t}
               onClick={() => setTab(t)}
-              className={`border-b-2 pb-2 text-[15px] capitalize transition ${tab === t ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"}`}
+              className={`eyebrow -mb-px border-b-2 py-3.5 transition ${tab === t ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}
             >
               {t}
             </button>
           ))}
         </div>
 
-        <div className="mt-2 overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px] text-left">
             <thead>
-              <tr className="text-sm text-muted">
-                {tab === "positions" ? (
-                  <>
-                    <th className="py-3 pl-1 font-normal">Position</th>
-                    <th className="py-3 font-normal">APY</th>
-                    <th className="py-3 font-normal">Balance</th>
-                    <th className="py-3 font-normal">Worth</th>
-                    <th className="py-3 font-normal">Status</th>
-                  </>
-                ) : (
-                  <>
-                    <th className="py-3 pl-1 font-normal">Action</th>
-                    <th className="py-3 font-normal">Vault</th>
-                    <th className="py-3 font-normal">Amount</th>
-                    <th className="py-3 font-normal">Fee</th>
-                    <th className="py-3 font-normal">Date</th>
-                  </>
-                )}
+              <tr className="eyebrow text-muted">
+                {(tab === "positions" ? ["Position", "APY", "Balance", "Worth", "Status"] : ["Action", "Vault", "Amount", "Fee", "Date"]).map((h, i) => (
+                  <th key={h} className={`py-3 font-medium ${i === 0 ? "pl-5" : ""}`}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
           </table>
         </div>
 
-        <div className="flex flex-col items-center gap-3 border-t border-line py-16 text-center">
-          <span className="grid size-12 place-items-center rounded-full bg-card-2"><Wallet className="size-5" /></span>
-          <p className="text-[17px]">{tab === "positions" ? "No open positions" : "No activity yet"}</p>
-          <p className="max-w-md text-sm text-muted">
+        <div className="flex flex-col items-center gap-3 border-t border-line px-6 py-16 text-center">
+          <span className="grid size-12 place-items-center rounded-xl border border-line bg-card-2 text-accent">
+            <Wallet className="size-5" />
+          </span>
+          <p className="text-[17px] tracking-[-0.02em]">{tab === "positions" ? "No open positions" : "No activity yet"}</p>
+          <p className="max-w-md font-sans text-sm leading-6 text-muted">
             Once your wallet is connected, every vault, lending and staking position shows here with its live worth, across all chains.
           </p>
-          <Link href="/" className="mt-2 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-sm text-white">
-            <Compass className="size-4" /> Explore opportunities
+          <Link href="/" className="eyebrow mt-2 inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-on-accent hover:bg-accent-deep">
+            <Compass className="size-4" /> Explore yields
           </Link>
         </div>
       </section>
@@ -88,9 +83,9 @@ export function PortfolioView() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[22px] bg-card-2 px-5 py-4">
-      <div className="text-sm text-muted">{label}</div>
-      <div className="tabular mt-1 text-xl">{value}</div>
+    <div className="bg-black/55 px-3 py-3 backdrop-blur md:px-4">
+      <div className="eyebrow text-[10px] text-muted md:text-[11px]">{label}</div>
+      <div className="tabular mt-1 text-lg font-medium tracking-[-0.02em]">{value}</div>
     </div>
   );
 }

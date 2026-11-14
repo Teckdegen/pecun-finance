@@ -28,7 +28,7 @@ export function Mark({ label, size = 36, ring }: { label: string; size?: number;
   return (
     <span
       aria-hidden
-      className={`grid shrink-0 place-items-center rounded-full font-semibold text-white ${ring ? "ring-2 ring-white" : ""}`}
+      className={`grid shrink-0 place-items-center rounded-full font-medium text-white ${ring ? "ring-2 ring-card" : ""}`}
       style={{ width: size, height: size, fontSize: size * 0.38, background: `radial-gradient(circle at 30% 25%, hsl(${hue} 55% 60%), hsl(${hue} 50% 34%))` }}
     >
       {label.replace(/[^A-Za-z0-9]/g, "").slice(0, 1).toUpperCase() || "?"}
@@ -51,7 +51,7 @@ export function Logo({ src, label, size = 36, ring, title }: { src?: string; lab
       loading="lazy"
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className={`shrink-0 rounded-full bg-white object-cover ${ring ? "ring-2 ring-white" : ""}`}
+      className={`shrink-0 rounded-full bg-white object-cover ${ring ? "ring-2 ring-card" : ""}`}
       style={{ width: size, height: size }}
     />
   );
@@ -80,8 +80,8 @@ export function ChainIcon({ chain, logo, size = 22 }: { chain: string; logo?: st
     );
   }
   return (
-    <span title={chain} className="grid shrink-0 place-items-center rounded-full text-[10px] font-semibold text-white"
-      style={{ width: size, height: size, background: CHAIN_COLOR[chain] ?? "#8a90a2" }}>
+    <span title={chain} className="grid shrink-0 place-items-center rounded-full text-[10px] font-medium text-white"
+      style={{ width: size, height: size, background: CHAIN_COLOR[chain] ?? "#3a3a3a" }}>
       {chain[0]}
     </span>
   );
@@ -149,7 +149,7 @@ export function AddressPill({ address, chain, label }: { address: string; chain:
         aria-label={copied ? "Copied" : "Copy address"}
         title={copied ? "Copied" : "Copy address"}
         className={`inline-flex h-7 items-center gap-1 rounded-lg border px-1.5 text-[11px] transition ${
-          copied ? "border-mint/40 bg-[#dcf3e8] text-mint" : "border-line bg-card-2 text-muted hover:border-faint hover:text-ink"
+          copied ? "border-accent/40 bg-accent-soft text-accent" : "border-line bg-card-2 text-muted hover:border-white/30 hover:text-ink"
         }`}
       >
         {copied ? (
