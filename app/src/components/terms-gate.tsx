@@ -8,7 +8,8 @@ import { LEGAL, UNSUPPORTED_REGIONS } from "@/lib/site";
 
 /**
  * Terms every visitor must accept before using PECUN. The answer is kept in this browser's local
- * storage, with the terms version, so people are asked again only when the terms change.
+ * storage, once per device: it only shows again if that saved answer no longer exists. The terms version
+ * accepted is saved alongside it as a record.
  * It stays out of the way on the legal pages so people can read them in full before agreeing.
  */
 const KEY = "pecun-terms-acceptance";
@@ -17,11 +18,11 @@ const LEGAL_PAGES = ["/terms", "/privacy", "/risk-disclosure"];
 
 type Acceptance = { version: string; acceptedAt: string };
 
-/** True once this browser has accepted the current version of the terms. */
+/** True once this device has accepted the terms. Shown once per device: only asked again if the saved answer is gone. */
 export function hasAcceptedTerms(): boolean {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? "null") as Acceptance | null;
-    return v?.version === LEGAL.termsVersion;
+    return !!v?.acceptedAt;
   } catch {
     return false;
   }
@@ -40,7 +41,7 @@ const SUMMARY: { title: string; body: ReactNode }[] = [
     body: (
       <>
         Welcome to PECUN Finance. By accessing and using PECUN, you agree to these terms. If you don&apos;t agree with any part, please don&apos;t use PECUN.
-        The full text is in our <A href="/terms">Terms and Conditions</A>.
+        The full text is in our <A href="/terms">Terms of Service</A>.
       </>
     ),
   },
@@ -51,6 +52,10 @@ const SUMMARY: { title: string; body: ReactNode }[] = [
   {
     title: "What PECUN does",
     body: "PECUN shows yield products run by independent protocols and builds the transactions to deposit and withdraw. PECUN does not hold your assets, manage strategies or give investment advice.",
+  },
+  {
+    title: "Third-party providers",
+    body: "PECUN relies on outside providers it doesn't control: Turnkey for your wallet, bridges and swap routers such as Relay and LI.FI to move funds between chains, and data, network and hosting providers. Their failures or delays are not PECUN's responsibility.",
   },
   {
     title: "Fees",
