@@ -18,7 +18,7 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 
 /**
- * PECUN's social accounts, shown as icons in the header.
+ * Pecun's social accounts, shown as icons in the header.
  * PLACEHOLDERS: swap in the real X profile and Discord invite before launch.
  */
 export const SOCIALS = {
@@ -26,19 +26,19 @@ export const SOCIALS = {
   discord: "https://discord.gg/pecunfinance",
 };
 
-export const SITE_NAME = "PECUN Finance";
+export const SITE_NAME = "Pecun Finance";
 export const SITE_TAGLINE = "Put your money to work.";
 export const SITE_DESCRIPTION =
-  "PECUN finds the best yield across lending markets, vaults and staking on Ethereum, Solana, Sui, Hyperliquid and more, and puts your money to work on-chain.";
+  "Pecun finds the best yield across lending markets, vaults and staking from the top protocols and platforms, and puts your money to work on-chain.";
 
 /** Shown on the privacy policy, the terms and the contact form. Override with env vars. */
 export const LEGAL = {
-  entity: process.env.NEXT_PUBLIC_LEGAL_ENTITY ?? "PECUN",
+  entity: process.env.NEXT_PUBLIC_LEGAL_ENTITY ?? "Pecun",
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "contact@pecun.finance",
   effectiveDate: "14 November 2026",
 };
 
-/** Regions PECUN does not serve. Same list as the app. */
+/** Regions Pecun does not serve. Same list as the app. */
 export const UNSUPPORTED_REGIONS = [
   "United States",
   "United Kingdom",
@@ -70,11 +70,11 @@ export const CHAINS = [
 
 const debank = (path: string) => `https://static.debank.com/image/${path}`;
 
-/** Turnkey: the wallet infrastructure behind every PECUN wallet (logo from its GitHub organisation, tkhq). */
+/** Turnkey: the wallet infrastructure behind every Pecun wallet (logo from its GitHub organisation, tkhq). */
 export const TURNKEY = { name: "Turnkey", logo: "https://avatars.githubusercontent.com/u/104513330?v=4", infra: true };
 
 /**
- * Partners shown on the landing page: the yield platforms PECUN integrates, plus Turnkey.
+ * Partners shown on the landing page: the yield platforms Pecun integrates, plus Turnkey.
  * `infra` marks partners that aren't yield platforms, so counts and yield badges can leave them out.
  */
 /** Routing the app actually uses: two bridges, plus Aftermath, the Sui aggregator. */

@@ -1,6 +1,6 @@
 const DEFAULT_TIMEOUT_MS = 45_000;
 /** Identify ourselves honestly to upstream APIs. */
-const UA = "PECUN/0.1 (yield catalog)";
+const UA = "Pecun/0.1 (yield catalog)";
 
 const RETRY_STATUSES = new Set([403, 408, 425, 429, 500, 502, 503, 504]);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

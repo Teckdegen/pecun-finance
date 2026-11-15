@@ -55,7 +55,7 @@ export async function suilend(): Promise<Opportunity[]> {
       const q = chunk.map((t, i) => `c${i}: coinMetadata(coinType: ${JSON.stringify(t)}) { symbol }`).join(" ");
       const meta = await fetch("https://graphql.mainnet.sui.io/graphql", {
         method: "POST",
-        headers: { "content-type": "application/json", "user-agent": "PECUN/0.1 (yield catalog)" },
+        headers: { "content-type": "application/json", "user-agent": "Pecun/0.1 (yield catalog)" },
         body: JSON.stringify({ query: `{ ${q} }` }),
         cache: "no-store",
       }).then((x) => x.json() as Promise<{ data?: Record<string, { symbol?: string } | null> }>).catch(() => null);

@@ -40,7 +40,7 @@ export function Mark({ label, size = 36, ring }: { label: string; size?: number;
 
 /** Image logo with a lettered fallback when missing or broken. */
 export function Logo({ src, label, size = 36, ring, title }: { src?: string; label: string; size?: number; ring?: boolean; title?: string }) {
-  // 0: through PECUN's logo cache, 1: the original URL, 2: give up and show the letter mark.
+  // 0: through Pecun's logo cache, 1: the original URL, 2: give up and show the letter mark.
   const [state, setState] = useState({ src, stage: 0 });
   const stage = state.src === src ? state.stage : 0;
   const setStage = (next: (s: number) => number) => setState({ src, stage: next(stage) });
@@ -186,7 +186,7 @@ export function AddressPill({ address, chain, label }: { address: string; chain:
   );
 }
 
-/** Logos of the platforms PECUN integrates, overlapped, then "+N platforms". Sized for the lime banners. */
+/** Logos of the platforms Pecun integrates, overlapped, then "+N platforms". Sized for the lime banners. */
 export function PlatformLogos({ max = 7, size = 26, label = true }: { max?: number; size?: number; label?: boolean }) {
   const shown = PLATFORMS.slice(0, max);
   const rest = PLATFORMS.length - shown.length;

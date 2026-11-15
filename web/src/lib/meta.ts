@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SITE_NAME } from "./site";
 
 /** The share image: the X banner itself (public/og.jpg). */
-export const OG_IMAGE = { url: "/og.jpg", width: 1500, height: 500, alt: "PECUN Finance: put your money to work" };
+export const OG_IMAGE = { url: "/og.jpg", width: 1500, height: 500, alt: "Pecun Finance: put your money to work" };
 
 /**
  * Title, description, canonical URL and matching social tags for one page.
@@ -22,7 +22,7 @@ export function pageMeta({
   /** Use the title as written, without the brand suffix. */
   absolute?: boolean;
 }): Metadata {
-  const full = absolute ? title : `${title} · PECUN Finance`;
+  const full = absolute ? title : `${title} · Pecun Finance`;
   return {
     title: absolute ? { absolute: full } : title,
     description,

@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/site";
 
 export const metadata = pageMeta({
   title: "Privacy Policy",
-  description: "What PECUN collects, why, who it's shared with, how long it's kept and your choices.",
+  description: "What Pecun collects, why, who it's shared with, how long it's kept and your choices.",
   path: "/privacy",
 });
 
@@ -14,14 +14,14 @@ const mail = <a className="text-accent underline-offset-2 hover:underline" href=
 const SECTIONS: LegalSection[] = [
   {
     heading: "Who we are",
-    body: [<>PECUN Finance is operated by {LEGAL.entity}, which is responsible for your personal data under this policy. Contact us at {mail}.</>],
+    body: [<>Pecun Finance is operated by {LEGAL.entity}, which is responsible for your personal data under this policy. Contact us at {mail}.</>],
   },
   {
     heading: "What we collect",
-    body: ["We keep this to what we need to run PECUN:"],
+    body: ["We keep this to what we need to run Pecun:"],
     bullets: [
       "Account details: the email address or passkey you sign up with, used to create and secure your wallet with our wallet infrastructure provider. We never see or store your private keys.",
-      "Wallet and transaction data: your wallet addresses, the transactions you make through PECUN, and your positions. Much of this is public on the blockchain anyway.",
+      "Wallet and transaction data: your wallet addresses, the transactions you make through Pecun, and your positions. Much of this is public on the blockchain anyway.",
       "Technical data: your IP address, device and browser type, and basic logs, used to keep the Service secure, prevent abuse and enforce region restrictions.",
       "Your choices: for example your cookie preference, stored on your device.",
     ],
@@ -32,7 +32,7 @@ const SECTIONS: LegalSection[] = [
     bullets: [
       "create your account and wallet and let you sign in;",
       "build, route and track the transactions you ask for, and show your portfolio;",
-      "charge PECUN's fees and keep accurate records;",
+      "charge Pecun's fees and keep accurate records;",
       "keep the Service secure, detect fraud and abuse, and block unsupported regions and sanctioned persons;",
       "meet our legal obligations;",
       "fix problems and improve the Service.",
@@ -40,7 +40,7 @@ const SECTIONS: LegalSection[] = [
   },
   {
     heading: "Who we share it with",
-    body: ["We don't sell your personal data. We share it only where needed to run PECUN:"],
+    body: ["We don't sell your personal data. We share it only where needed to run Pecun:"],
     bullets: [
       "Wallet infrastructure: our wallet provider, which creates and secures your wallet.",
       "Blockchain networks: transactions you make are broadcast to public blockchains, where anyone can see them.",
@@ -58,7 +58,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Cookies and local storage",
     body: [
-      "PECUN uses only what's needed to work: for example remembering your session and your cookie choice. We don't use advertising cookies. If we add analytics, they'll only run if you choose \"Accept all\" in the cookie banner. You can change your choice any time by clearing this site's data in your browser.",
+      "Pecun uses only what's needed to work: for example remembering your session and your cookie choice. We don't use advertising cookies. If we add analytics, they'll only run if you choose \"Accept all\" in the cookie banner. You can change your choice any time by clearing this site's data in your browser.",
     ],
   },
   {
@@ -83,7 +83,7 @@ const SECTIONS: LegalSection[] = [
   },
   {
     heading: "Children",
-    body: ["PECUN is only for people aged 18 or over. We don't knowingly collect data from children."],
+    body: ["Pecun is only for people aged 18 or over. We don't knowingly collect data from children."],
   },
   {
     heading: "Changes to this policy",
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       effective={LEGAL.effectiveDate}
-      intro={<p>This policy explains what personal data PECUN collects, why, who it&apos;s shared with, how long it&apos;s kept and the choices you have.</p>}
+      intro={<p>This policy explains what personal data Pecun collects, why, who it&apos;s shared with, how long it&apos;s kept and the choices you have.</p>}
       sections={SECTIONS}
     />
   );

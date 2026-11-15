@@ -3,7 +3,7 @@ import path from "node:path";
 import type { Opportunity } from "./types.ts";
 
 /**
- * Remembers what each source listed, so PECUN notices when a vault drops off a protocol's list.
+ * Remembers what each source listed, so Pecun notices when a vault drops off a protocol's list.
  *
  * A vault that disappears is not dropped: anyone holding it still needs to see it and withdraw.
  * It becomes a "delisted" record (withdraw-only, with the last data we had) only once it has been

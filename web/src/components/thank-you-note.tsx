@@ -22,7 +22,7 @@ export function ThankYouNote() {
   }, []);
 
   const mailto = note
-    ? `mailto:${LEGAL.contactEmail}?subject=${encodeURIComponent("Hello from the PECUN site")}&body=${encodeURIComponent(`${note.message}\n\nFrom ${note.email}`)}`
+    ? `mailto:${LEGAL.contactEmail}?subject=${encodeURIComponent("Hello from the Pecun site")}&body=${encodeURIComponent(`${note.message}\n\nFrom ${note.email}`)}`
     : `mailto:${LEGAL.contactEmail}`;
 
   return (
@@ -35,7 +35,7 @@ export function ThankYouNote() {
       </p>
       <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
         <a href={mailto} className="inline-flex h-11 items-center justify-center rounded-full bg-lime px-5 text-sm font-medium text-ink hover:bg-lime-deep">
-          Email PECUN
+          Email Pecun
         </a>
         <a href="/" className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-white px-5 text-sm font-medium hover:bg-paper">
           Back home

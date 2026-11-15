@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/site";
 
 export const metadata = pageMeta({
   title: "Risk Disclosure",
-  description: "The risks of using PECUN and the products it lists: smart contracts, lending, staking, fixed yield, liquidity pools, bridges and more.",
+  description: "The risks of using Pecun and the products it lists: smart contracts, lending, staking, fixed yield, liquidity pools, bridges and more.",
   path: "/risk-disclosure",
 });
 
@@ -16,16 +16,16 @@ const b = (title: string, text: string) => (
 );
 
 /**
- * PECUN's risk disclosure, written for what PECUN actually lists (lending markets, curated vaults,
+ * Pecun's risk disclosure, written for what Pecun actually lists (lending markets, curated vaults,
  * liquid staking, fixed yield, liquidity pools, perp vaults) and how it works (routing, bridges,
  * sponsored gas, fees).
  */
 const SECTIONS: LegalSection[] = [
   {
-    heading: "What PECUN is",
+    heading: "What Pecun is",
     body: [
-      "PECUN is an interface that finds yield across EVM chains, Solana, Sui and Hyperliquid and routes your deposits and withdrawals into them. Every vault, lending market, pool and staking product shown is run by an independent protocol or manager, not by PECUN. PECUN does not manage strategies, make investment decisions or give investment advice. Make sure you understand a product and its risks before you deposit.",
-      "PECUN does not hold the assets you deposit. They sit in the protocol you choose, and the position belongs to your wallet. PECUN builds the transactions you approve and charges a fee on deposits and on withdrawals, shown before you confirm. Protocols may charge their own fees (performance, management, withdrawal or unstaking), which are separate from PECUN's.",
+      "Pecun is an interface that finds yield across EVM chains, Solana, Sui and Hyperliquid and routes your deposits and withdrawals into them. Every vault, lending market, pool and staking product shown is run by an independent protocol or manager, not by Pecun. Pecun does not manage strategies, make investment decisions or give investment advice. Make sure you understand a product and its risks before you deposit.",
+      "Pecun does not hold the assets you deposit. They sit in the protocol you choose, and the position belongs to your wallet. Pecun builds the transactions you approve and charges a fee on deposits and on withdrawals, shown before you confirm. Protocols may charge their own fees (performance, management, withdrawal or unstaking), which are separate from Pecun's.",
     ],
   },
   {
@@ -41,7 +41,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Third-party protocol and manager risks",
     body: [
-      "Curators and vault managers decide where vault funds go, and their choices, mistakes or governance changes affect both returns and safety. Protocols can freeze, pause, deprecate or delist a product at any time. When that happens PECUN closes new deposits and shows the product as withdraw-only or paused where it can detect it, but whether and when you can withdraw is up to the protocol.",
+      "Curators and vault managers decide where vault funds go, and their choices, mistakes or governance changes affect both returns and safety. Protocols can freeze, pause, deprecate or delist a product at any time. When that happens Pecun closes new deposits and shows the product as withdraw-only or paused where it can detect it, but whether and when you can withdraw is up to the protocol.",
     ],
   },
   {
@@ -91,26 +91,26 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Network risks",
     body: [
-      "Blockchains can become congested, halt or reorganise, and transactions can fail or be delayed. PECUN sponsors network fees but cannot guarantee when or whether a transaction is included.",
+      "Blockchains can become congested, halt or reorganise, and transactions can fail or be delayed. Pecun sponsors network fees but cannot guarantee when or whether a transaction is included.",
     ],
   },
   {
     heading: "Regulatory risks",
     body: [
-      "Rules for digital assets change and differ between jurisdictions. Access to PECUN or to individual protocols may be restricted in some places, and regulatory action can restrict, delay or close products without notice.",
+      "Rules for digital assets change and differ between jurisdictions. Access to Pecun or to individual protocols may be restricted in some places, and regulatory action can restrict, delay or close products without notice.",
     ],
   },
   {
     heading: "Operational risks",
     body: [
-      "PECUN depends on its own software and on wallet, data and network providers. Outages or failures can make the interface unavailable. Your positions remain on-chain and can still be managed directly through each protocol.",
+      "Pecun depends on its own software and on wallet, data and network providers. Outages or failures can make the interface unavailable. Your positions remain on-chain and can still be managed directly through each protocol.",
     ],
   },
   {
     heading: "Your acceptance",
     body: [
       <>
-        Using PECUN and the products it lists is entirely at your own risk. You could lose some or all of what you deposit, and returns are never guaranteed. See also our{" "}
+        Using Pecun and the products it lists is entirely at your own risk. You could lose some or all of what you deposit, and returns are never guaranteed. See also our{" "}
         <Link className="text-accent underline-offset-2 hover:underline" href="/terms">Terms and Conditions</Link>.
       </>,
     ],
@@ -122,7 +122,7 @@ export default function RiskDisclosurePage() {
     <LegalPage
       title="Risk Disclosure"
       effective={LEGAL.effectiveDate}
-      intro={<p>Using PECUN involves risk. Read this before you deposit into any product listed on PECUN.</p>}
+      intro={<p>Using Pecun involves risk. Read this before you deposit into any product listed on Pecun.</p>}
       sections={SECTIONS}
     />
   );

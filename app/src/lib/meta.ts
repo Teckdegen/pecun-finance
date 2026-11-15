@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { SITE_NAME } from "./site";
 
 /** The share image: the X banner itself (public/og.jpg). */
-export const OG_IMAGE = { url: "/og.jpg", width: 1500, height: 500, alt: "PECUN Finance: put your money to work" };
+export const OG_IMAGE = { url: "/og.jpg", width: 1500, height: 500, alt: "Pecun Finance: put your money to work" };
 
 /**
  * Title, description, canonical URL and matching social tags for one page.
  * The share image is set explicitly: a page that sets its own Open Graph tags would otherwise lose the root one.
  */
 export function pageMeta({ title, description, path, noindex }: { title: string; description: string; path: string; noindex?: boolean }): Metadata {
-  const full = `${title} · PECUN`;
+  const full = `${title} · Pecun`;
   return {
     title: { absolute: full },
     description,

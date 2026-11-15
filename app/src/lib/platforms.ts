@@ -1,4 +1,4 @@
-/** Every platform PECUN lists, with the icon from its own website. Safe to import from client components. */
+/** Every platform Pecun lists, with the icon from its own website. Safe to import from client components. */
 export const PLATFORMS: { name: string; logo: string }[] = [
   { name: "Morpho", logo: "/logos/protocols/morpho.ico" },
   { name: "Aave", logo: "/logos/protocols/aave.png" },

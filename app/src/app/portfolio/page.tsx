@@ -3,7 +3,7 @@ import { pageMeta } from "@/lib/meta";
 
 export const metadata = pageMeta({
   title: "Portfolio",
-  description: "See what you've supplied, what you've earned and your open positions across every chain PECUN supports.",
+  description: "See what you've supplied, what you've earned and your open positions across every chain Pecun supports.",
   path: "/portfolio",
 });
 

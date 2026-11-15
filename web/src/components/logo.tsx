@@ -35,7 +35,7 @@ export function Logo({ src, label, size = 32, className = "" }: { src?: string; 
 }
 
 /**
- * The PECUN mark: a leaf split down its vein. On light backgrounds the top half is black and the bottom half lime (a touch deeper, so it holds up on white);
+ * The Pecun mark: a leaf split down its vein. On light backgrounds the top half is black and the bottom half lime (a touch deeper, so it holds up on white);
  * `tone="dark"` swaps the black for white so it still reads on dark backgrounds.
  */
 export function PecunMark({ size = 28, tone = "light" }: { size?: number; tone?: "light" | "dark" }) {

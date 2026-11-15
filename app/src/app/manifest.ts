@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
 
-/** Lets phones and desktops install PECUN as an app (Add to Home Screen / Install). */
+/** Lets phones and desktops install Pecun as an app (Add to Home Screen / Install). */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PECUN Finance",
-    short_name: "PECUN",
-    description: "Every on-chain yield PECUN can execute, across EVM, Solana, Sui and Hyperliquid.",
+    name: "Pecun Finance",
+    short_name: "Pecun",
+    description: "Every on-chain yield Pecun can execute, across the top protocols and platforms.",
     start_url: "/",
     scope: "/",
     display: "standalone",

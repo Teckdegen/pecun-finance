@@ -22,9 +22,9 @@ const interTight = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `${SITE_NAME} · ${SITE_TAGLINE}`, template: "%s · PECUN Finance" },
+  title: { default: `${SITE_NAME} · ${SITE_TAGLINE}`, template: "%s · Pecun Finance" },
   description: SITE_DESCRIPTION,
-  applicationName: "PECUN",
+  applicationName: "Pecun",
   openGraph: {
     type: "website",
     siteName: SITE_NAME,

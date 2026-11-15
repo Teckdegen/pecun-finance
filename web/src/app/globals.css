@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Landing page: mostly white and black, with PECUN lime for fills and a deep green for coloured text. */
+/* Landing page: mostly white and black, with Pecun lime for fills and a deep green for coloured text. */
 :root {
   --bg: #ffffff;
   --paper: #fafaf7;

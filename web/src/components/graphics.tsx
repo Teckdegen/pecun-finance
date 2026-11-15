@@ -5,7 +5,7 @@ import { APP_URL, TURNKEY } from "@/lib/site";
 import { pct } from "@/lib/live";
 
 /**
- * Pieces of the PECUN app for the feature rows, in the landing page's colours (white, black, PECUN green).
+ * Pieces of the Pecun app for the feature rows, in the landing page's colours (white, black, Pecun green).
  * The yield list uses live catalog rows; the deposit amount is an example.
  */
 

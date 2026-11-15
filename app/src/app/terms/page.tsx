@@ -7,7 +7,7 @@ import { LEGAL, SITE_URL, UNSUPPORTED_REGIONS } from "@/lib/site";
 export const metadata = pageMeta({
   title: "Terms of Service",
   description:
-    "The terms for using PECUN: what PECUN does, the third-party protocols and providers it relies on, wallets, fees, eligibility, risks, liability and disputes.",
+    "The terms for using Pecun: what Pecun does, the third-party protocols and providers it relies on, wallets, fees, eligibility, risks, liability and disputes.",
   path: "/terms",
 });
 
@@ -19,7 +19,7 @@ const A = ({ href, children }: { href: string; children: ReactNode }) => (
 const mail = <a className="text-accent underline-offset-2 hover:underline" href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>;
 const B = ({ children }: { children: ReactNode }) => <span className="font-medium text-ink">{children}</span>;
 
-/** Protocols PECUN currently lists. Kept here so the Terms name them plainly. */
+/** Protocols Pecun currently lists. Kept here so the Terms name them plainly. */
 const PROTOCOLS =
   "Aave, Morpho, Euler, Compound, Spark, Sky, Fluid, Moonwell, Pendle, Yearn, Beefy, Lagoon, Lido, Ember, Upshift, Gearbox, Kamino, Jupiter Lend, Marinade, Meteora, Jito and other Solana stake pools, NAVI, Scallop, Suilend, Aftermath and Hyperliquid";
 
@@ -29,14 +29,14 @@ const SECTIONS: LegalSection[] = [
     body: [],
     subsections: [
       {
-        heading: "What PECUN is",
+        heading: "What Pecun is",
         body: [
           <>
-            PECUN provides a website and app (the <B>&quot;App&quot;</B>) that finds yield opportunities across EVM blockchains, Solana, Sui and
+            Pecun provides a website and app (the <B>&quot;App&quot;</B>) that finds yield opportunities across EVM blockchains, Solana, Sui and
             Hyperliquid, shows information about them, and prepares the blockchain transactions you need to deposit into and withdraw from them. The App,
             together with any related content, tools, documentation and features, makes up the <B>&quot;Services&quot;</B>.
           </>,
-          "PECUN is an interface. It does not run the yield products it shows, does not hold or control the assets you deposit, and does not trade, lend or invest on your behalf. Every transaction you make through the App is one you approve, executed on a public blockchain.",
+          "Pecun is an interface. It does not run the yield products it shows, does not hold or control the assets you deposit, and does not trade, lend or invest on your behalf. Every transaction you make through the App is one you approve, executed on a public blockchain.",
         ],
       },
       {
@@ -44,17 +44,17 @@ const SECTIONS: LegalSection[] = [
         body: [
           <>
             Every vault, lending market, liquidity pool, staking product and fixed-yield market shown in the App is created and operated by an independent
-            third party (a <B>&quot;Third-Party Protocol&quot;</B>), not by PECUN. These currently include {PROTOCOLS}, and the curators and vault managers
+            third party (a <B>&quot;Third-Party Protocol&quot;</B>), not by Pecun. These currently include {PROTOCOLS}, and the curators and vault managers
             that run strategies on them.
           </>,
-          "Third-Party Protocols are not part of the Services. Your use of them is governed by their own terms, and is entirely at your own risk. PECUN does not control, audit, endorse or guarantee any Third-Party Protocol, its smart contracts, its managers or its returns. Third-Party Protocols can be used without PECUN, and anyone can build their own interface to them.",
+          "Third-Party Protocols are not part of the Services. Your use of them is governed by their own terms, and is entirely at your own risk. Pecun does not control, audit, endorse or guarantee any Third-Party Protocol, its smart contracts, its managers or its returns. Third-Party Protocols can be used without Pecun, and anyone can build their own interface to them.",
         ],
       },
       {
         heading: "Information shown in the App",
         body: [
           "APY, TVL, prices, rates, capacity and other figures in the App come from each Third-Party Protocol's own data, from blockchain data, and from the data providers listed in section 2. They are estimates for information only. They may be delayed, incomplete or wrong, and actual returns can differ greatly. A yield shown today is not a promise of any future return.",
-          "PECUN may add, change, hide or remove listed products at any time. When a Third-Party Protocol freezes, pauses, deprecates or delists a product, PECUN may close new deposits to it and show it as withdraw-only or paused, but PECUN cannot guarantee it will detect every such change, and whether and when you can withdraw is decided by the Third-Party Protocol.",
+          "Pecun may add, change, hide or remove listed products at any time. When a Third-Party Protocol freezes, pauses, deprecates or delists a product, Pecun may close new deposits to it and show it as withdraw-only or paused, but Pecun cannot guarantee it will detect every such change, and whether and when you can withdraw is decided by the Third-Party Protocol.",
         ],
       },
       {
@@ -74,7 +74,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Third-party service providers",
     body: [
-      "To run the Services, PECUN relies on outside companies and networks (\"Service Providers\") that PECUN does not own or control. By using the Services you agree that these providers are involved in handling your requests, and that their own terms and privacy policies may also apply. They currently include:",
+      "To run the Services, Pecun relies on outside companies and networks (\"Service Providers\") that Pecun does not own or control. By using the Services you agree that these providers are involved in handling your requests, and that their own terms and privacy policies may also apply. They currently include:",
     ],
     bullets: [
       <>
@@ -83,7 +83,7 @@ const SECTIONS: LegalSection[] = [
       </>,
       <>
         <B>Bridges and swap routers</B> — including Relay, LI.FI, Across, deBridge, Mayan and decentralised exchange aggregators, which move your funds
-        between blockchains or swap one token for another when a deposit or withdrawal needs it. PECUN compares their quotes and may pick a route for you.
+        between blockchains or swap one token for another when a deposit or withdrawal needs it. Pecun compares their quotes and may pick a route for you.
       </>,
       <>
         <B>Transaction sponsorship</B> — relayers and paymaster services used to pay network (gas) fees on your behalf.
@@ -100,7 +100,7 @@ const SECTIONS: LegalSection[] = [
       {
         heading: "No responsibility for Service Providers",
         body: [
-          "Service Providers can fail, be delayed, be hacked, change their terms, block certain users or regions, or stop operating. PECUN is not responsible for their acts or omissions, including a bridge or router failing, delaying or mispricing a transfer, a data provider showing wrong figures, or a wallet or node provider being unavailable. We may add, replace or remove Service Providers at any time without notice, and this list will be updated from time to time.",
+          "Service Providers can fail, be delayed, be hacked, change their terms, block certain users or regions, or stop operating. Pecun is not responsible for their acts or omissions, including a bridge or router failing, delaying or mispricing a transfer, a data provider showing wrong figures, or a wallet or node provider being unavailable. We may add, replace or remove Service Providers at any time without notice, and this list will be updated from time to time.",
         ],
       },
     ],
@@ -112,20 +112,20 @@ const SECTIONS: LegalSection[] = [
       {
         heading: "Embedded wallet",
         body: [
-          "When you sign up, a self-custodial wallet is created for you through our wallet infrastructure provider and linked to the login methods you choose (for example email or a passkey). PECUN does not hold or know your private keys and cannot move your assets without your approval.",
-          "You are responsible for keeping your login methods, devices and any recovery details secure, and for every transaction approved from your account. If you lose access to your login methods, PECUN may be unable to help you recover your wallet.",
+          "When you sign up, a self-custodial wallet is created for you through our wallet infrastructure provider and linked to the login methods you choose (for example email or a passkey). Pecun does not hold or know your private keys and cannot move your assets without your approval.",
+          "You are responsible for keeping your login methods, devices and any recovery details secure, and for every transaction approved from your account. If you lose access to your login methods, Pecun may be unable to help you recover your wallet.",
         ],
       },
       {
         heading: "Other wallets",
         body: [
-          "If you connect a third-party wallet, you use it under that wallet provider's own terms. Third-party wallets are not operated, supported or controlled by PECUN, and we are not responsible for how they work with the Services.",
+          "If you connect a third-party wallet, you use it under that wallet provider's own terms. Third-party wallets are not operated, supported or controlled by Pecun, and we are not responsible for how they work with the Services.",
         ],
       },
       {
         heading: "Transactions are final",
         body: [
-          "Blockchain transactions are irreversible once confirmed. PECUN cannot cancel, reverse or refund them. Check the amount, asset, network and destination before you approve. Transactions can fail because of network congestion, changes in on-chain conditions, protocol limits or provider errors, and PECUN is not liable for failed or delayed transactions.",
+          "Blockchain transactions are irreversible once confirmed. Pecun cannot cancel, reverse or refund them. Check the amount, asset, network and destination before you approve. Transactions can fail because of network congestion, changes in on-chain conditions, protocol limits or provider errors, and Pecun is not liable for failed or delayed transactions.",
         ],
       },
     ],
@@ -135,21 +135,21 @@ const SECTIONS: LegalSection[] = [
     body: [],
     subsections: [
       {
-        heading: "PECUN's fees",
+        heading: "Pecun's fees",
         body: [
-          "PECUN charges a fee on each deposit and on each withdrawal made through the App. The fee is shown before you confirm and is paid as part of the transaction, as a transfer to PECUN; on deposits it is taken before your funds enter the product. Fees are not refundable, including when a transaction later fails or a Third-Party Protocol loses value.",
+          "Pecun charges a fee on each deposit and on each withdrawal made through the App. The fee is shown before you confirm and is paid as part of the transaction, as a transfer to Pecun; on deposits it is taken before your funds enter the product. Fees are not refundable, including when a transaction later fails or a Third-Party Protocol loses value.",
         ],
       },
       {
         heading: "Network fees",
         body: [
-          "PECUN currently pays network (gas) fees on your behalf. We may stop or change this at any time; if you will be charged network fees, this will be shown before you confirm.",
+          "Pecun currently pays network (gas) fees on your behalf. We may stop or change this at any time; if you will be charged network fees, this will be shown before you confirm.",
         ],
       },
       {
         heading: "Third-party fees",
         body: [
-          "Third-Party Protocols and Service Providers may charge their own fees, such as performance, management, deposit, withdrawal, unstaking, bridge or swap fees, and swaps may involve slippage. These are set by them, not by PECUN, and any estimate shown in the App may differ from what is actually charged.",
+          "Third-Party Protocols and Service Providers may charge their own fees, such as performance, management, deposit, withdrawal, unstaking, bridge or swap fees, and swaps may involve slippage. These are set by them, not by Pecun, and any estimate shown in the App may differ from what is actually charged.",
         ],
       },
       {
@@ -166,13 +166,13 @@ const SECTIONS: LegalSection[] = [
     bullets: [
       "is named on a sanctions or restricted-party list maintained by the United States (including OFAC's Specially Designated Nationals list), the European Union or any EU member state, the United Kingdom, the United Nations, or any other applicable authority;",
       "is a citizen or resident of, located in, or organised in an unsupported region (the \"Prohibited Jurisdictions\" listed below);",
-      "is otherwise someone PECUN is not allowed to deal with under applicable law; or",
+      "is otherwise someone Pecun is not allowed to deal with under applicable law; or",
       "is owned or controlled by, or acting for, any such person.",
     ],
     subsections: [
       {
         heading: "Prohibited Jurisdictions",
-        body: ["PECUN is not available in the following regions. This list combines every region blocked by a Third-Party Protocol or Service Provider PECUN uses, and may change:"],
+        body: ["Pecun is not available in the following regions. This list combines every region blocked by a Third-Party Protocol or Service Provider Pecun uses, and may change:"],
         bullets: UNSUPPORTED_REGIONS,
       },
       {
@@ -233,7 +233,7 @@ const SECTIONS: LegalSection[] = [
       {
         heading: "Trademarks",
         body: [
-          "The PECUN name and logo are our trademarks. The names and logos of Third-Party Protocols, tokens, networks and Service Providers belong to their owners and are used only to identify their products; their use does not mean they endorse, sponsor or are affiliated with PECUN.",
+          "The Pecun name and logo are our trademarks. The names and logos of Third-Party Protocols, tokens, networks and Service Providers belong to their owners and are used only to identify their products; their use does not mean they endorse, sponsor or are affiliated with Pecun.",
         ],
       },
       {
@@ -262,29 +262,29 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "No advice",
     body: [
-      "Nothing in the Services is investment, financial, legal or tax advice, or a recommendation to buy, sell or hold any asset or use any product. We do not assess whether any product is suitable for you. Every deposit or withdrawal you make is your own decision, made without advice or solicitation from PECUN.",
+      "Nothing in the Services is investment, financial, legal or tax advice, or a recommendation to buy, sell or hold any asset or use any product. We do not assess whether any product is suitable for you. Every deposit or withdrawal you make is your own decision, made without advice or solicitation from Pecun.",
     ],
   },
   {
     heading: "Disclaimers",
     body: [
-      "THE SERVICES ARE PROVIDED \"AS IS\" AND \"AS AVAILABLE\". TO THE FULLEST EXTENT ALLOWED BY LAW, PECUN, ITS AFFILIATES AND THEIR DIRECTORS, OFFICERS, EMPLOYEES, AGENTS AND LICENSORS (THE \"PECUN PARTIES\") DISCLAIM ALL WARRANTIES, WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT.",
-      "THE PECUN PARTIES DO NOT WARRANT THAT THE SERVICES WILL BE UNINTERRUPTED, SECURE OR ERROR-FREE; THAT ANY INFORMATION SHOWN IS ACCURATE, COMPLETE OR CURRENT; OR THAT ANY THIRD-PARTY PROTOCOL, SERVICE PROVIDER, WALLET OR BLOCKCHAIN WILL WORK AS EXPECTED.",
+      "THE SERVICES ARE PROVIDED \"AS IS\" AND \"AS AVAILABLE\". TO THE FULLEST EXTENT ALLOWED BY LAW, Pecun, ITS AFFILIATES AND THEIR DIRECTORS, OFFICERS, EMPLOYEES, AGENTS AND LICENSORS (THE \"Pecun PARTIES\") DISCLAIM ALL WARRANTIES, WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT.",
+      "THE Pecun PARTIES DO NOT WARRANT THAT THE SERVICES WILL BE UNINTERRUPTED, SECURE OR ERROR-FREE; THAT ANY INFORMATION SHOWN IS ACCURATE, COMPLETE OR CURRENT; OR THAT ANY THIRD-PARTY PROTOCOL, SERVICE PROVIDER, WALLET OR BLOCKCHAIN WILL WORK AS EXPECTED.",
     ],
   },
   {
     heading: "Limitation of liability",
     body: [
-      "TO THE FULLEST EXTENT ALLOWED BY LAW, THE PECUN PARTIES WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, DATA, DIGITAL ASSETS OR GOODWILL, ARISING FROM OR RELATED TO THE SERVICES OR THESE TERMS, HOWEVER CAUSED, EVEN IF ADVISED OF THEIR POSSIBILITY.",
-      "THE PECUN PARTIES ARE NOT LIABLE FOR LOSSES CAUSED BY THIRD-PARTY PROTOCOLS, SERVICE PROVIDERS, WALLETS, BLOCKCHAINS, MARKET MOVEMENTS, YOUR OWN TRANSACTIONS, OR UNAUTHORISED ACCESS TO YOUR ACCOUNT THAT IS NOT OUR FAULT.",
-      "THE PECUN PARTIES' TOTAL LIABILITY TO YOU FOR ALL CLAIMS RELATING TO THE SERVICES WILL NOT EXCEED THE GREATER OF (A) THE FEES YOU PAID TO PECUN IN THE 12 MONTHS BEFORE THE CLAIM AROSE AND (B) ONE HUNDRED US DOLLARS (US$100).",
+      "TO THE FULLEST EXTENT ALLOWED BY LAW, THE Pecun PARTIES WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, DATA, DIGITAL ASSETS OR GOODWILL, ARISING FROM OR RELATED TO THE SERVICES OR THESE TERMS, HOWEVER CAUSED, EVEN IF ADVISED OF THEIR POSSIBILITY.",
+      "THE Pecun PARTIES ARE NOT LIABLE FOR LOSSES CAUSED BY THIRD-PARTY PROTOCOLS, SERVICE PROVIDERS, WALLETS, BLOCKCHAINS, MARKET MOVEMENTS, YOUR OWN TRANSACTIONS, OR UNAUTHORISED ACCESS TO YOUR ACCOUNT THAT IS NOT OUR FAULT.",
+      "THE Pecun PARTIES' TOTAL LIABILITY TO YOU FOR ALL CLAIMS RELATING TO THE SERVICES WILL NOT EXCEED THE GREATER OF (A) THE FEES YOU PAID TO Pecun IN THE 12 MONTHS BEFORE THE CLAIM AROSE AND (B) ONE HUNDRED US DOLLARS (US$100).",
       "Nothing in these Terms limits liability that cannot be limited by law, such as liability for fraud. Some jurisdictions do not allow certain exclusions, so some of the above may not apply to you.",
     ],
   },
   {
     heading: "Indemnity",
     body: [
-      "You agree to defend, indemnify and hold harmless the PECUN Parties from any claims, losses, liabilities, damages, costs and expenses (including reasonable legal fees) arising from your breach of these Terms or the law, your violation of anyone else's rights, or your misuse of the Services. We may take control of the defence of any such claim, and you agree to cooperate with us.",
+      "You agree to defend, indemnify and hold harmless the Pecun Parties from any claims, losses, liabilities, damages, costs and expenses (including reasonable legal fees) arising from your breach of these Terms or the law, your violation of anyone else's rights, or your misuse of the Services. We may take control of the defence of any such claim, and you agree to cooperate with us.",
     ],
   },
   {
@@ -353,7 +353,7 @@ const SECTIONS: LegalSection[] = [
         body: [
           <>
             These Terms, together with the <A href="/privacy">Privacy Policy</A> and the <A href="/risk-disclosure">Risk Disclosure</A>, are the entire
-            agreement between you and PECUN about the Services.
+            agreement between you and Pecun about the Services.
           </>,
         ],
       },
@@ -375,21 +375,21 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      subtitle="Terms and conditions for using PECUN Finance"
+      subtitle="Terms and conditions for using Pecun Finance"
       effective={LEGAL.effectiveDate}
       contents
       intro={
         <>
           <p>
-            These Terms of Service (the &quot;Terms&quot;) explain the conditions for accessing and using the PECUN website at {SITE_URL.replace(/^https?:\/\//, "")}, the
-            PECUN app, and any related services, operated by {LEGAL.entity} (&quot;PECUN&quot;, &quot;we&quot;, &quot;us&quot;). By accessing or using
-            them you agree to these Terms. If you do not understand or agree to them, do not use PECUN.
+            These Terms of Service (the &quot;Terms&quot;) explain the conditions for accessing and using the Pecun website at {SITE_URL.replace(/^https?:\/\//, "")}, the
+            Pecun app, and any related services, operated by {LEGAL.entity} (&quot;Pecun&quot;, &quot;we&quot;, &quot;us&quot;). By accessing or using
+            them you agree to these Terms. If you do not understand or agree to them, do not use Pecun.
           </p>
           <p>
             <B>Important:</B> section 14 contains an arbitration agreement and a class action waiver. Please read it carefully.
           </p>
           <p>
-            &quot;You&quot; means you as the user. If you use PECUN on behalf of a company or other entity, you confirm you are authorised to accept
+            &quot;You&quot; means you as the user. If you use Pecun on behalf of a company or other entity, you confirm you are authorised to accept
             these Terms for it, and &quot;you&quot; includes that entity.
           </p>
         </>

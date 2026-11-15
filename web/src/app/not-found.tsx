@@ -4,7 +4,7 @@ import { APP_URL } from "@/lib/site";
 
 export const metadata: Metadata = pageMeta({
   title: "Page not found",
-  description: "That page isn't on the PECUN site.",
+  description: "That page isn't on the Pecun site.",
   path: "/404",
   noindex: true,
 });

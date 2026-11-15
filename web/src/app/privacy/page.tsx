@@ -5,7 +5,7 @@ import { APP_URL, LEGAL } from "@/lib/site";
 
 export const metadata: Metadata = pageMeta({
   title: "Privacy Policy",
-  description: "What this PECUN site collects, why, who it's shared with, how long it's kept and your choices.",
+  description: "What this Pecun site collects, why, who it's shared with, how long it's kept and your choices.",
   path: "/privacy",
 });
 
@@ -20,7 +20,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Who we are",
     body: [
       <>
-        This policy covers the PECUN website. It is operated by {LEGAL.entity}, which is responsible for personal data collected here. Contact us at {mail}. The
+        This policy covers the Pecun website. It is operated by {LEGAL.entity}, which is responsible for personal data collected here. Contact us at {mail}. The
         app has its own policy at{" "}
         <a className="underline underline-offset-2" href={`${APP_URL}/privacy`}>
           {APP_URL}/privacy
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
       <LegalPage
         title="Privacy Policy"
         effective={LEGAL.effectiveDate}
-        intro={<p>This policy explains what personal data this PECUN website collects, why, who it&apos;s shared with, how long it&apos;s kept and the choices you have.</p>}
+        intro={<p>This policy explains what personal data this Pecun website collects, why, who it&apos;s shared with, how long it&apos;s kept and the choices you have.</p>}
         sections={SECTIONS}
       />
     </main>

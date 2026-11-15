@@ -6,7 +6,7 @@ import { pct } from "@/lib/live";
 import { TURNKEY } from "@/lib/site";
 
 /**
- * Four panels, PECUN colours. Rates and logos are live.
+ * Four panels, Pecun colours. Rates and logos are live.
  * No sample balance and no made-up return.
  */
 
@@ -133,7 +133,7 @@ export function FeatureRows({ rows, featured }: { rows: Featured[]; featured: Fe
     },
     {
       title: "Your keys stay yours",
-      text: "Sign up with email or a passkey. PECUN never holds the deposit.",
+      text: "Sign up with email or a passkey. Pecun never holds the deposit.",
       graphic: <Keys />,
     },
   ];

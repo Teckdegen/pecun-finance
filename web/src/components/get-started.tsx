@@ -230,7 +230,7 @@ function BleedRows({ rows }: { rows: { icon: ReactNode; tile: string; label: Rea
 
 /* ---------- find ---------- */
 
-/** Real platforms floating round the PECUN tile, the one in focus lifting a little. */
+/** Real platforms floating round the Pecun tile, the one in focus lifting a little. */
 function PlatformsCard({ rows }: { rows: StartRow[] }) {
   const ref = useRef<HTMLElement>(null);
   const active = useTicker(rows.length, 2200, ref);

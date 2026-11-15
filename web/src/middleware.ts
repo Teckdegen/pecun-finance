@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Telegram builds its link preview from the page title, description and image. PECUN's preview should be the
+ * Telegram builds its link preview from the page title, description and image. Pecun's preview should be the
  * image alone, so Telegram's preview bot gets a bare page with just the share image. People and other crawlers
  * (Google, X, Discord) still get the normal page with its titles and descriptions.
  */

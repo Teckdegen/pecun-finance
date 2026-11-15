@@ -1,4 +1,4 @@
-/** The PECUN leaf on black, drawn for next/og image generation. `pad` leaves the margin maskable icons need. */
+/** The Pecun leaf on black, drawn for next/og image generation. `pad` leaves the margin maskable icons need. */
 export function Icon({ size, pad = 0 }: { size: number; pad?: number }) {
   const leaf = size * (1 - pad * 2) * 0.72;
   return (

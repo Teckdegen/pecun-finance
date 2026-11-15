@@ -59,7 +59,7 @@ function useActive() {
   };
 }
 
-/** The PECUN mark: a leaf split down its vein, white and lime on the dark app. */
+/** The Pecun mark: a leaf split down its vein, white and lime on the dark app. */
 export function PecunMark({ size = 28 }: { size?: number }) {
   return (
     <svg aria-hidden width={size} height={size} viewBox="12 12 40 40" className="shrink-0">
@@ -140,9 +140,9 @@ function Sidebar() {
       className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-rail transition-transform lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:translate-x-0 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
     >
       <div className="flex h-14 shrink-0 items-center justify-between px-4">
-        <Link href="/" aria-label="PECUN home" className="flex items-center gap-2">
+        <Link href="/" aria-label="Pecun home" className="flex items-center gap-2">
           <PecunMark size={24} />
-          <span className="text-[15px] font-medium tracking-[-0.03em]">PECUN</span>
+          <span className="text-[15px] font-medium tracking-[-0.03em]">Pecun</span>
         </Link>
         <button type="button" onClick={closeMenu} aria-label="Close menu" className="grid size-8 place-items-center rounded-lg text-muted hover:text-ink lg:hidden">
           <X className="size-4" />
@@ -170,7 +170,7 @@ function Sidebar() {
               </Link>
             ))}
           </nav>
-          <p className="mt-2 px-1 font-sans text-xs text-faint">© 2026 PECUN Finance</p>
+          <p className="mt-2 px-1 font-sans text-xs text-faint">© 2026 Pecun Finance</p>
         </div>
     </aside>
   );

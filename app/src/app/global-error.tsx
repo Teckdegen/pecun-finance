@@ -6,7 +6,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
     <html lang="en">
       <body style={{ margin: 0, minHeight: "100dvh", display: "grid", placeItems: "center", background: "#0c0c0c", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
         <div role="alert" style={{ textAlign: "center", padding: 24 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 500, margin: 0 }}>PECUN is having trouble loading.</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 500, margin: 0 }}>Pecun is having trouble loading.</h1>
           <p style={{ color: "#a3a3a3", fontSize: 14, marginTop: 12 }}>Please try again in a moment. Your positions live on-chain and aren&apos;t affected.</p>
           <button
             onClick={reset}

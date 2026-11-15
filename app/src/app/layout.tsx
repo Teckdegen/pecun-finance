@@ -31,12 +31,12 @@ const robotoMono = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   // Pages set their own title; the template adds the brand.
-  title: { default: `${SITE_NAME} · ${SITE_TAGLINE}`, template: "%s · PECUN" },
+  title: { default: `${SITE_NAME} · ${SITE_TAGLINE}`, template: "%s · Pecun" },
   description: SITE_DESCRIPTION,
-  applicationName: "PECUN",
+  applicationName: "Pecun",
   openGraph: { type: "website", siteName: SITE_NAME, title: SITE_NAME, description: SITE_DESCRIPTION, url: "/", images: [OG_IMAGE] },
   twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESCRIPTION, images: [OG_IMAGE.url] },
-  appleWebApp: { capable: true, title: "PECUN", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Pecun", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },
 };
 

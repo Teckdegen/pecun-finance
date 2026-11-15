@@ -33,7 +33,7 @@ export interface Opportunity {
   status?: VaultStatus;
   /** Why the vault isn't open, in plain words (e.g. "Frozen by Aave governance"). */
   statusReason?: string;
-  /** When PECUN noticed the vault had dropped off its protocol's list (ISO time). */
+  /** When Pecun noticed the vault had dropped off its protocol's list (ISO time). */
   delistedAt?: string;
   /** URL slug for /earn/[slug]; assigned by the catalog so it is unique */
   slug?: string;

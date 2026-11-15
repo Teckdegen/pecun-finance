@@ -16,7 +16,7 @@ const EARN_LABEL: Record<string, string> = {
 };
 
 const EARN_DESCRIPTION: Record<string, string> = {
-  vaults: "Curated and strategy vaults across EVM chains, Solana and Sui, with live APY and TVL.",
+  vaults: "Curated and strategy vaults from the top protocols and platforms, with live APY and TVL.",
   lending: "Lend your crypto on Aave, Morpho, Euler, Compound, Spark, Kamino and more. Compare live supply rates.",
   staking: "Liquid staking for ETH, SOL, SUI and HYPE. Compare staking yields in one place.",
   stable: "Earn yield on USDC, USDT and other stablecoins across lending markets, vaults and savings rates.",
@@ -27,7 +27,7 @@ const EARN_DESCRIPTION: Record<string, string> = {
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ earn?: string }> }) {
   const { earn } = await searchParams;
   const label = earn ? EARN_LABEL[earn] : undefined;
-  if (!label) return { ...pageMeta({ title: "Explore yields", description: SITE_DESCRIPTION, path: "/" }), title: { absolute: "PECUN Finance · Put your money to work." } };
+  if (!label) return { ...pageMeta({ title: "Explore yields", description: SITE_DESCRIPTION, path: "/" }), title: { absolute: "Pecun Finance · Put your money to work." } };
   // Filtered views share the home page's canonical URL, so search engines index one Explore page.
   return pageMeta({ title: `${label} yields`, description: EARN_DESCRIPTION[earn!] ?? SITE_DESCRIPTION, path: `/?earn=${earn}` });
 }

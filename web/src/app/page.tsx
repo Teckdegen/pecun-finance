@@ -2,7 +2,8 @@ import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { GetStarted } from "@/components/get-started";
 import { LiveVault } from "@/components/live-vault";
-import { Logo } from "@/components/logo";
+import { Logo, PecunMark } from "@/components/logo";
+import { Socials } from "@/components/socials";
 import { getLive, usd, type ChainMark, type Featured } from "@/lib/live";
 import { pageMeta } from "@/lib/meta";
 import { INTEGRATIONS, PARTNERS, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, TURNKEY } from "@/lib/site";
@@ -75,7 +76,7 @@ function Hero({ vaults, platforms }: { vaults: number; platforms: number }) {
             <span className="tabular">{vaults.toLocaleString("en-US")}</span> vaults and yields from {platforms} platforms
           </p>
         </div>
-        <ul aria-label="Integrations on PECUN" className="mx-auto mt-12 flex max-w-4xl flex-wrap items-center justify-center gap-x-7 gap-y-4">
+        <ul aria-label="Integrations on Pecun" className="mx-auto mt-12 flex max-w-4xl flex-wrap items-center justify-center gap-x-7 gap-y-4">
           {[...PARTNERS.filter((p) => p.infra), ...INTEGRATIONS].map((p) => (
             <li key={p.name} className="flex items-center gap-2 opacity-55 grayscale transition hover:opacity-100 hover:grayscale-0">
               <Logo src={p.logo} label={p.name} size={22} />
@@ -118,7 +119,7 @@ function Bento({
             Lending, vaults and staking in one list. The rate next to each one is live.
           </p>
           <p className="mt-6 max-w-[36ch] text-sm leading-relaxed text-[#5e5e58]">
-            The deposit leaves your wallet and goes into the protocol you pick. PECUN never holds the keys, and never holds the deposit.
+            The deposit leaves your wallet and goes into the protocol you pick. Pecun never holds the keys, and never holds the deposit.
           </p>
         </article>
 
@@ -160,20 +161,20 @@ function Bento({
 function Faq() {
   const qa: [string, string][] = [
     [
-      "What is PECUN?",
-      "One place for on-chain yield. PECUN lists lending markets, vaults, liquid staking and fixed yield across Ethereum and other EVM chains, Solana, Sui and Hyperliquid, with the live rate next to each one, so you can compare them and put your money where it earns the most.",
+      "What is Pecun?",
+      "One place for on-chain yield. Pecun brings together lending markets, vaults, liquid staking and fixed yield from the biggest protocols and platforms, with the live rate next to each one, so you can compare them and put your money where it earns the most.",
     ],
     [
       "Who holds my money?",
-      "You do. Your PECUN wallet is self-custodial and runs on Turnkey, so only you can approve a transaction. Deposits go from your wallet straight into the protocol you pick. PECUN never holds your funds and can't move them.",
+      "You do. Your Pecun wallet is self-custodial and runs on Turnkey, so only you can approve a transaction. Deposits go from your wallet straight into the protocol you pick. Pecun never holds your funds and can't move them.",
     ],
     [
       "Where do the rates come from?",
       "From each protocol, live. You can compare vaults by their 7-day or 30-day APY, and where a vault charges a performance fee you see the APY after that fee. Rates move all the time, so treat them as today's figure, not a promise.",
     ],
     [
-      "Which vaults does PECUN list?",
-      "Only ones PECUN can actually deposit into for you. If a protocol closes a vault, it's marked as closed and you can still withdraw from it, but no new deposits go in.",
+      "Which vaults does Pecun list?",
+      "Only ones Pecun can actually deposit into for you. If a protocol closes a vault, it's marked as closed and you can still withdraw from it, but no new deposits go in.",
     ],
     [
       "Can I withdraw whenever I want?",
@@ -181,15 +182,15 @@ function Faq() {
     ],
     [
       "What does it cost?",
-      "PECUN charges a small fee on deposits and withdrawals, always shown before you confirm. Network fees are currently paid by PECUN. Protocols may charge their own fees on top, which are shown on the vault.",
+      "Pecun charges a small fee on deposits and withdrawals, always shown before you confirm. Network fees are currently paid by Pecun. Protocols may charge their own fees on top, which are shown on the vault.",
     ],
     [
       "Is it risky?",
       "Yes. All yield carries risk, including smart-contract failures, depegs and market losses, and you could lose what you deposit. Read the Risk Disclosure in the app before you start.",
     ],
     [
-      "Where is PECUN available?",
-      "Most of the world, but not everywhere. PECUN isn't available in some regions, including the United States, the United Kingdom, Ontario and sanctioned countries. The full list is in the Terms of Service in the app.",
+      "Where is Pecun available?",
+      "Most of the world, but not everywhere. Pecun isn't available in some regions, including the United States, the United Kingdom, Ontario and sanctioned countries. The full list is in the Terms of Service in the app.",
     ],
   ];
   return (
@@ -212,6 +213,15 @@ function Faq() {
             </details>
           ))}
         </div>
+
+        {/* Footer: the brand, and where to find Pecun on X and Discord. */}
+        <footer className="mt-16 flex flex-col items-center justify-between gap-5 sm:flex-row md:mt-20">
+          <span className="flex items-center gap-2 text-sm text-[#5e5e58]">
+            <PecunMark size={22} />
+            &copy; {new Date().getFullYear()} Pecun
+          </span>
+          <Socials />
+        </footer>
       </div>
     </section>
   );

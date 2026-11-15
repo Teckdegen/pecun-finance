@@ -455,7 +455,7 @@ const CAT_TEXT: Record<Cat, string> = {
   perps: "Provide liquidity to perpetuals exchanges and earn from trading.",
 };
 
-/** Lime banner, Hood "Savings" style: a short headline and the platforms PECUN integrates. No yields, no button. */
+/** Lime banner, Hood "Savings" style: a short headline and the platforms Pecun integrates. No yields, no button. */
 function YieldBanner() {
   return (
     <section className="lime-banner mt-5 overflow-hidden rounded-2xl">

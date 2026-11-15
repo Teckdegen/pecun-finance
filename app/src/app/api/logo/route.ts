@@ -1,7 +1,7 @@
 import { isKnownLogo } from "@/lib/logos.ts";
 
 /**
- * Serves token, protocol and chain logos from PECUN's own origin.
+ * Serves token, protocol and chain logos from Pecun's own origin.
  * Logos live on many slow third-party hosts (GitHub, DeBank, IPFS…); on a weak connection the
  * browser gives up on them and the UI falls back to a letter. Here the server fetches each logo
  * once, with retries, keeps it in memory and lets the browser cache it for a week.
@@ -24,7 +24,7 @@ async function fetchLogo(url: string): Promise<Cached> {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const res = await fetch(url, {
-        headers: { accept: "image/*", "user-agent": "PECUN/0.1 (logo cache)" },
+        headers: { accept: "image/*", "user-agent": "Pecun/0.1 (logo cache)" },
         signal: AbortSignal.timeout(12_000),
         cache: "no-store",
       });

@@ -8,7 +8,7 @@ import { PecunMark } from "@/components/shell";
 import { LEGAL } from "@/lib/site";
 
 /**
- * Terms every visitor must accept before using PECUN. The answer is kept in this browser's local
+ * Terms every visitor must accept before using Pecun. The answer is kept in this browser's local
  * storage, once per device: it only shows again if that saved answer no longer exists. The terms version
  * accepted is saved alongside it as a record.
  * It stays out of the way on the legal pages so people can read them in full before agreeing.
@@ -85,7 +85,7 @@ export function TermsGate() {
         <div className="flex flex-col items-center px-6 pt-8 pb-6">
           <PecunMark size={56} />
           <h2 id="terms-gate-title" className="sr-only">
-            Accept the terms to use PECUN
+            Accept the terms to use Pecun
           </h2>
 
           <label className="mt-7 flex cursor-pointer items-start gap-3 font-sans text-sm leading-relaxed text-ink/85">
@@ -112,7 +112,7 @@ export function TermsGate() {
           </label>
           {declined && (
             <p role="alert" className="mt-3 font-sans text-xs text-red-300">
-              You need to accept the terms to use PECUN.
+              You need to accept the terms to use Pecun.
             </p>
           )}
         </div>

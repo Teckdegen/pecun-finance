@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { hasAcceptedTerms, TERMS_ACCEPTED_EVENT } from "./terms-gate";
 
 /**
- * Cookie consent. PECUN only uses what it needs to work, so nothing optional runs until someone
+ * Cookie consent. Pecun only uses what it needs to work, so nothing optional runs until someone
  * picks "Accept all". Anything optional added later (analytics) must check hasOptionalConsent().
  */
 const KEY = "pecun-cookie-consent";
@@ -53,7 +53,7 @@ export function CookieBanner() {
       style={{ bottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
       <p className="font-sans text-sm leading-relaxed text-ink/85">
-        We use essential cookies to run PECUN. With your OK we may also use analytics to improve it. See our{" "}
+        We use essential cookies to run Pecun. With your OK we may also use analytics to improve it. See our{" "}
         <Link href="/privacy" className="text-accent underline-offset-2 hover:underline">
           Privacy Policy
         </Link>

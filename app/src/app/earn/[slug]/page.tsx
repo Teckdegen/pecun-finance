@@ -8,14 +8,14 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { item } = await findBySlug(slug);
-  if (!item) return { title: { absolute: "Vault not found · PECUN" }, robots: { index: false } };
+  if (!item) return { title: { absolute: "Vault not found · Pecun" }, robots: { index: false } };
   const apy = item.apy30d ?? item.apy7d ?? item.apy;
   const rate = apy !== null ? `${(apy * 100).toFixed(2)}% APY` : "Variable APY";
   // "Steakhouse on Morpho", but just "Aave Ethereum" when the manager already names the protocol.
   const by = !item.manager || item.manager.includes(item.protocol) ? item.manager || item.protocol : `${item.manager} on ${item.protocol}`;
   return pageMeta({
     title: item.name,
-    description: `${rate} on ${item.asset} via ${by} (${item.chain}). See rates, TVL and risks, then deposit with PECUN.`,
+    description: `${rate} on ${item.asset} via ${by} (${item.chain}). See rates, TVL and risks, then deposit with Pecun.`,
     path: `/earn/${slug}`,
     // Closed vaults stay reachable for holders but shouldn't be found in search.
     noindex: !!item.status && item.status !== "open",

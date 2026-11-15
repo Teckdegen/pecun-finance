@@ -8,9 +8,9 @@ export function Footer() {
     <footer className="border-t border-line bg-paper">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 py-14 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:gap-16 md:py-16">
         <div>
-          <a href="/" className="inline-flex items-center gap-2" aria-label="PECUN home">
+          <a href="/" className="inline-flex items-center gap-2" aria-label="Pecun home">
             <PecunMark size={26} />
-            <span className="text-lg font-medium tracking-[-0.03em]">PECUN</span>
+            <span className="text-lg font-medium tracking-[-0.03em]">Pecun</span>
           </a>
           <p className="mt-4 max-w-sm font-sans text-sm leading-relaxed text-muted">Put your money to work across lending, vaults, staking and fixed yield.</p>
           <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
@@ -45,7 +45,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-line">
-        <p className="mx-auto max-w-6xl px-4 py-4 font-sans text-xs text-muted sm:px-6">© {new Date().getFullYear()} PECUN. Rates are variable and never a promise of future returns.</p>
+        <p className="mx-auto max-w-6xl px-4 py-4 font-sans text-xs text-muted sm:px-6">© {new Date().getFullYear()} Pecun. Rates are variable and never a promise of future returns.</p>
       </div>
     </footer>
   );

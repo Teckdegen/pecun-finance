@@ -1,5 +1,5 @@
 /**
- * The PECUN leaf for next/og (favicons and the Apple icon), in the site's light colours: black top half,
+ * The Pecun leaf for next/og (favicons and the Apple icon), in the site's light colours: black top half,
  * lime bottom half. Favicons are the bare leaf on a transparent background; `backdrop` paints a white
  * square behind it for the Apple icon, since iOS fills transparent icons with black.
  */
