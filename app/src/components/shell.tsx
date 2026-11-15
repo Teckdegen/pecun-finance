@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { DOCS_URL } from "@/lib/site";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { PlatformLogos } from "./ui";
@@ -43,10 +44,12 @@ export const NAV = [
   { href: "/?earn=perps", earn: "perps", label: "Perps", icon: ArrowUpDown },
 ] as const;
 
+/** The legal documents live on the docs site. */
 const LEGAL_LINKS = [
-  { href: "/terms", label: "Terms" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/risk-disclosure", label: "Risk Disclosure" },
+  { href: `${DOCS_URL}/terms`, label: "Terms" },
+  { href: `${DOCS_URL}/privacy`, label: "Privacy" },
+  { href: `${DOCS_URL}/risk-disclosure`, label: "Risk Disclosure" },
+  { href: DOCS_URL, label: "Docs" },
 ] as const;
 
 function useActive() {
@@ -159,15 +162,15 @@ function Sidebar() {
 
       <div className="shrink-0 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
           <div className="lime-banner overflow-hidden rounded-xl p-3.5">
-            <span className="lb-pill inline-flex rounded-full px-2 py-0.5 font-sans text-[11px]">Every chain</span>
+            <span className="lb-pill inline-flex rounded-full px-2 py-0.5 font-sans text-[11px]">Every protocol</span>
             <p className="mt-2 text-sm font-medium leading-snug tracking-[-0.01em]">Put your money to work.</p>
             <div className="mt-3"><PlatformLogos max={5} size={20} /></div>
           </div>
           <nav aria-label="Legal" className="mt-4 flex flex-wrap gap-x-3 gap-y-1 px-1 font-sans text-xs">
             {LEGAL_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} onClick={closeMenu} className="text-muted hover:text-ink">
+              <a key={l.href} href={l.href} onClick={closeMenu} className="text-muted hover:text-ink">
                 {l.label}
-              </Link>
+              </a>
             ))}
           </nav>
           <p className="mt-2 px-1 font-sans text-xs text-faint">© 2026 Pecun Finance</p>
@@ -215,13 +218,7 @@ function Crumb() {
       ? [{ label: "Portfolio", href: "/portfolio" }, { label: "Activity" }]
       : path.startsWith("/portfolio")
         ? [{ label: "Portfolio" }]
-        : path.startsWith("/terms")
-          ? [{ label: "Terms" }]
-          : path.startsWith("/privacy")
-            ? [{ label: "Privacy" }]
-            : path.startsWith("/risk-disclosure")
-              ? [{ label: "Risk Disclosure" }]
-            : path.startsWith("/thank-you")
+        : path.startsWith("/thank-you")
               ? [{ label: "Thank you" }]
               : earn
           ? [{ label: "Explore", href: "/" }, { label: NAV.find((n) => n.earn === earn)?.label ?? "Explore" }]

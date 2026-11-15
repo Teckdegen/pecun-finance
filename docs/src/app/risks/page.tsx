@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { A, Callout, Doc, Facts, H2, P } from "@/components/chrome";
-import { APP_URL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Risks", description: "What can go wrong when earning yield on-chain, and how to think about it." };
 
@@ -32,7 +31,7 @@ export default function Risks() {
       </P>
 
       <Callout tone="warn" title="Read the full Risk Disclosure">
-        The <A href={`${APP_URL}/risk-disclosure`}>Risk Disclosure</A> in the app covers these risks in full. Read it before you deposit.
+        The <A href="/risk-disclosure">Risk Disclosure</A> covers these risks in full. Read it before you deposit.
       </Callout>
     </Doc>
   );

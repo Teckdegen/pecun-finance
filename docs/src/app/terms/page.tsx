@@ -1,22 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LegalPage, type LegalSection } from "@/components/legal";
-import { pageMeta } from "@/lib/meta";
-import { LEGAL, SITE_URL, UNSUPPORTED_REGIONS } from "@/lib/site";
+import { LEGAL, UNSUPPORTED_REGIONS, WEBSITE_URL } from "@/lib/site";
 
-export const metadata = pageMeta({
-  title: "Terms of Service",
-  description:
-    "The terms for using Pecun: what Pecun does, the third-party protocols and providers it relies on, wallets, fees, eligibility, risks, liability and disputes.",
-  path: "/terms",
-});
+export const metadata: Metadata = { title: "Terms of Service", description: "The terms for using Pecun: what Pecun does, the third-party protocols and providers it relies on, wallets, fees, eligibility, risks, liability and disputes." };
 
 const A = ({ href, children }: { href: string; children: ReactNode }) => (
-  <Link className="text-accent underline-offset-2 hover:underline" href={href}>
+  <Link className="font-medium text-[#2f7d1c] underline decoration-[#2f7d1c]/30 underline-offset-[3px] hover:decoration-[#2f7d1c]" href={href}>
     {children}
   </Link>
 );
-const mail = <a className="text-accent underline-offset-2 hover:underline" href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>;
+const mail = <a className="font-medium text-[#2f7d1c] underline decoration-[#2f7d1c]/30 underline-offset-[3px] hover:decoration-[#2f7d1c]" href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>;
 const B = ({ children }: { children: ReactNode }) => <span className="font-medium text-ink">{children}</span>;
 
 /** Protocols Pecun currently lists. Kept here so the Terms name them plainly. */
@@ -381,7 +376,7 @@ export default function TermsPage() {
       intro={
         <>
           <p>
-            These Terms of Service (the &quot;Terms&quot;) explain the conditions for accessing and using the Pecun website at {SITE_URL.replace(/^https?:\/\//, "")}, the
+            These Terms of Service (the &quot;Terms&quot;) explain the conditions for accessing and using the Pecun website at {WEBSITE_URL.replace(/^https?:\/\//, "")}, the
             Pecun app, and any related services, operated by {LEGAL.entity} (&quot;Pecun&quot;, &quot;we&quot;, &quot;us&quot;). By accessing or using
             them you agree to these Terms. If you do not understand or agree to them, do not use Pecun.
           </p>

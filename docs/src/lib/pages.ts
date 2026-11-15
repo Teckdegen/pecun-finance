@@ -42,7 +42,15 @@ export const GROUPS: DocGroup[] = [
       { href: "/faq", title: "FAQ", summary: "Short answers to common questions." },
       { href: "/availability", title: "Availability", summary: "Where Pecun is and isn't available." },
       { href: "/brand", title: "Brand kit", summary: "Logo, colours and images." },
-      { href: "/legal", title: "Legal and contact", summary: "Terms, privacy, risk disclosure and how to reach us." },
+    ],
+  },
+  {
+    title: "Legal",
+    pages: [
+      { href: "/legal", title: "Legal and contact", summary: "Pecun's legal documents and how to reach us." },
+      { href: "/terms", title: "Terms of Service", summary: "The rules for using Pecun." },
+      { href: "/privacy", title: "Privacy Policy", summary: "What data Pecun collects and why." },
+      { href: "/risk-disclosure", title: "Risk Disclosure", summary: "The risks of using Pecun." },
     ],
   },
 ];

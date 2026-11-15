@@ -1,13 +1,17 @@
 import type { NextConfig } from "next";
 
-const APP_URL = (
-  process.env.NEXT_PUBLIC_APP_URL ?? (process.env.NODE_ENV === "production" ? "https://app.pecun.finance" : "http://localhost:3000")
+const DOCS_URL = (
+  process.env.NEXT_PUBLIC_DOCS_URL ?? (process.env.NODE_ENV === "production" ? "https://docs.pecun.finance" : "http://localhost:3002")
 ).replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
-  // The only Terms of Service live in the app; old links to this site's /terms go there.
+  // The Terms, the Privacy Policy and the Risk Disclosure live on the docs site.
   async redirects() {
-    return [{ source: "/terms", destination: `${APP_URL}/terms`, permanent: true }];
+    return [
+      { source: "/terms", destination: `${DOCS_URL}/terms`, permanent: true },
+      { source: "/privacy", destination: `${DOCS_URL}/privacy`, permanent: true },
+      { source: "/risk-disclosure", destination: `${DOCS_URL}/risk-disclosure`, permanent: true },
+    ];
   },
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DOCS_URL } from "@/lib/site";
 import { hasAcceptedTerms, TERMS_ACCEPTED_EVENT } from "./terms-gate";
 
 /**
@@ -54,9 +54,9 @@ export function CookieBanner() {
     >
       <p className="font-sans text-sm leading-relaxed text-ink/85">
         We use essential cookies to run Pecun. With your OK we may also use analytics to improve it. See our{" "}
-        <Link href="/privacy" className="text-accent underline-offset-2 hover:underline">
+        <a href={`${DOCS_URL}/privacy`} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
           Privacy Policy
-        </Link>
+        </a>
         .
       </p>
       <div className="mt-3 flex gap-2">

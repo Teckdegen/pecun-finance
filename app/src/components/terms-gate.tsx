@@ -1,21 +1,18 @@
 "use client";
 
 import { Check } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PecunMark } from "@/components/shell";
-import { LEGAL } from "@/lib/site";
+import { DOCS_URL, LEGAL } from "@/lib/site";
 
 /**
  * Terms every visitor must accept before using Pecun. The answer is kept in this browser's local
  * storage, once per device: it only shows again if that saved answer no longer exists. The terms version
  * accepted is saved alongside it as a record.
- * It stays out of the way on the legal pages so people can read them in full before agreeing.
+ * The legal documents live on the docs site and open in a new tab, so people can read them in full before agreeing.
  */
 const KEY = "pecun-terms-acceptance";
 export const TERMS_ACCEPTED_EVENT = "pecun:terms-accepted";
-const LEGAL_PAGES = ["/terms", "/privacy", "/risk-disclosure"];
 
 type Acceptance = { version: string; acceptedAt: string };
 
@@ -29,14 +26,14 @@ export function hasAcceptedTerms(): boolean {
   }
 }
 
+/** Opens in a new tab, so the dialog is still here when you come back from reading. */
 const A = ({ href, children }: { href: string; children: ReactNode }) => (
-  <Link href={href} className="text-accent underline-offset-2 hover:underline">
+  <a href={`${DOCS_URL}${href}`} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
     {children}
-  </Link>
+  </a>
 );
 
 export function TermsGate() {
-  const path = usePathname();
   const [needed, setNeeded] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [declined, setDeclined] = useState(false);
@@ -44,7 +41,7 @@ export function TermsGate() {
 
   useEffect(() => setNeeded(!hasAcceptedTerms()), []);
 
-  const show = needed && !LEGAL_PAGES.some((p) => path.startsWith(p));
+  const show = needed;
 
   // Keep the page behind still and move focus into the dialog while it's up.
   useEffect(() => {

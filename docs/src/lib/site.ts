@@ -20,6 +20,13 @@ export const SITE_DESCRIPTION =
 
 export const CONTACT_EMAIL = "contact@pecun.finance";
 
+/** Shown in the Terms, the Privacy Policy and the Risk Disclosure. Same values as the app. */
+export const LEGAL = {
+  entity: process.env.NEXT_PUBLIC_LEGAL_ENTITY ?? "Pecun",
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? CONTACT_EMAIL,
+  effectiveDate: "14 November 2026",
+};
+
 /** PLACEHOLDERS: swap in the real X profile and Discord invite before launch (same as the landing page). */
 export const SOCIALS = {
   x: "https://x.com/pecunfinance",

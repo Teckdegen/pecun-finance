@@ -9,6 +9,14 @@ export const SITE_URL = (
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")
 ).replace(/\/$/, "");
 
+/**
+ * The docs site, which also hosts the Terms, the Privacy Policy and the Risk Disclosure. Keyed on NODE_ENV so client
+ * components (the sidebar, the terms dialog) see the same value. NEXT_PUBLIC_DOCS_URL overrides it.
+ */
+export const DOCS_URL = (
+  process.env.NEXT_PUBLIC_DOCS_URL ?? (process.env.NODE_ENV === "production" ? "https://docs.pecun.finance" : "http://localhost:3002")
+).replace(/\/$/, "");
+
 export const SITE_NAME = "Pecun Finance";
 export const SITE_TAGLINE = "Put your money to work.";
 export const SITE_DESCRIPTION =

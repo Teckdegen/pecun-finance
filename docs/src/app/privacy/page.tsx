@@ -1,15 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, type LegalSection } from "@/components/legal";
-import { pageMeta } from "@/lib/meta";
 import { LEGAL } from "@/lib/site";
 
-export const metadata = pageMeta({
-  title: "Privacy Policy",
-  description: "What Pecun collects, why, who it's shared with, how long it's kept and your choices.",
-  path: "/privacy",
-});
+export const metadata: Metadata = { title: "Privacy Policy", description: "What Pecun collects, why, who it's shared with, how long it's kept and your choices." };
 
-const mail = <a className="text-accent underline-offset-2 hover:underline" href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>;
+const mail = <a className="font-medium text-[#2f7d1c] underline decoration-[#2f7d1c]/30 underline-offset-[3px] hover:decoration-[#2f7d1c]" href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>;
 
 const SECTIONS: LegalSection[] = [
   {
@@ -88,7 +84,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Changes to this policy",
     body: [
-      <>We may update this policy. We&apos;ll change the effective date above and tell you in the app about significant changes. See also our <Link className="text-accent underline-offset-2 hover:underline" href="/terms">Terms and Conditions</Link>.</>,
+      <>We may update this policy. We&apos;ll change the effective date above and tell you in the app about significant changes. See also our <Link className="font-medium text-[#2f7d1c] underline decoration-[#2f7d1c]/30 underline-offset-[3px] hover:decoration-[#2f7d1c]" href="/terms">Terms and Conditions</Link>.</>,
     ],
   },
 ];
@@ -98,7 +94,7 @@ export default function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       effective={LEGAL.effectiveDate}
-      intro={<p>This policy explains what personal data Pecun collects, why, who it&apos;s shared with, how long it&apos;s kept and the choices you have.</p>}
+      intro={<p>This policy explains what personal data Pecun collects, why, who it&apos;s shared with, how long it&apos;s kept and the choices you have. It covers the Pecun app, the website at pecun.finance and these docs.</p>}
       sections={SECTIONS}
     />
   );

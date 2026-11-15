@@ -1,13 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, type LegalSection } from "@/components/legal";
-import { pageMeta } from "@/lib/meta";
 import { LEGAL } from "@/lib/site";
 
-export const metadata = pageMeta({
-  title: "Risk Disclosure",
-  description: "The risks of using Pecun and the products it lists: smart contracts, lending, staking, fixed yield, liquidity pools, bridges and more.",
-  path: "/risk-disclosure",
-});
+export const metadata: Metadata = { title: "Risk Disclosure", description: "The risks of using Pecun and the yield products it lists." };
 
 const b = (title: string, text: string) => (
   <>
@@ -111,7 +107,7 @@ const SECTIONS: LegalSection[] = [
     body: [
       <>
         Using Pecun and the products it lists is entirely at your own risk. You could lose some or all of what you deposit, and returns are never guaranteed. See also our{" "}
-        <Link className="text-accent underline-offset-2 hover:underline" href="/terms">Terms and Conditions</Link>.
+        <Link className="font-medium text-[#2f7d1c] underline decoration-[#2f7d1c]/30 underline-offset-[3px] hover:decoration-[#2f7d1c]" href="/terms">Terms and Conditions</Link>.
       </>,
     ],
   },
