@@ -1,18 +1,14 @@
-/** Production builds point at the live Pecun sites; local dev points at the local servers. Env vars override. */
+/** Production builds point at the live Pecun sites; local dev points at the local servers. */
 const prod = process.env.NODE_ENV === "production";
-const clean = (u: string) => u.replace(/\/$/, "");
 
 /** The app, where "Launch App" goes. */
-export const APP_URL = clean(process.env.NEXT_PUBLIC_APP_URL ?? (prod ? "https://app.pecun.finance" : "http://localhost:3000"));
+export const APP_URL = prod ? "https://app.pecun.finance" : "http://localhost:3000";
 
 /** The landing page. */
-export const WEBSITE_URL = clean(process.env.NEXT_PUBLIC_WEBSITE_URL ?? (prod ? "https://pecun.finance" : "http://localhost:3001"));
+export const WEBSITE_URL = prod ? "https://pecun.finance" : "http://localhost:3001";
 
 /** This docs site: the base for the share image, canonical links and the sitemap. */
-export const SITE_URL = clean(
-  process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : prod ? "https://docs.pecun.finance" : "http://localhost:3002"),
-);
+export const SITE_URL = prod ? "https://docs.pecun.finance" : "http://localhost:3002";
 
 export const SITE_NAME = "Pecun Docs";
 export const SITE_DESCRIPTION =
@@ -22,8 +18,8 @@ export const CONTACT_EMAIL = "contact@pecun.finance";
 
 /** Shown in the Terms, the Privacy Policy and the Risk Disclosure. Same values as the app. */
 export const LEGAL = {
-  entity: process.env.NEXT_PUBLIC_LEGAL_ENTITY ?? "Pecun",
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? CONTACT_EMAIL,
+  entity: "Pecun",
+  contactEmail: CONTACT_EMAIL,
   effectiveDate: "14 November 2026",
 };
 

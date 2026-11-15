@@ -1,26 +1,19 @@
 /**
  * The app: where "Launch App" points and where the live figures come from. Production builds use
- * https://app.pecun.finance; NEXT_PUBLIC_APP_URL overrides it. Keyed on NODE_ENV (not a Vercel-only variable)
+ * https://app.pecun.finance. Keyed on NODE_ENV (not a Vercel-only variable)
  * because client components read it too, and only NEXT_PUBLIC_ and NODE_ENV values reach the browser.
  */
-export const APP_URL = (
-  process.env.NEXT_PUBLIC_APP_URL ?? (process.env.NODE_ENV === "production" ? "https://app.pecun.finance" : "http://localhost:3000")
-).replace(/\/$/, "");
+export const APP_URL = process.env.NODE_ENV === "production" ? "https://app.pecun.finance" : "http://localhost:3000";
 
 /**
  * Public address of this landing page: the base for the share image, canonical links, sitemap and robots.txt.
  * Link previews (Telegram, X, Discord) need it to be a real public address, so on Vercel it falls back to the
- * project's production domain rather than localhost. NEXT_PUBLIC_SITE_URL overrides it (e.g. https://pecun.finance).
+ * project's production domain rather than localhost.
  */
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3001")
-).replace(/\/$/, "");
+export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3001";
 
-/** The docs site. Production builds use https://docs.pecun.finance; NEXT_PUBLIC_DOCS_URL overrides it. */
-export const DOCS_URL = (
-  process.env.NEXT_PUBLIC_DOCS_URL ?? (process.env.NODE_ENV === "production" ? "https://docs.pecun.finance" : "http://localhost:3002")
-).replace(/\/$/, "");
+/** The docs site. Production builds use https://docs.pecun.finance. */
+export const DOCS_URL = process.env.NODE_ENV === "production" ? "https://docs.pecun.finance" : "http://localhost:3002";
 
 /**
  * Pecun's social accounts, shown as icons in the footer.
@@ -36,10 +29,10 @@ export const SITE_TAGLINE = "Put your money to work.";
 export const SITE_DESCRIPTION =
   "Pecun finds the best yield across lending markets, vaults and staking from the top protocols and platforms, and puts your money to work on-chain.";
 
-/** Shown on the privacy policy, the terms and the contact form. Override with env vars. */
+/** Shown on the legal pages and the contact form. */
 export const LEGAL = {
-  entity: process.env.NEXT_PUBLIC_LEGAL_ENTITY ?? "Pecun",
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "contact@pecun.finance",
+  entity: "Pecun",
+  contactEmail: "contact@pecun.finance",
   effectiveDate: "14 November 2026",
 };
 
