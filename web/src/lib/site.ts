@@ -17,8 +17,13 @@ export const SITE_URL = (
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3001")
 ).replace(/\/$/, "");
 
+/** The docs site. Production builds use https://docs.pecun.finance; NEXT_PUBLIC_DOCS_URL overrides it. */
+export const DOCS_URL = (
+  process.env.NEXT_PUBLIC_DOCS_URL ?? (process.env.NODE_ENV === "production" ? "https://docs.pecun.finance" : "http://localhost:3002")
+).replace(/\/$/, "");
+
 /**
- * Pecun's social accounts, shown as icons in the header.
+ * Pecun's social accounts, shown as icons in the footer.
  * PLACEHOLDERS: swap in the real X profile and Discord invite before launch.
  */
 export const SOCIALS = {

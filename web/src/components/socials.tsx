@@ -1,4 +1,5 @@
-import { SOCIALS } from "@/lib/site";
+import { BookOpen } from "lucide-react";
+import { DOCS_URL, SOCIALS } from "@/lib/site";
 
 /** Brand marks for the social links (24x24 paths, filled with currentColor). */
 const X_PATH = "M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z";
@@ -21,10 +22,17 @@ export function Social({ href, label, path }: { href: string; label: string; pat
   );
 }
 
-/** The X and Discord links, side by side. */
+/** The docs, X and Discord links, side by side. */
 export function Socials() {
   return (
     <div className="flex items-center gap-2">
+      <a
+        href={DOCS_URL}
+        aria-label="Pecun docs"
+        className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-white pr-4 pl-3 text-sm font-medium text-ink ring-1 ring-black/[0.06] transition-colors hover:bg-[#f1f5ea] sm:h-11"
+      >
+        <BookOpen className="size-4 sm:size-[18px]" strokeWidth={2} /> Docs
+      </a>
       <Social href={SOCIALS.x} label="Pecun on X" path={X_PATH} />
       <Social href={SOCIALS.discord} label="Pecun on Discord" path={DISCORD_PATH} />
     </div>

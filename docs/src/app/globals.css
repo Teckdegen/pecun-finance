@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Same palette as the landing page: mostly white and black, PECUN lime for fills, deep green for coloured text. */
+:root {
+  --bg: #ffffff;
+  --paper: #fafaf7;
+  --ink: #0a0a0a;
+  --muted: #66665f;
+  --line: rgba(10, 10, 10, 0.09);
+  --lime: #b8ff9d;
+  --green: #2f7d1c;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-lime: var(--lime);
+  --color-green: var(--green);
+  --font-sans: var(--font-inter);
+  --font-tight: var(--font-inter-tight);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  min-height: 100%;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--font-inter-tight), var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(184, 255, 157, 0.7);
+  color: #0a0a0a;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}
