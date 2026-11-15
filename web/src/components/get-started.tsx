@@ -3,7 +3,6 @@
 import {
   ArrowDown,
   ArrowDownToLine,
-  ArrowUpRight,
   CalendarClock,
   Check,
   Clock,
@@ -16,7 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Logo } from "@/components/logo";
-import { APP_URL, PARTNERS } from "@/lib/site";
+import { PARTNERS } from "@/lib/site";
 
 export type StartRow = {
   name: string;
@@ -113,12 +112,6 @@ function Headline({ z, children }: { z: string; children: ReactNode }) {
       className={`sticky top-0 flex h-[100dvh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-24px_60px_rgba(10,10,10,0.1)] ${z}`}
     >
       <h2 className="max-w-5xl text-[2.6rem] font-medium leading-[1.1] tracking-[-0.045em] sm:text-[4rem] lg:text-[5.75rem]">{children}</h2>
-      <a
-        href={APP_URL}
-        className="mt-10 inline-flex h-12 items-center gap-2 rounded-full bg-[#dcf3cf] px-6 text-base font-medium text-ink transition-colors hover:bg-lime sm:mt-12 sm:h-14 sm:px-7 sm:text-lg"
-      >
-        Launch App <ArrowUpRight className="size-5" strokeWidth={2} />
-      </a>
     </section>
   );
 }
