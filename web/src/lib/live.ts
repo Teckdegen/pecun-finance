@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { APP_URL, CHAINS, PARTNERS } from "./site";
 
 type Opp = {
@@ -35,7 +36,20 @@ export type Featured = {
   protocolLogo?: string;
   href: string;
 };
-export type Live = { rows: Featured[]; example: Featured; vaults: number; vaultProducts: number; platforms: number; chains: number; chainMarks: ChainMark[]; worthMarks: ChainMark[]; tvlUsd: number; topLendingApy: number; featured: Featured[]; isLive: boolean };
+export type Live = {
+  rows: Featured[];
+  example: Featured;
+  vaults: number;
+  vaultProducts: number;
+  platforms: number;
+  chains: number;
+  chainMarks: ChainMark[];
+  worthMarks: ChainMark[];
+  tvlUsd: number;
+  topLendingApy: number;
+  featured: Featured[];
+  isLive: boolean;
+};
 
 /** "Up to" quotes lending markets this big only: smaller markets and trading pools can show outlier rates. */
 const MIN_TVL_FOR_HEADLINE = 50_000_000;
@@ -75,26 +89,103 @@ const FALLBACK: Live = {
   platforms: 25,
   chains: 30,
   chainMarks: CHAINS,
-  worthMarks: PARTNERS.filter((p) => !p.infra).slice(0, 6).map((p) => ({ name: p.name, logo: p.logo })),
+  worthMarks: PARTNERS.filter((p) => !p.infra)
+    .slice(0, 6)
+    .map((p) => ({ name: p.name, logo: p.logo })),
   tvlUsd: 60e9,
   topLendingApy: 0.1,
   isLive: false,
   example: LIDO,
   featured: [
-    { name: "Savings USDS (sUSDS)", asset: "USDS", protocol: "Sky", manager: "Sky", chain: "Ethereum", kind: "Vault", apy: 0.038, tvlUsd: 3.7e9, redemption: "Instant", href: APP_URL },
+    {
+      name: "Savings USDS (sUSDS)",
+      asset: "USDS",
+      protocol: "Sky",
+      manager: "Sky",
+      chain: "Ethereum",
+      kind: "Vault",
+      apy: 0.038,
+      tvlUsd: 3.7e9,
+      redemption: "Instant",
+      href: APP_URL,
+    },
     LIDO,
-    { name: "Jito Staked SOL", asset: "SOL", protocol: "Solana staking", manager: "Jito", chain: "Solana", kind: "Liquid staking", apy: 0.0621, tvlUsd: 7.3e8, redemption: "Instant (swap)", href: APP_URL },
+    {
+      name: "Jito Staked SOL",
+      asset: "SOL",
+      protocol: "Solana staking",
+      manager: "Jito",
+      chain: "Solana",
+      kind: "Liquid staking",
+      apy: 0.0621,
+      tvlUsd: 7.3e8,
+      redemption: "Instant (swap)",
+      href: APP_URL,
+    },
   ],
   rows: [
-    { name: "PT Ethena sUSDe", asset: "USDe", protocol: "Pendle", manager: "Pendle", chain: "Ethereum", kind: "Fixed yield", apy: 0.118, tvlUsd: 9.1e8, redemption: "At maturity", logo: USDE_LOGO, protocolLogo: local("pendle.ico"), href: APP_URL },
-    { name: "Ember USDC vault", asset: "USDC", protocol: "Ember", manager: "Ember", chain: "Sui", kind: "Vault", apy: 0.192, tvlUsd: 4.2e7, redemption: "Instant", logo: USDC_LOGO, protocolLogo: local("ember.png"), href: APP_URL },
-    { name: "Upshift USDC", asset: "USDC", protocol: "Upshift", manager: "Upshift", chain: "Ethereum", kind: "Vault", apy: 0.137, tvlUsd: 6.5e7, redemption: "Withdrawal queue", logo: USDC_LOGO, protocolLogo: local("upshift.png"), href: APP_URL },
-    { name: "Hyperliquidity Provider (HLP)", asset: "USDC", protocol: "Hyperliquid", manager: "Hyperliquid", chain: "Hyperliquid", kind: "Vault", apy: 0.141, tvlUsd: 3.8e8, redemption: "4-day lockup", logo: USDC_LOGO, protocolLogo: local("hyperliquid.png"), href: APP_URL },
+    {
+      name: "PT Ethena sUSDe",
+      asset: "USDe",
+      protocol: "Pendle",
+      manager: "Pendle",
+      chain: "Ethereum",
+      kind: "Fixed yield",
+      apy: 0.118,
+      tvlUsd: 9.1e8,
+      redemption: "At maturity",
+      logo: USDE_LOGO,
+      protocolLogo: local("pendle.ico"),
+      href: APP_URL,
+    },
+    {
+      name: "Ember USDC vault",
+      asset: "USDC",
+      protocol: "Ember",
+      manager: "Ember",
+      chain: "Sui",
+      kind: "Vault",
+      apy: 0.192,
+      tvlUsd: 4.2e7,
+      redemption: "Instant",
+      logo: USDC_LOGO,
+      protocolLogo: local("ember.png"),
+      href: APP_URL,
+    },
+    {
+      name: "Upshift USDC",
+      asset: "USDC",
+      protocol: "Upshift",
+      manager: "Upshift",
+      chain: "Ethereum",
+      kind: "Vault",
+      apy: 0.137,
+      tvlUsd: 6.5e7,
+      redemption: "Withdrawal queue",
+      logo: USDC_LOGO,
+      protocolLogo: local("upshift.png"),
+      href: APP_URL,
+    },
+    {
+      name: "Hyperliquidity Provider (HLP)",
+      asset: "USDC",
+      protocol: "Hyperliquid",
+      manager: "Hyperliquid",
+      chain: "Hyperliquid",
+      kind: "Vault",
+      apy: 0.141,
+      tvlUsd: 3.8e8,
+      redemption: "4-day lockup",
+      logo: USDC_LOGO,
+      protocolLogo: local("hyperliquid.png"),
+      href: APP_URL,
+    },
   ],
 };
 
 const rate = (o: Opp) => o.apy30d ?? o.apy7d ?? o.apy ?? 0;
-const abs = (u?: string) => (!u ? undefined : u.startsWith("http") ? u : `${APP_URL}${u}`);
+const abs = (u?: string) =>
+  !u ? undefined : u.startsWith("http") ? u : `${APP_URL}${u}`;
 
 const toFeatured = (o: Opp): Featured => ({
   name: o.name,
@@ -111,94 +202,160 @@ const toFeatured = (o: Opp): Featured => ({
   href: o.slug ? `${APP_URL}/earn/${o.slug}` : APP_URL,
 });
 
-/** Live figures from the app's catalog, refreshed every 5 minutes. Never throws. */
+/**
+ * Live figures from the app's catalog, refreshed every 5 minutes. Never throws.
+ * The full catalog is over Next's 2 MB fetch-cache limit, so the raw response is not cached; only the small
+ * summary below is, which keeps every render fast and stops the page flipping between live and fallback figures.
+ */
+const cachedLive = unstable_cache(loadLive, ["landing-live-v1"], {
+  revalidate: 300,
+});
+
 export async function getLive(): Promise<Live> {
   try {
-    const res = await fetch(`${APP_URL}/api/opportunities`, { next: { revalidate: 300 }, signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) return FALLBACK;
-    const { opportunities: all } = (await res.json()) as { opportunities: Opp[] };
-    if (!all?.length) return FALLBACK;
-
-    const lending = all.filter((o) => o.kind === "Lending" && o.tvlUsd >= MIN_TVL_FOR_HEADLINE).map(rate).filter((r) => r > 0 && r <= MAX_SANE);
-
-    // Featured: the biggest stablecoin, ETH and SOL products, each from a different platform.
-    const byTvl = [...all].sort((a, b) => b.tvlUsd - a.tvlUsd);
-    const used = new Set<string>();
-    const pick = (test: (o: Opp) => boolean) => {
-      const o = byTvl.find((x) => test(x) && !used.has(x.protocol) && rate(x) >= 0.01 && rate(x) <= MAX_SANE);
-      if (o) used.add(o.protocol);
-      return o;
-    };
-    const featured = [pick((o) => o.stablecoin), pick((o) => /ETH$/i.test(o.asset)), pick((o) => o.asset === "SOL")]
-      .filter((o): o is Opp => !!o)
-      .map(toFeatured);
-
-    // The landing card names high rates (Ember, ~20% and the rest), one product per platform.
-    // Platforms already shown in the hero logo row are left out, so a vault is not named twice.
-    const heroVaults = new Set(PARTNERS.filter((p) => !p.infra).slice(0, 8).map((p) => p.name));
-    const spotSeen = new Set<string>();
-    const high = [...all]
-      .filter((o) => o.tvlUsd >= MIN_SPOT_TVL && rate(o) >= MIN_SPOT_APY && rate(o) <= MAX_SPOT_APY && !heroVaults.has(o.protocol))
-      .sort((a, b) => rate(b) - rate(a))
-      .filter((o) => !spotSeen.has(o.protocol) && (spotSeen.add(o.protocol), true))
-      .slice(0, 8)
-      .map(toFeatured);
-    const seen = new Set<string>();
-    const rows =
-      high.length >= 4
-        ? high
-        : byTvl
-            .filter((o) => rate(o) >= 0.01 && rate(o) <= MAX_SANE && !seen.has(o.protocol) && (seen.add(o.protocol), true))
-            .slice(0, 6)
-            .map(toFeatured);
-
-    // Lido stETH is the example in the deposit and earn steps; the biggest Lido product, else the fallback.
-    const lido = byTvl.find((o) => o.protocol === "Lido" && rate(o) > 0 && rate(o) <= MAX_SANE);
-    const example = lido ? { ...toFeatured(lido), logo: abs(lido.assetLogo) ?? ETH_LOGO, protocolLogo: abs(lido.protocolLogo) ?? LIDO.protocolLogo } : LIDO;
-
-    const chainCounts = new Map<string, { n: number; logo?: string }>();
-    for (const o of all) {
-      const cur = chainCounts.get(o.chain) ?? { n: 0 };
-      cur.n += 1;
-      if (!cur.logo && o.chainLogo) cur.logo = abs(o.chainLogo);
-      chainCounts.set(o.chain, cur);
-    }
-    const worthByProtocol = new Map<string, { tvl: number; logo?: string }>();
-    for (const o of all) {
-      const cur = worthByProtocol.get(o.protocol) ?? { tvl: 0 };
-      cur.tvl += o.tvlUsd || 0;
-      if (!cur.logo && o.protocolLogo) cur.logo = abs(o.protocolLogo);
-      worthByProtocol.set(o.protocol, cur);
-    }
-    const worthMarks = [...worthByProtocol.entries()]
-      .filter((entry): entry is [string, { tvl: number; logo: string }] => !!entry[1].logo)
-      .sort((a, b) => b[1].tvl - a[1].tvl)
-      .slice(0, 6)
-      .map(([name, v]) => ({ name, logo: v.logo }));
-
-    const chainMarks = [...chainCounts.entries()]
-      .filter((entry): entry is [string, { n: number; logo: string }] => !!entry[1].logo && entry[0] !== "Monad")
-      .sort((a, b) => b[1].n - a[1].n)
-      .slice(0, 6)
-      .map(([name, v]) => ({ name, logo: v.logo }));
-
-    return {
-      vaults: all.length,
-      vaultProducts: all.filter((o) => o.kind === "Vault").length,
-      platforms: new Set(all.map((o) => o.protocol)).size,
-      chains: chainCounts.size,
-      chainMarks: chainMarks.length ? chainMarks : FALLBACK.chainMarks,
-      worthMarks: worthMarks.length ? worthMarks : FALLBACK.worthMarks,
-      tvlUsd: all.reduce((s, o) => s + (o.tvlUsd || 0), 0),
-      topLendingApy: lending.length ? Math.max(...lending) : FALLBACK.topLendingApy,
-      featured: featured.length === 3 ? featured : FALLBACK.featured,
-      rows,
-      example,
-      isLive: true,
-    };
+    return await cachedLive();
   } catch {
+    // Failures throw so they are never cached: the next render tries the app again.
     return FALLBACK;
   }
+}
+
+/** Fetches and summarises the catalog. Throws when the app can't be reached, so a failure isn't cached. */
+async function loadLive(): Promise<Live> {
+  const res = await fetch(`${APP_URL}/api/opportunities`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) throw new Error(`catalog ${res.status}`);
+  const { opportunities: all } = (await res.json()) as {
+    opportunities: Opp[];
+  };
+  if (!all?.length) throw new Error("empty catalog");
+
+  const lending = all
+    .filter((o) => o.kind === "Lending" && o.tvlUsd >= MIN_TVL_FOR_HEADLINE)
+    .map(rate)
+    .filter((r) => r > 0 && r <= MAX_SANE);
+
+  // Featured: the biggest stablecoin, ETH and SOL products, each from a different platform.
+  const byTvl = [...all].sort((a, b) => b.tvlUsd - a.tvlUsd);
+  const used = new Set<string>();
+  const pick = (test: (o: Opp) => boolean) => {
+    const o = byTvl.find(
+      (x) =>
+        test(x) &&
+        !used.has(x.protocol) &&
+        rate(x) >= 0.01 &&
+        rate(x) <= MAX_SANE,
+    );
+    if (o) used.add(o.protocol);
+    return o;
+  };
+  const featured = [
+    pick((o) => o.stablecoin),
+    pick((o) => /ETH$/i.test(o.asset)),
+    pick((o) => o.asset === "SOL"),
+  ]
+    .filter((o): o is Opp => !!o)
+    .map(toFeatured);
+
+  // The landing card names high rates (Ember, ~20% and the rest), one product per platform.
+  // Platforms already shown in the hero logo row are left out, so a vault is not named twice.
+  const heroVaults = new Set(
+    PARTNERS.filter((p) => !p.infra)
+      .slice(0, 8)
+      .map((p) => p.name),
+  );
+  const spotSeen = new Set<string>();
+  const high = [...all]
+    .filter(
+      (o) =>
+        o.tvlUsd >= MIN_SPOT_TVL &&
+        rate(o) >= MIN_SPOT_APY &&
+        rate(o) <= MAX_SPOT_APY &&
+        !heroVaults.has(o.protocol),
+    )
+    .sort((a, b) => rate(b) - rate(a))
+    .filter(
+      (o) => !spotSeen.has(o.protocol) && (spotSeen.add(o.protocol), true),
+    )
+    .slice(0, 8)
+    .map(toFeatured);
+  const seen = new Set<string>();
+  const rows =
+    high.length >= 4
+      ? high
+      : byTvl
+          .filter(
+            (o) =>
+              rate(o) >= 0.01 &&
+              rate(o) <= MAX_SANE &&
+              !seen.has(o.protocol) &&
+              (seen.add(o.protocol), true),
+          )
+          .slice(0, 6)
+          .map(toFeatured);
+
+  // Lido stETH is the example in the deposit and earn steps; the biggest Lido product, else the fallback.
+  const lido = byTvl.find(
+    (o) => o.protocol === "Lido" && rate(o) > 0 && rate(o) <= MAX_SANE,
+  );
+  const example = lido
+    ? {
+        ...toFeatured(lido),
+        logo: abs(lido.assetLogo) ?? ETH_LOGO,
+        protocolLogo: abs(lido.protocolLogo) ?? LIDO.protocolLogo,
+      }
+    : LIDO;
+
+  const chainCounts = new Map<string, { n: number; logo?: string }>();
+  for (const o of all) {
+    const cur = chainCounts.get(o.chain) ?? { n: 0 };
+    cur.n += 1;
+    if (!cur.logo && o.chainLogo) cur.logo = abs(o.chainLogo);
+    chainCounts.set(o.chain, cur);
+  }
+  const worthByProtocol = new Map<string, { tvl: number; logo?: string }>();
+  for (const o of all) {
+    const cur = worthByProtocol.get(o.protocol) ?? { tvl: 0 };
+    cur.tvl += o.tvlUsd || 0;
+    if (!cur.logo && o.protocolLogo) cur.logo = abs(o.protocolLogo);
+    worthByProtocol.set(o.protocol, cur);
+  }
+  const worthMarks = [...worthByProtocol.entries()]
+    .filter(
+      (entry): entry is [string, { tvl: number; logo: string }] =>
+        !!entry[1].logo,
+    )
+    .sort((a, b) => b[1].tvl - a[1].tvl)
+    .slice(0, 6)
+    .map(([name, v]) => ({ name, logo: v.logo }));
+
+  const chainMarks = [...chainCounts.entries()]
+    .filter(
+      (entry): entry is [string, { n: number; logo: string }] =>
+        !!entry[1].logo && entry[0] !== "Monad",
+    )
+    .sort((a, b) => b[1].n - a[1].n)
+    .slice(0, 6)
+    .map(([name, v]) => ({ name, logo: v.logo }));
+
+  return {
+    vaults: all.length,
+    vaultProducts: all.filter((o) => o.kind === "Vault").length,
+    platforms: new Set(all.map((o) => o.protocol)).size,
+    chains: chainCounts.size,
+    chainMarks: chainMarks.length ? chainMarks : FALLBACK.chainMarks,
+    worthMarks: worthMarks.length ? worthMarks : FALLBACK.worthMarks,
+    tvlUsd: all.reduce((s, o) => s + (o.tvlUsd || 0), 0),
+    topLendingApy: lending.length
+      ? Math.max(...lending)
+      : FALLBACK.topLendingApy,
+    featured: featured.length === 3 ? featured : FALLBACK.featured,
+    rows,
+    example,
+    isLive: true,
+  };
 }
 
 export function usd(n: number): string {

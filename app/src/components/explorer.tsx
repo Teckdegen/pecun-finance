@@ -138,7 +138,7 @@ export function Explorer({ catalog, initialQuery = "", initialEarn }: { catalog:
       {/* Page title, Hood style: left-aligned, tight, with a one-line description */}
       <header>
         <h1 className="text-[1.65rem] font-medium tracking-[-0.03em] md:text-[2rem]">{catMeta.label === "All Products" ? "Explore yields" : catMeta.label}</h1>
-        <p className="mt-1 font-sans text-sm text-muted">{CAT_TEXT[filters.cat]}</p>
+        {CAT_TEXT[filters.cat] && <p className="mt-1 font-sans text-sm text-muted">{CAT_TEXT[filters.cat]}</p>}
       </header>
 
       <YieldBanner />
@@ -445,7 +445,7 @@ function SortHead({ label, onClick, on }: { label: string; onClick: () => void; 
 }
 
 const CAT_TEXT: Record<Cat, string> = {
-  all: "Every on-chain yield PECUN can execute, across EVM, Solana, Sui and Hyperliquid.",
+  all: "",
   featured: "Hand-picked vaults with deep liquidity and a clean track record.",
   stable: "Dollar-pegged yields. Your balance stays in stablecoins.",
   lending: "Supply an asset to a lending market and earn what borrowers pay.",

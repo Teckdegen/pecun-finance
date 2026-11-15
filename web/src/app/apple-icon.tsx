@@ -6,5 +6,5 @@ export const contentType = "image/png";
 
 /** Home-screen icon for iPhone and iPad. */
 export default function AppleIcon() {
-  return new ImageResponse(<Mark size={180} />, size);
+  return new ImageResponse(<Mark size={180} backdrop />, size);
 }

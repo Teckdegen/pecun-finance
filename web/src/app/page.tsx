@@ -178,7 +178,7 @@ function Faq() {
     ["Where is PECUN available?", "Not in some regions, including the United States, the United Kingdom, Ontario and sanctioned countries. The full list is in the Terms of Service in the app."],
   ];
   return (
-    <section className="sticky top-0 z-[70] flex min-h-[100dvh] flex-col justify-center rounded-t-[2rem] bg-white px-4 pt-16 pb-12 text-ink shadow-[0_-24px_60px_rgba(10,10,10,0.12)] sm:pt-[4.5rem]">
+    <section className="sticky top-0 z-[70] flex min-h-[100dvh] flex-col justify-center rounded-t-[2rem] bg-white px-4 pt-16 pb-12 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform sm:pt-[4.5rem]">
       <Heading title="Questions," muted="answered." />
       <div className="mx-auto mt-10 max-w-2xl divide-y divide-line border-y border-line">
         {qa.map(([q, a]) => (

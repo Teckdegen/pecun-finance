@@ -34,15 +34,15 @@ export function Logo({ src, label, size = 32, className = "" }: { src?: string; 
   );
 }
 
-/** The PECUN mark: lime tile, black letter. */
-export function PecunMark({ size = 28 }: { size?: number }) {
+/**
+ * The PECUN mark: a leaf split down its vein. On light backgrounds the top half is black and the bottom half lime (a touch deeper, so it holds up on white);
+ * `tone="dark"` swaps the black for white so it still reads on dark backgrounds.
+ */
+export function PecunMark({ size = 28, tone = "light" }: { size?: number; tone?: "light" | "dark" }) {
   return (
-    <span
-      aria-hidden
-      className="grid shrink-0 place-items-center rounded-[7px] bg-lime font-tight font-medium leading-none text-ink"
-      style={{ width: size, height: size, fontSize: size * 0.56, letterSpacing: "-0.04em" }}
-    >
-      P
-    </span>
+    <svg aria-hidden width={size} height={size} viewBox="12 12 40 40" className="shrink-0">
+      <path d="M14 50C14 28 28 14 50 14Z" fill={tone === "dark" ? "#ffffff" : "#0a0a0a"} />
+      <path d="M50 14C50 36 36 50 14 50Z" fill={tone === "dark" ? "#b8ff9d" : "#9aee78"} />
+    </svg>
   );
 }

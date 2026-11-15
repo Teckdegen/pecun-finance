@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { pct, type Featured } from "@/lib/live";
 
 /** Rotates through live vaults so the card names more than the first one. */
@@ -9,12 +9,24 @@ export function LiveVault({ vaults }: { vaults: Featured[] }) {
   const [i, setI] = useState(0);
   const [shown, setShown] = useState(true);
 
+  const box = useRef<HTMLDivElement>(null);
+  const visible = useRef(false);
+
+  // Only rotate while the card is on screen.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => (visible.current = e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     if (list.length < 2) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let fade: number | undefined;
     const id = window.setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || !visible.current) return;
       setShown(false);
       fade = window.setTimeout(() => {
         setI((n) => (n + 1) % list.length);
@@ -39,7 +51,7 @@ export function LiveVault({ vaults }: { vaults: Featured[] }) {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div ref={box} className="flex flex-1 flex-col">
       <div className={`flex flex-1 flex-col transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`} aria-live="polite">
         <p className="text-sm text-[#3d4a34]">Live · {v.protocol}</p>
         <p className="mt-3 tabular text-[4rem] font-medium leading-none tracking-[-0.05em] sm:text-[4.75rem]">{pct(v.apy)}</p>

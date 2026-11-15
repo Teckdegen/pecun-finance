@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>PECUN X profile picture</title>
+<style>
+  html, body { margin: 0; width: 1000px; height: 1000px; overflow: hidden; }
+  body { display: grid; place-items: center; }
+  svg { width: 560px; height: 560px; }
+</style>
+</head>
+<body>
+<!-- ?bg=<hex>&top=<hex>&bottom=<hex>, e.g. pfp.html?bg=2f7d1c&top=0a0a0a&bottom=b8ff9d -->
+<svg viewBox="12 12 40 40" aria-hidden="true">
+  <path id="top" d="M14 50C14 28 28 14 50 14Z" />
+  <path id="bottom" d="M50 14C50 36 36 50 14 50Z" />
+</svg>
+<script>
+  const q = new URLSearchParams(location.search);
+  document.body.style.background = "#" + (q.get("bg") || "2f7d1c");
+  document.getElementById("top").setAttribute("fill", "#" + (q.get("top") || "0a0a0a"));
+  document.getElementById("bottom").setAttribute("fill", "#" + (q.get("bottom") || "b8ff9d"));
+</script>
+</body>
+</html>

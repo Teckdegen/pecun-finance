@@ -59,16 +59,13 @@ function useActive() {
   };
 }
 
-/** The PECUN mark in Hood colours: lime tile, black letter. */
+/** The PECUN mark: a leaf split down its vein, white and lime on the dark app. */
 export function PecunMark({ size = 28 }: { size?: number }) {
   return (
-    <span
-      aria-hidden
-      className="grid shrink-0 place-items-center rounded-[7px] bg-accent font-tight font-medium leading-none text-on-accent"
-      style={{ width: size, height: size, fontSize: size * 0.56, letterSpacing: "-0.04em" }}
-    >
-      P
-    </span>
+    <svg aria-hidden width={size} height={size} viewBox="12 12 40 40" className="shrink-0">
+      <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+      <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+    </svg>
   );
 }
 
@@ -194,9 +191,6 @@ function Header() {
         >
           <Menu className="size-5" />
         </button>
-        <Link href="/" aria-label="PECUN home" className="lg:hidden">
-          <PecunMark size={24} />
-        </Link>
         <span className="hidden h-5 w-px shrink-0 bg-line lg:block" />
         <Crumb />
         <div className="ml-auto flex items-center gap-2">

@@ -25,7 +25,7 @@ export function Footer() {
               </a>
             </li>
             <li>
-              <a href="/terms" className="hover:underline">
+              <a href={`${APP_URL}/terms`} className="hover:underline">
                 Terms
               </a>
             </li>

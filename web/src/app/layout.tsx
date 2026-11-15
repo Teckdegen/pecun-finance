@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { CookieBanner } from "@/components/cookie-banner";
 import { Nav } from "@/components/nav";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -50,7 +49,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="flex min-h-screen flex-col antialiased">
         <Nav />
         <div className="flex-1">{children}</div>
-        <CookieBanner />
       </body>
     </html>
   );

@@ -34,14 +34,13 @@ const SECTIONS: LegalSection[] = [
     body: ["On this website we keep collection small:"],
     bullets: [
       "Technical data: your IP address, device and browser type, and basic logs, used to serve the site, keep it secure and enforce region restrictions.",
-      "Your cookie choice, stored on your device.",
       "What you type into the contact form. That stays in your browser so the thank-you page can open an email. This site does not keep a copy on our servers.",
       "If you email us, we keep that email and message so we can reply.",
     ],
   },
   {
     heading: "How we use it",
-    body: ["We use this data to run and protect the website, remember your cookie choice, reply when you write to us, and meet legal obligations. We don't sell personal data and we don't use it for advertising."],
+    body: ["We use this data to run and protect the website, reply when you write to us, and meet legal obligations. We don't sell personal data and we don't use it for advertising."],
   },
   {
     heading: "Who we share it with",
@@ -50,12 +49,12 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Cookies and local storage",
     body: [
-      "Essential storage remembers your cookie choice. The contact form uses session storage on your device so a message can be handed to your email app. We don't use advertising cookies. Analytics run only if you choose \"Accept all\" in the cookie banner. Clear this site's data in your browser to reset that choice.",
+      "This website doesn't set cookies and doesn't run analytics or advertising trackers. The contact form uses session storage on your device so a message can be handed to your email app. The app has its own cookie notice, covered by the app privacy policy.",
     ],
   },
   {
     heading: "How long we keep it",
-    body: ["Cookie and form data in your browser stay until you clear them or the tab session ends. Emails you send us are kept while we need them to reply, and afterwards only as long as the law requires. Technical logs are kept for a short period for security, then deleted."],
+    body: ["Form data in your browser stays until you clear it or the tab session ends. Emails you send us are kept while we need them to reply, and afterwards only as long as the law requires. Technical logs are kept for a short period for security, then deleted."],
   },
   {
     heading: "Your rights",
@@ -81,7 +80,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Changes",
     body: [
       <>
-        We may update this policy. We&apos;ll change the date above when we do. See also the <a className="underline underline-offset-2" href="/terms">Terms and Conditions</a>.
+        We may update this policy. We&apos;ll change the date above when we do. See also the <a className="underline underline-offset-2" href={`${APP_URL}/terms`}>Terms of Service</a>.
       </>,
     ],
   },

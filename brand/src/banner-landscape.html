@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>PECUN X banner: landscape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&display=block" rel="stylesheet" />
+<style>
+  html, body { margin: 0; width: 1500px; height: 500px; overflow: hidden; background: #dfe6d3; }
+  svg { position: absolute; inset: 0; }
+  .copy {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding-top: 40px; color: #ffffff; font-family: "Inter Tight", sans-serif; font-weight: 500; text-align: center;
+    font-size: 64px; line-height: 1.08; letter-spacing: -0.035em; text-shadow: 0 2px 24px rgba(10, 30, 10, 0.35);
+  }
+  .copy span { color: #b8ff9d; }
+</style>
+</head>
+<body>
+<svg width="1500" height="500" viewBox="0 0 1500 500">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9eee2" />
+      <stop offset="0.55" stop-color="#d9e4cc" />
+      <stop offset="1" stop-color="#cbd9b9" />
+    </linearGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a9b79b" />
+      <stop offset="1" stop-color="#8e9e80" />
+    </linearGradient>
+    <linearGradient id="near" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7d8a6e" />
+      <stop offset="0.6" stop-color="#5c6a4f" />
+      <stop offset="1" stop-color="#46553a" />
+    </linearGradient>
+    <!-- soft clouds -->
+    <filter id="clouds" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.004 0.012" numOctaves="4" seed="7" />
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.6 -0.75" />
+      <feGaussianBlur stdDeviation="6" />
+    </filter>
+    <!-- rock texture on the ridges -->
+    <filter id="rock" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.06" numOctaves="3" seed="3" result="n" />
+      <feColorMatrix in="n" values="0 0 0 0 0.12  0 0 0 0 0.14  0 0 0 0 0.1  0 0 0 0.55 0" result="shade" />
+      <feComposite in="shade" in2="SourceGraphic" operator="in" result="tex" />
+      <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="tex" /></feMerge>
+    </filter>
+    <!-- the field, streaked sideways like it's flying past -->
+    <filter id="motion" x="-10%" y="0" width="120%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.003 0.09" numOctaves="4" seed="11" result="n" />
+      <feColorMatrix in="n" values="0.55 0 0 0 0.16  0.75 0 0 0 0.22  0.2 0 0 0 0.06  0 0 0 0 1" result="g" />
+      <feGaussianBlur in="g" stdDeviation="70 1.5" />
+    </filter>
+    <linearGradient id="fieldShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f3d14" stop-opacity="0" />
+      <stop offset="1" stop-color="#0f220a" stop-opacity="0.45" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1500" height="500" fill="url(#sky)" />
+  <rect width="1500" height="200" filter="url(#clouds)" opacity="0.85" />
+  <path id="ridgeFar" fill="url(#far)" />
+  <path id="ridgeNear" fill="url(#near)" filter="url(#rock)" />
+  <rect y="182" width="1500" height="318" filter="url(#motion)" />
+  <rect y="182" width="1500" height="318" fill="url(#fieldShade)" />
+  <rect y="178" width="1500" height="10" fill="#6f7f52" opacity="0.5" />
+</svg>
+
+<div class="copy">
+  <div>Put your money</div>
+  <div><span>to work.</span></div>
+</div>
+
+<script>
+  // Ridge lines by midpoint displacement, seeded so every render matches.
+  let seed = 42;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  function ridge(points, base, rough) {
+    let pts = points.slice();
+    let r = rough;
+    for (let pass = 0; pass < 7; pass++) {
+      const next = [];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+        next.push([x1, y1], [(x1 + x2) / 2, (y1 + y2) / 2 + (rand() - 0.5) * r]);
+      }
+      next.push(pts[pts.length - 1]);
+      pts = next;
+      r *= 0.55;
+    }
+    return "M0 " + base + " " + pts.map(([x, y]) => "L" + x.toFixed(1) + " " + y.toFixed(1)).join(" ") + " L1500 " + base + " Z";
+  }
+  document.getElementById("ridgeFar").setAttribute("d",
+    ridge([[0, 150], [260, 120], [520, 98], [760, 82], [1000, 100], [1260, 110], [1500, 128]], 190, 50));
+  document.getElementById("ridgeNear").setAttribute("d",
+    ridge([[0, 172], [180, 160], [400, 120], [620, 70], [760, 40], [900, 64], [1080, 80], [1260, 120], [1420, 150], [1500, 160]], 192, 70));
+</script>
+</body>
+</html>

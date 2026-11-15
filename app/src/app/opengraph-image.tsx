@@ -22,22 +22,10 @@ export default function OpengraphImage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 16,
-              background: "#b8ff9d",
-              color: "#0a0b0d",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 44,
-              fontWeight: 700,
-            }}
-          >
-            P
-          </div>
+          <svg width={72} height={72} viewBox="12 12 40 40">
+            <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+            <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+          </svg>
           <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: -1 }}>PECUN Finance</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

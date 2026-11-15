@@ -94,7 +94,7 @@ body {
   }
 }
 .rise {
-  animation: rise 0.7s ease-out both;
+  animation: rise 0.35s ease-out both;
 }
 
 @keyframes pop {

@@ -1,25 +1,12 @@
-/** The PECUN app mark in Hood colours (lime tile, black letter), drawn for next/og image generation. */
+/** The PECUN leaf on black, drawn for next/og image generation. `pad` leaves the margin maskable icons need. */
 export function Icon({ size, pad = 0 }: { size: number; pad?: number }) {
-  const inner = size * (1 - pad * 2);
+  const leaf = size * (1 - pad * 2) * 0.72;
   return (
     <div style={{ width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center", background: "#0c0c0c" }}>
-      <div
-        style={{
-          width: inner,
-          height: inner,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: pad ? inner * 0.22 : 0,
-          background: "#b8ff9d",
-          color: "#0a0b0d",
-          fontSize: inner * 0.56,
-          fontWeight: 600,
-          letterSpacing: -inner * 0.03,
-        }}
-      >
-        P
-      </div>
+      <svg width={leaf} height={leaf} viewBox="12 12 40 40">
+        <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+        <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+      </svg>
     </div>
   );
 }

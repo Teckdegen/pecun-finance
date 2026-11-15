@@ -13,8 +13,8 @@ import {
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
-import { Logo } from "@/components/logo";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Logo, PecunMark } from "@/components/logo";
 import { PARTNERS } from "@/lib/site";
 
 export type StartRow = {
@@ -29,15 +29,31 @@ export type StartRow = {
 
 const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
 
-/** Cycles 0..n-1 every `ms`, paused for reduced motion. */
-function useTicker(n: number, ms: number) {
+/**
+ * Cycles 0..n-1 every `ms` while `ref` is on screen. Stops when it scrolls away or the tab is hidden,
+ * so the cards off screen don't keep re-rendering. Paused for reduced motion.
+ */
+function useTicker(n: number, ms: number, ref: RefObject<HTMLElement | null>) {
   const [i, setI] = useState(0);
   useEffect(() => {
-    if (n < 2) return;
+    const el = ref.current;
+    if (n < 2 || !el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const id = window.setInterval(() => setI((x) => (x + 1) % n), ms);
-    return () => window.clearInterval(id);
-  }, [n, ms]);
+    let id: number | undefined;
+    const stop = () => {
+      if (id) window.clearInterval(id);
+      id = undefined;
+    };
+    const io = new IntersectionObserver(([e]) => {
+      stop();
+      if (e.isIntersecting) id = window.setInterval(() => !document.hidden && setI((x) => (x + 1) % n), ms);
+    });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      stop();
+    };
+  }, [n, ms, ref]);
   return i;
 }
 
@@ -103,7 +119,7 @@ function Hold() {
 function Headline({ z, children }: { z: string; children: ReactNode }) {
   return (
     <section
-      className={`sticky top-0 flex h-[100dvh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-24px_60px_rgba(10,10,10,0.1)] ${z}`}
+      className={`sticky top-0 flex h-[100dvh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform ${z}`}
     >
       <h2 className="max-w-5xl text-[2.6rem] font-medium leading-[1.1] tracking-[-0.045em] sm:text-[4rem] lg:text-[5.75rem]">{children}</h2>
     </section>
@@ -150,7 +166,7 @@ function LogoCluster({ marks }: { marks: Mark[] }) {
 function CardScreen({ z, icon: Icon, label, children }: { z: string; icon: LucideIcon; label: string; children: ReactNode }) {
   return (
     <section
-      className={`sticky top-0 flex h-[100dvh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-24px_60px_rgba(10,10,10,0.1)] sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
+      className={`sticky top-0 flex h-[100dvh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
         <span className="inline-flex h-11 items-center gap-2 self-start rounded-full bg-white px-5 text-base font-medium shadow-[0_1px_2px_rgba(10,10,10,0.04)] sm:h-12 sm:text-lg">
@@ -171,9 +187,9 @@ const TONE = {
   cream: "bg-[#efe9dc] text-ink",
 };
 
-function Card({ tone, title, children }: { tone: keyof typeof TONE; title: string; children: ReactNode }) {
+function Card({ tone, title, children, cardRef }: { tone: keyof typeof TONE; title: string; children: ReactNode; cardRef?: RefObject<HTMLElement | null> }) {
   return (
-    <article className={`relative flex w-[84vw] max-w-[380px] shrink-0 snap-center flex-col overflow-hidden rounded-[28px] md:w-auto md:max-w-none ${TONE[tone]}`}>
+    <article ref={cardRef} className={`relative flex w-[84vw] max-w-[380px] shrink-0 snap-center flex-col overflow-hidden rounded-[28px] md:w-auto md:max-w-none ${TONE[tone]}`}>
       <h3 className="relative z-10 max-w-[20ch] px-7 pt-7 text-[1.5rem] font-medium leading-[1.2] tracking-[-0.025em] lg:px-9 lg:pt-9 lg:text-[1.7rem]">{title}</h3>
       <div className="relative min-h-0 flex-1">{children}</div>
     </article>
@@ -211,7 +227,8 @@ function BleedRows({ rows }: { rows: { icon: ReactNode; tile: string; label: Rea
 
 /** Real platforms floating round the PECUN tile, the one in focus lifting a little. */
 function PlatformsCard({ rows }: { rows: StartRow[] }) {
-  const active = useTicker(rows.length, 2200);
+  const ref = useRef<HTMLElement>(null);
+  const active = useTicker(rows.length, 2200, ref);
   const spots = [
     "top-[8%] left-[6%] -rotate-[7deg]",
     "top-[30%] -right-[4%] rotate-[6deg]",
@@ -219,12 +236,12 @@ function PlatformsCard({ rows }: { rows: StartRow[] }) {
     "bottom-[6%] right-[4%] -rotate-[6deg]",
   ];
   return (
-    <Card tone="lime" title="Lending, vaults, staking and fixed yield, side by side.">
+    <Card tone="lime" title="Lending, vaults, staking and fixed yield, side by side." cardRef={ref}>
       <span aria-hidden className="absolute top-[18%] right-[14%] size-5 rounded-full bg-ink" />
       <span aria-hidden className="absolute bottom-[40%] left-[16%] size-9 rounded-full bg-[#9aee78]" />
       <span aria-hidden className="absolute right-[30%] bottom-[2%] size-3 rounded-full bg-[#2f7d1c]" />
       <span className="absolute top-1/2 left-1/2 grid size-24 -translate-x-1/2 -translate-y-1/2 rotate-6 place-items-center rounded-[26px] bg-[#122018] shadow-[0_20px_40px_rgba(18,32,24,0.3)]">
-        <span className="text-[3.2rem] font-medium leading-none tracking-[-0.04em] text-lime">P</span>
+        <PecunMark size={56} tone="dark" />
       </span>
       {rows.map((row, i) => (
         <span
@@ -295,9 +312,10 @@ function OpenCard({ rows }: { rows: StartRow[] }) {
 
 /** A phone deposit screen, the "Deposited" note dropping in and out. */
 function DepositCard({ lead }: { lead: StartRow }) {
-  const done = useTicker(2, 2600) === 1;
+  const ref = useRef<HTMLElement>(null);
+  const done = useTicker(2, 2600, ref) === 1;
   return (
-    <Card tone="dark" title="Deposit in one tap, straight from your own wallet.">
+    <Card tone="dark" title="Deposit in one tap, straight from your own wallet." cardRef={ref}>
       <Phone dark>
         <div
           className={`flex items-center gap-2.5 self-center rounded-2xl bg-white/[0.08] py-2.5 pr-4 pl-2.5 text-sm transition-all duration-500 ${done ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"}`}
@@ -409,9 +427,10 @@ function PortfolioCard({ lead }: { lead: StartRow }) {
 
 /** Pending items move along until they settle. */
 function ActivityCard({ lead }: { lead: StartRow }) {
-  const step = useTicker(4, 1400);
+  const ref = useRef<HTMLElement>(null);
+  const step = useTicker(4, 1400, ref);
   return (
-    <Card tone="dark" title="Deposits and withdrawals tracked until they settle.">
+    <Card tone="dark" title="Deposits and withdrawals tracked until they settle." cardRef={ref}>
       <Phone dark>
         <div className="flex gap-5 border-b border-white/10 px-1 text-sm">
           <span className="pb-3 text-white/50">History</span>
@@ -457,9 +476,10 @@ function ActivityCard({ lead }: { lead: StartRow }) {
 
 /** Instant exit or the protocol's own queue, flipping between the two. */
 function WithdrawCard({ lead }: { lead: StartRow }) {
-  const instant = useTicker(2, 2600) === 0;
+  const ref = useRef<HTMLElement>(null);
+  const instant = useTicker(2, 2600, ref) === 0;
   return (
-    <Card tone="lime" title="Withdraw when you're ready, instantly where the vault allows.">
+    <Card tone="lime" title="Withdraw when you're ready, instantly where the vault allows." cardRef={ref}>
       <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 rotate-[2deg] rounded-[24px] bg-white p-5 shadow-[0_24px_50px_rgba(18,32,24,0.18)] lg:inset-x-9">
         <div className="flex rounded-full bg-[#f3efe6] p-1 text-sm">
           {["Instant exit", "Queue"].map((t, i) => (

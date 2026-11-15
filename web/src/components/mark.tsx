@@ -1,5 +1,10 @@
-/** Lime tile, black P. Drawn for next/og so the favicon set and Apple icon match the site. */
-export function Mark({ size }: { size: number }) {
+/**
+ * The PECUN leaf for next/og (favicons and the Apple icon), in the site's light colours: black top half,
+ * lime bottom half. Favicons are the bare leaf on a transparent background; `backdrop` paints a white
+ * square behind it for the Apple icon, since iOS fills transparent icons with black.
+ */
+export function Mark({ size, backdrop = false }: { size: number; backdrop?: boolean }) {
+  const leaf = backdrop ? size * 0.7 : size;
   return (
     <div
       style={{
@@ -8,15 +13,13 @@ export function Mark({ size }: { size: number }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#b8ff9d",
-        color: "#0a0a0a",
-        fontSize: Math.round(size * 0.56),
-        fontWeight: 600,
-        borderRadius: Math.max(2, Math.round(size * 0.22)),
-        letterSpacing: `${-size * 0.04}px`,
+        background: backdrop ? "#ffffff" : "transparent",
       }}
     >
-      P
+      <svg width={leaf} height={leaf} viewBox="12 12 40 40">
+        <path d="M14 50C14 28 28 14 50 14Z" fill="#0a0a0a" />
+        <path d="M50 14C50 36 36 50 14 50Z" fill="#9aee78" />
+      </svg>
     </div>
   );
 }
