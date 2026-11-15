@@ -7,7 +7,7 @@
   Photo: Mick Haupt on Unsplash (Big Bend, Texas), used under the Unsplash License.
   https://unsplash.com/photos/ELuTbEVQdBc
   Query params: ?y=<0-100> moves the photo up and down; ?field=<px> sets where the motion blur starts;
-  ?w=&h= set the canvas size (default 1500x500, the X banner); ?text=0 leaves the words off (share images).
+  ?w=&h= set the canvas size (default 1500x500, the X banner); ?text=0 leaves the words off; ?ty=<px> and ?fs=<px> move and size the words.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500&display=block" rel="stylesheet" />
@@ -77,7 +77,10 @@
   art.querySelectorAll(":scope > rect").forEach((r) => r.setAttribute("width", W));
   art.querySelector(":scope > rect:last-of-type").setAttribute("height", Math.round(H * 0.48));
   art.querySelector(":scope > rect:first-of-type").setAttribute("height", H);
-  if (q.get("text") === "0") document.getElementById("copy").remove();
+  const copy = document.getElementById("copy");
+  if (q.get("text") === "0") copy.remove();
+  if (q.get("ty")) copy.style.top = q.get("ty") + "px";
+  if (q.get("fs")) copy.style.fontSize = q.get("fs") + "px";
   const img = new Image();
   img.onload = () => {
     const h = (W * img.naturalHeight) / img.naturalWidth;
