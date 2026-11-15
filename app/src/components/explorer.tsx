@@ -11,7 +11,8 @@ import {
   Lock,
   Search,
   SlidersHorizontal,
-  Sparkles,
+  Gift,
+  LayoutGrid,
   Star,
   Waves,
   X,
@@ -25,7 +26,7 @@ import { ChainIcon, Logo, PlatformLogos, VaultMark, display, pct, subtitle, usd 
 
 type Cat = "all" | "featured" | "stable" | "lending" | "vaults" | "fixed" | "staking" | "perps";
 const CATS: { id: Cat; label: string; icon: React.ElementType; test: (o: Opportunity) => boolean }[] = [
-  { id: "all", label: "All Products", icon: Sparkles, test: () => true },
+  { id: "all", label: "All Products", icon: LayoutGrid, test: () => true },
   { id: "featured", label: "Featured", icon: Star, test: (o) => !!o.featured },
   { id: "stable", label: "Stablecoin", icon: CircleDollarSign, test: (o) => o.stablecoin },
   { id: "lending", label: "Lending", icon: Landmark, test: (o) => o.kind === "Lending" },
@@ -199,13 +200,13 @@ export function Explorer({ catalog, initialQuery = "", initialEarn }: { catalog:
             <span className="flex flex-col items-end md:hidden">
               <span className="tabular flex items-center gap-1 text-[15px] font-medium text-accent" title={o.apyNote}>
                 {pct(apyOf(o, filters.apyMode))}
-                {!!o.rewardApy && <Sparkles className="size-3.5" aria-label="Includes rewards" />}
+                {!!o.rewardApy && <Gift className="size-3.5" aria-label="Includes rewards" />}
               </span>
               <span className="tabular mt-0.5 text-xs text-muted">{usd(o.tvlUsd)}</span>
             </span>
             <span className="tabular hidden items-center gap-1 text-[15px] font-medium text-accent md:flex" title={o.apyNote}>
               {pct(apyOf(o, filters.apyMode))}
-              {!!o.rewardApy && <Sparkles className="size-3.5" aria-label="Includes rewards" />}
+              {!!o.rewardApy && <Gift className="size-3.5" aria-label="Includes rewards" />}
             </span>
             <span className="hidden md:block"><SmallStack items={managerItems(o, managerLogo)} /></span>
             <span className="tabular hidden text-sm md:block">{usd(o.tvlUsd)}</span>

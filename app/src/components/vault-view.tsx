@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Calculator, ChevronRight, Copy, ExternalLink, Info, Leaf, ShieldCheck, Sparkles, TrendingUp, Wallet } from "lucide-react";
+import { ArrowLeft, Calculator, ChevronRight, Copy, ExternalLink, Gift, Info, Leaf, Percent, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { History, Opportunity } from "@/lib/types.ts";
@@ -302,7 +302,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
                 <div className="font-medium">Yield composition</div>
                 <dl className="mt-3 grid gap-2.5">
                   {depositYield !== null && <Line icon={<Leaf className="size-3.5" />} label="Deposit yield" value={pct(depositYield)} tone="pos" />}
-                  {reward > 0 && <Line icon={<Sparkles className="size-3.5" />} label="Rewards" value={pct(reward)} />}
+                  {reward > 0 && <Line icon={<Gift className="size-3.5" />} label="Rewards" value={pct(reward)} />}
                   {feeCost !== null && perfFeeText && (
                     <Line icon={<TrendingUp className="size-3.5" />} label={`Performance fee (${perfFeeText})`} value={pct(feeCost)} />
                   )}
@@ -310,7 +310,7 @@ function Dossier({ o, deployments, history, loading }: { o: Opportunity; deploym
                 {afterFees !== null && (
                   <>
                     <div className="my-3 border-t border-line" />
-                    <Line icon={<Sparkles className="size-3.5" />} label="APY after fees" value={pct(afterFees)} strong />
+                    <Line icon={<Percent className="size-3.5" />} label="APY after fees" value={pct(afterFees)} strong />
                   </>
                 )}
                 {afterFees !== null && (

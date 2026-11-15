@@ -303,7 +303,7 @@ const SECTIONS: LegalSection[] = [
       {
         heading: "Arbitration",
         body: [
-          `If the dispute is not resolved informally, any dispute, claim or controversy arising from or relating to these Terms or the Services (including whether this section applies) will be finally resolved by confidential, binding arbitration under ${LEGAL.arbitration}. The arbitration will be conducted in English.`,
+          "If the dispute is not resolved informally, any dispute, claim or controversy arising from or relating to these Terms or the Services (including whether this section applies) will be finally resolved by confidential, binding arbitration under the rules of a recognised arbitration body in the country or region where you live, with the arbitration held there. Where arbitration is not allowed or not available under the law of your country or region, the dispute will be decided by its competent courts. The arbitration or court proceedings will be conducted in English unless the law of your country or region requires otherwise.",
         ],
       },
       {
@@ -344,7 +344,9 @@ const SECTIONS: LegalSection[] = [
     subsections: [
       {
         heading: "Governing law",
-        body: [`These Terms, and any dispute arising from them or the Services, are governed by ${LEGAL.governingLaw}, without regard to conflict-of-law rules.`],
+        body: [
+          "These Terms, and any dispute arising from them or the Services, are governed by the laws of the country or region where you live. Nothing in these Terms takes away any protection you have under the mandatory laws of your country or region.",
+        ],
       },
       {
         heading: "Entire agreement",
