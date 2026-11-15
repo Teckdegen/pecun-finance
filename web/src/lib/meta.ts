@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { SITE_NAME } from "./site";
 
-/** The share image: the Big Bend photo from the X banner, no text (public/og.jpg). */
-export const OG_IMAGE = { url: "/og.jpg", width: 1200, height: 630, alt: "PECUN Finance: put your money to work" };
+/** The share image: the X banner itself (public/og.jpg). */
+export const OG_IMAGE = { url: "/og.jpg", width: 1500, height: 500, alt: "PECUN Finance: put your money to work" };
 
 /**
  * Title, description, canonical URL and matching social tags for one page.
