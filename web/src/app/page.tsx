@@ -1,12 +1,13 @@
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { GetStarted } from "@/components/get-started";
 import { LiveVault } from "@/components/live-vault";
 import { Logo, PecunMark } from "@/components/logo";
 import { Socials } from "@/components/socials";
 import { getLive, usd, type ChainMark, type Featured } from "@/lib/live";
 import { pageMeta } from "@/lib/meta";
-import { INTEGRATIONS, PARTNERS, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, TURNKEY } from "@/lib/site";
+import { DOCS_URL, INTEGRATIONS, PARTNERS, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, TURNKEY } from "@/lib/site";
 
 export const metadata: Metadata = pageMeta({
   title: `${SITE_NAME} · ${SITE_TAGLINE}`,
@@ -159,10 +160,36 @@ function Bento({
 }
 
 function Faq() {
-  const qa: [string, string][] = [
+  const docs = (path: string, label: string) => (
+    <a href={`${DOCS_URL}${path}`} className="font-medium text-ink underline decoration-black/25 underline-offset-[3px] hover:decoration-black">
+      {label}
+    </a>
+  );
+  const qa: [string, ReactNode][] = [
     [
       "What is Pecun?",
       "One place for on-chain yield. Pecun brings together lending markets, vaults, liquid staking and fixed yield from the biggest protocols and platforms, with the live rate next to each one, so you can compare them and put your money where it earns the most.",
+    ],
+    [
+      "What is $PEN?",
+      <>
+        Pecun&apos;s token. Every $PEN trade pays a 3% tax into the Pecun Fund, and holders own a share of that Fund. The supply is 1,000,000,000,
+        and it&apos;s a fair launch with no presale. {docs("/token", "Read about $PEN")}.
+      </>,
+    ],
+    [
+      "What is the Pecun Fund?",
+      <>
+        The pool the $PEN tax pays into. It&apos;s put to work across delta-neutral strategies, yield vaults, lending, liquid staking and $PEN buybacks,
+        and its wallet and positions are public. Its value can go down as well as up. {docs("/fund", "See how the Fund works")}.
+      </>,
+    ],
+    [
+      "How do I get my share of the Fund?",
+      <>
+        Hold $PEN. Your share is your tokens divided by the $PEN in circulation, and it&apos;s paid to you automatically when you sell.{" "}
+        {docs("/fund", "Work out your share")}.
+      </>,
     ],
     [
       "Who holds my money?",

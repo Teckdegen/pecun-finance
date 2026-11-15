@@ -13,7 +13,7 @@ const QA: [string, ReactNode][] = [
   ["Can I withdraw whenever I want?", <>It depends on the vault: some pay out instantly, some use a queue, and fixed yield pays at maturity. See <A href="/withdrawals">Withdrawals</A>.</>],
   ["What does it cost?", <>A small Pecun fee on deposits and withdrawals, shown before you confirm. Network fees are currently paid by Pecun. Protocols may charge their own fees. See <A href="/fees">Fees</A>.</>],
   ["Is it risky?", <>Yes. All yield carries risk and you could lose what you deposit. See <A href="/risks">Risks</A>.</>],
-  ["Is there a Pecun token?", <>One is in the works, but nothing has launched yet. Details will appear on the <A href="/token">Pecun token</A> page first.</>],
+  ["What is $PEN?", <>The Pecun token. Every trade pays a 3% tax into the Pecun Fund, which is invested in yield vaults, and holders own a share of it. See <A href="/token">$PEN token</A>.</>],
   ["Where is Pecun available?", <>Most of the world, with some exceptions. See <A href="/availability">Availability</A>.</>],
   ["How do I contact Pecun?", <>Email <A href="mailto:contact@pecun.finance">contact@pecun.finance</A>, or find us on X and Discord.</>],
 ];

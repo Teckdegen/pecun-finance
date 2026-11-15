@@ -3,11 +3,13 @@
 import {
   ArrowDown,
   ArrowDownToLine,
+  ArrowUpRight,
   CalendarClock,
   Check,
   Clock,
   Coins,
   Leaf,
+  PieChart,
   Search,
   TrendingDown,
   TrendingUp,
@@ -15,7 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Logo, PecunMark } from "@/components/logo";
-import { PARTNERS } from "@/lib/site";
+import { DOCS_URL, PARTNERS } from "@/lib/site";
 
 export type StartRow = {
   name: string;
@@ -108,6 +110,20 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
           <Hold />
         </>
       )}
+
+      <span id="fund" className="block" />
+      <Headline z="z-[62]">
+        Every $PEN trade
+        <br />
+        grows the <FundTile /> Fund.
+      </Headline>
+      <CardScreen z="z-[64]" icon={PieChart} label="Pecun Fund">
+        <FundTaxCard />
+        <FundAllocationCard />
+        <FundShareCard />
+      </CardScreen>
+      <Hold />
+
       <span id="faq" className="block" />
       {children}
     </div>
@@ -168,15 +184,38 @@ function LogoCluster({ marks }: { marks: Mark[] }) {
   );
 }
 
-function CardScreen({ z, icon: Icon, label, children }: { z: string; icon: LucideIcon; label: string; children: ReactNode }) {
+function CardScreen({
+  z,
+  icon: Icon,
+  label,
+  link,
+  children,
+}: {
+  z: string;
+  icon: LucideIcon;
+  label: string;
+  /** Optional link shown at the right of the label, e.g. to the docs. */
+  link?: { href: string; label: string };
+  children: ReactNode;
+}) {
   return (
     <section
       className={`sticky top-0 flex h-[100dvh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
-        <span className="inline-flex h-11 items-center gap-2 self-start rounded-full bg-white px-5 text-base font-medium shadow-[0_1px_2px_rgba(10,10,10,0.04)] sm:h-12 sm:text-lg">
-          <Icon className="size-5" strokeWidth={2} /> {label}
-        </span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-base font-medium shadow-[0_1px_2px_rgba(10,10,10,0.04)] sm:h-12 sm:text-lg">
+            <Icon className="size-5" strokeWidth={2} /> {label}
+          </span>
+          {link && (
+            <a
+              href={link.href}
+              className="inline-flex h-11 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-medium text-white hover:bg-[#262626] sm:h-12 sm:px-5 sm:text-[15px]"
+            >
+              {link.label} <ArrowUpRight className="size-4" />
+            </a>
+          )}
+        </div>
         {/* Phones: swipe sideways through the cards. From md up: three across. */}
         <div className="-mx-4 mt-5 flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-8 sm:px-8 md:mx-0 md:my-auto md:grid md:max-h-[640px] md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
           {children}
@@ -507,6 +546,160 @@ function WithdrawCard({ lead }: { lead: StartRow }) {
           <span className="font-medium">{instant ? "Now, via swap" : lead.redemption || "Protocol queue"}</span>
         </div>
         <span className="mt-5 flex h-12 items-center justify-center rounded-2xl bg-ink text-[15px] font-medium text-white">Withdraw</span>
+      </div>
+    </Card>
+  );
+}
+
+/* ---------- the Pecun Fund ---------- */
+
+/** The leaf on a dark tile, sized to the headline type. */
+function FundTile() {
+  return (
+    <span
+      aria-hidden
+      className="float-soft mx-[0.04em] inline-grid size-[0.95em] place-items-center rounded-[0.26em] bg-[#122018] align-[-0.14em] shadow-[0_0.12em_0.3em_rgba(18,32,24,0.22)]"
+    >
+      <svg viewBox="12 12 40 40" className="size-[0.6em]">
+        <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+        <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+      </svg>
+    </span>
+  );
+}
+
+/** A trade receipt: $97 goes through, $3 goes to the Fund, and the Fund's tally ticks up. */
+function FundTaxCard() {
+  const ref = useRef<HTMLElement>(null);
+  const tick = useTicker(6, 1600, ref);
+  return (
+    <Card tone="lime" title="3% of every $PEN trade goes into the Fund." cardRef={ref}>
+      <div className="absolute inset-x-6 top-1/2 flex -translate-y-1/2 flex-col gap-3 lg:inset-x-9">
+        <div className="rounded-[24px] bg-white p-5 shadow-[0_18px_40px_rgba(18,32,24,0.12)]">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[#5e5e58]">$PEN trade</span>
+            <span className="tabular text-[1.6rem] font-medium leading-none tracking-[-0.04em]">$100.00</span>
+          </div>
+          <div className="mt-4 flex h-2.5 gap-[3px] overflow-hidden rounded-full">
+            <span className="h-full rounded-l-full bg-[#0a0a0a]" style={{ width: "97%" }} />
+            <span className="h-full flex-1 rounded-r-full bg-[#2f7d1c]" />
+          </div>
+          <dl className="mt-4 grid gap-2.5 text-[15px]">
+            <div className="flex items-center justify-between">
+              <dt className="flex items-center gap-2 text-[#5e5e58]">
+                <span className="size-2 rounded-full bg-[#0a0a0a]" /> Goes through
+              </dt>
+              <dd className="tabular font-medium">$97.00</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="flex items-center gap-2 text-[#5e5e58]">
+                <span className="size-2 rounded-full bg-[#2f7d1c]" /> Tax to the Fund
+              </dt>
+              <dd className="tabular font-medium text-[#2f7d1c]">$3.00</dd>
+            </div>
+          </dl>
+        </div>
+        <div className="flex items-center justify-between rounded-[20px] bg-[#122018] px-5 py-4 text-white">
+          <span className="flex items-center gap-2.5 text-[15px] text-white/75">
+            <span className="relative grid size-2.5 place-items-center">
+              <span className="absolute size-2.5 animate-ping rounded-full bg-lime/60" />
+              <span className="size-2 rounded-full bg-lime" />
+            </span>
+            Pecun Fund
+          </span>
+          <span key={tick} className="pop tabular text-[15px] font-medium text-lime">
+            +${(3 * (tick + 1)).toFixed(2)}
+          </span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+const FUND_SPLIT = [
+  { label: "Delta-neutral strategies", value: 30, color: "#ffffff" },
+  { label: "Yield vaults", value: 25, color: "#b8ff9d" },
+  { label: "$PEN buybacks", value: 15, color: "#7ed957" },
+  { label: "Lending markets", value: 15, color: "#3f9a2a" },
+  { label: "Liquid staking", value: 10, color: "#d8d2c2" },
+  { label: "Cash reserve", value: 5, color: "#6b7a64" },
+];
+
+/** The Fund's target split: a donut with a clean legend beside it. */
+function FundAllocationCard() {
+  const r = 50;
+  const c = 2 * Math.PI * r;
+  let offset = 0;
+  return (
+    <Card tone="dark" title="Put to work across vaults, hedged strategies and buybacks.">
+      <div className="absolute inset-x-6 top-1/2 flex -translate-y-1/2 flex-col items-center gap-5 lg:inset-x-9">
+        <div className="relative size-44">
+          <svg viewBox="0 0 120 120" className="size-full -rotate-90" role="img" aria-label={FUND_SPLIT.map((d) => `${d.label} ${d.value}%`).join(", ")}>
+            <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="14" />
+            {FUND_SPLIT.map((d) => {
+              const len = (d.value / 100) * c;
+              const el = (
+                <circle
+                  key={d.label}
+                  cx="60"
+                  cy="60"
+                  r={r}
+                  fill="none"
+                  stroke={d.color}
+                  strokeWidth="14"
+                  strokeLinecap="butt"
+                  strokeDasharray={`${Math.max(0, len - 2.5)} ${c}`}
+                  strokeDashoffset={-offset}
+                />
+              );
+              offset += len;
+              return el;
+            })}
+          </svg>
+          <span className="absolute inset-0 flex flex-col items-center justify-center text-center">
+            <span className="text-[1.6rem] font-medium leading-none tracking-[-0.04em] text-white">6</span>
+            <span className="mt-1 text-[12px] leading-tight text-white/55">places it works</span>
+          </span>
+        </div>
+        <ul className="w-full divide-y divide-white/[0.07] text-[14px]">
+          {FUND_SPLIT.map((d) => (
+            <li key={d.label} className="flex items-center gap-2.5 py-[7px]">
+              <span className="size-2.5 shrink-0 rounded-full" style={{ background: d.color }} />
+              <span className="min-w-0 flex-1 text-white/80">{d.label}</span>
+              <span className="tabular font-medium text-white">{d.value}%</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
+/** Your slice of the Fund, and a way into the docs. */
+function FundShareCard() {
+  return (
+    <Card tone="cream" title="Own a share. It's paid out when you sell.">
+      <div className="absolute inset-x-6 top-1/2 flex -translate-y-1/2 flex-col gap-3 lg:inset-x-9">
+        <div className="rounded-[24px] bg-white p-5 shadow-[0_16px_40px_rgba(10,10,10,0.07)]">
+          <p className="text-sm text-[#5e5e58]">You hold</p>
+          <p className="tabular mt-1 text-[1.9rem] font-medium leading-none tracking-[-0.04em]">1,000,000 PEN</p>
+          <div className="relative mt-5 h-2 rounded-full bg-[#efe9dc]">
+            <span className="absolute inset-y-0 left-0 w-[3px] rounded-full bg-[#2f7d1c]" />
+            <span className="absolute -top-1 left-0 h-4 w-px bg-[#2f7d1c]" />
+          </div>
+          <div className="mt-2 flex justify-between text-[13px] text-[#8a8a83]">
+            <span>You: 0.1% of the supply</span>
+            <span>1B PEN</span>
+          </div>
+        </div>
+        <div className="rounded-[24px] bg-[#122018] p-5 text-white">
+          <p className="text-sm text-white/55">Your share of the Fund</p>
+          <p className="tabular mt-1 text-[1.9rem] font-medium leading-none tracking-[-0.04em] text-lime">0.1%</p>
+          <p className="mt-2 text-xs text-white/45">Paid to you automatically when you sell.</p>
+        </div>
+        <a href={`${DOCS_URL}/fund`} className="flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-ink text-[15px] font-medium text-white hover:bg-[#262626]">
+          Read how it works <ArrowUpRight className="size-4" />
+        </a>
       </div>
     </Card>
   );
