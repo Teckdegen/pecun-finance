@@ -65,6 +65,8 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
   const shown = rows.slice(0, 4);
   return (
     <div>
+      {/* Anchors for the header links. Plain blocks in the flow, so a jump lands where each screen starts. */}
+      <span id="explore" className="block" />
       <Headline z="z-10">
         Find the best rate,
         <br />
@@ -79,6 +81,7 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
 
       {lead && (
         <>
+          <span id="deposit" className="block" />
           <Headline z="z-30">
             Deposit <LogoCluster marks={DEPOSIT_MARKS} />
             <br />
@@ -91,6 +94,7 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
           </CardScreen>
           <Hold />
 
+          <span id="earn" className="block" />
           <Headline z="z-50">
             Earn <LogoCluster marks={YIELD_MARKS} />
             <br />
@@ -104,6 +108,7 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
           <Hold />
         </>
       )}
+      <span id="faq" className="block" />
       {children}
     </div>
   );

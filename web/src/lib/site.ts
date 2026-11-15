@@ -1,8 +1,21 @@
-/** Where "Launch App" points. Set NEXT_PUBLIC_APP_URL in production (e.g. https://app.pecun.finance). */
-export const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+/**
+ * The app: where "Launch App" points and where the live figures come from. Production builds use
+ * https://app.pecun.finance; NEXT_PUBLIC_APP_URL overrides it. Keyed on NODE_ENV (not a Vercel-only variable)
+ * because client components read it too, and only NEXT_PUBLIC_ and NODE_ENV values reach the browser.
+ */
+export const APP_URL = (
+  process.env.NEXT_PUBLIC_APP_URL ?? (process.env.NODE_ENV === "production" ? "https://app.pecun.finance" : "http://localhost:3000")
+).replace(/\/$/, "");
 
-/** Public address of this landing page, for metadata. */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001").replace(/\/$/, "");
+/**
+ * Public address of this landing page: the base for the share image, canonical links, sitemap and robots.txt.
+ * Link previews (Telegram, X, Discord) need it to be a real public address, so on Vercel it falls back to the
+ * project's production domain rather than localhost. NEXT_PUBLIC_SITE_URL overrides it (e.g. https://pecun.finance).
+ */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3001")
+).replace(/\/$/, "");
 
 export const SITE_NAME = "PECUN Finance";
 export const SITE_TAGLINE = "Put your money to work.";

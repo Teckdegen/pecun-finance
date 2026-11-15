@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
-const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const APP_URL = (
+  process.env.NEXT_PUBLIC_APP_URL ?? (process.env.NODE_ENV === "production" ? "https://app.pecun.finance" : "http://localhost:3000")
+).replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   // The only Terms of Service live in the app; old links to this site's /terms go there.
