@@ -17,6 +17,15 @@ export const SITE_URL = (
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3001")
 ).replace(/\/$/, "");
 
+/**
+ * PECUN's social accounts, shown as icons in the header.
+ * PLACEHOLDERS: swap in the real X profile and Discord invite before launch.
+ */
+export const SOCIALS = {
+  x: "https://x.com/pecunfinance",
+  discord: "https://discord.gg/pecunfinance",
+};
+
 export const SITE_NAME = "PECUN Finance";
 export const SITE_TAGLINE = "Put your money to work.";
 export const SITE_DESCRIPTION =

@@ -1,6 +1,5 @@
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import { GetStarted } from "@/components/get-started";
 import { LiveVault } from "@/components/live-vault";
 import { Logo } from "@/components/logo";
@@ -51,17 +50,6 @@ export default async function Home() {
 
 /* ---------- pieces ---------- */
 
-function Heading({ title, muted, children }: { title: string; muted?: string; children?: ReactNode }) {
-  return (
-    <div className="mx-auto max-w-xl px-4 text-center">
-      <h2 className="text-[1.6rem] font-medium leading-[1.15] tracking-[-0.03em] md:text-[2rem]">
-        {title}
-        {muted && <span className="block text-muted">{muted}</span>}
-      </h2>
-      {children && <p className="mx-auto mt-4 max-w-md font-sans text-sm leading-relaxed text-muted">{children}</p>}
-    </div>
-  );
-}
 
 /* ---------- hero (light) ---------- */
 
@@ -171,29 +159,60 @@ function Bento({
 
 function Faq() {
   const qa: [string, string][] = [
-    ["What is PECUN?", "An app that finds yield across EVM chains, Solana, Sui and Hyperliquid, from lending markets and vaults to liquid staking and fixed yield, and lets you deposit and withdraw in a few taps."],
-    ["Does PECUN hold my money?", "No. Your funds go from your own self-custodial wallet straight into the protocol you choose. PECUN never holds your keys or your deposits."],
-    ["What does it cost?", "PECUN charges a small fee on deposits and withdrawals, always shown before you confirm. Network fees are currently paid by PECUN. Protocols may charge their own fees."],
-    ["Is it risky?", "Yes. All yield carries risk, including smart-contract failures, depegs and market losses, and you could lose what you deposit. Read the Risk Disclosure in the app first."],
-    ["Where is PECUN available?", "Not in some regions, including the United States, the United Kingdom, Ontario and sanctioned countries. The full list is in the Terms of Service in the app."],
+    [
+      "What is PECUN?",
+      "One place for on-chain yield. PECUN lists lending markets, vaults, liquid staking and fixed yield across Ethereum and other EVM chains, Solana, Sui and Hyperliquid, with the live rate next to each one, so you can compare them and put your money where it earns the most.",
+    ],
+    [
+      "Who holds my money?",
+      "You do. Your PECUN wallet is self-custodial and runs on Turnkey, so only you can approve a transaction. Deposits go from your wallet straight into the protocol you pick. PECUN never holds your funds and can't move them.",
+    ],
+    [
+      "Where do the rates come from?",
+      "From each protocol, live. You can compare vaults by their 7-day or 30-day APY, and where a vault charges a performance fee you see the APY after that fee. Rates move all the time, so treat them as today's figure, not a promise.",
+    ],
+    [
+      "Which vaults does PECUN list?",
+      "Only ones PECUN can actually deposit into for you. If a protocol closes a vault, it's marked as closed and you can still withdraw from it, but no new deposits go in.",
+    ],
+    [
+      "Can I withdraw whenever I want?",
+      "That depends on the vault. Some pay out instantly, some go through the protocol's withdrawal queue, and fixed-yield positions pay out at maturity. Each vault shows how withdrawals work before you deposit.",
+    ],
+    [
+      "What does it cost?",
+      "PECUN charges a small fee on deposits and withdrawals, always shown before you confirm. Network fees are currently paid by PECUN. Protocols may charge their own fees on top, which are shown on the vault.",
+    ],
+    [
+      "Is it risky?",
+      "Yes. All yield carries risk, including smart-contract failures, depegs and market losses, and you could lose what you deposit. Read the Risk Disclosure in the app before you start.",
+    ],
+    [
+      "Where is PECUN available?",
+      "Most of the world, but not everywhere. PECUN isn't available in some regions, including the United States, the United Kingdom, Ontario and sanctioned countries. The full list is in the Terms of Service in the app.",
+    ],
   ];
   return (
-    <section className="sticky top-0 z-[70] flex min-h-[100dvh] flex-col justify-center rounded-t-[2rem] bg-white px-4 pt-16 pb-12 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform sm:pt-[4.5rem]">
-      <Heading title="Questions," muted="answered." />
-      <div className="mx-auto mt-10 max-w-2xl divide-y divide-line border-y border-line">
-        {qa.map(([q, a]) => (
-          <details key={q} className="group py-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-medium [&::-webkit-details-marker]:hidden">
-              {q}
-              <span className="grid size-7 shrink-0 place-items-center rounded-full border border-line text-muted transition group-open:rotate-45">
-                <Plus className="size-3.5" />
-              </span>
-            </summary>
-            <p className="mt-3 pr-10 font-sans text-sm leading-relaxed text-muted">{a}</p>
-          </details>
-        ))}
+    <section className="sticky top-0 z-[70] flex min-h-[100dvh] flex-col justify-center rounded-t-[2rem] bg-white px-4 pt-24 pb-16 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform sm:px-8 md:pt-28 md:pb-24">
+      <div className="mx-auto w-full max-w-4xl">
+        <h2 className="text-center text-[2.6rem] font-medium leading-[1.04] tracking-[-0.045em] sm:text-[3.5rem] lg:text-[4.5rem]">
+          Questions,
+          <span className="block text-[#8a8a83]">answered.</span>
+        </h2>
+        <div className="mt-12 divide-y divide-line border-y border-line md:mt-16">
+          {qa.map(([q, a]) => (
+            <details key={q} className="group py-6 md:py-8">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-[1.25rem] font-medium leading-snug tracking-[-0.02em] md:text-[1.6rem] [&::-webkit-details-marker]:hidden">
+                {q}
+                <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line text-[#5e5e58] transition group-open:rotate-45 group-open:border-ink group-open:bg-ink group-open:text-white md:size-12">
+                  <Plus className="size-5" />
+                </span>
+              </summary>
+              <p className="mt-4 max-w-3xl pr-12 font-sans text-base leading-relaxed text-[#5e5e58] md:mt-5 md:pr-16 md:text-lg">{a}</p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
-
