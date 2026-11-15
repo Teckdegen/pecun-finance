@@ -147,3 +147,17 @@ body {
 .float {
   animation: float 3.2s ease-in-out infinite;
 }
+
+/* Gentle bob for logo clusters inside headlines. */
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.05em);
+  }
+}
+.float-soft {
+  animation: float-soft 3.2s ease-in-out infinite;
+}

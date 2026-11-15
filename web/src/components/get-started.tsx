@@ -52,7 +52,7 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
       <Headline z="z-10">
         Find the best rate,
         <br />
-        <LogoCluster /> in one list.
+        <LogoCluster marks={PLATFORM_MARKS} /> in one list.
       </Headline>
       <CardScreen z="z-20" icon={Search} label="Explore">
         <PlatformsCard rows={shown} />
@@ -64,12 +64,9 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
       {lead && (
         <>
           <Headline z="z-30">
-            Deposit in
+            Deposit <LogoCluster marks={DEPOSIT_MARKS} />
             <br />
-            <Tile className="bg-[#122018] text-lime">
-              <ArrowDown className="size-[0.6em]" strokeWidth={2.4} />
-            </Tile>{" "}
-            one tap.
+            in one tap.
           </Headline>
           <CardScreen z="z-40" icon={ArrowDownToLine} label="Deposit">
             <DepositCard lead={lead} />
@@ -79,10 +76,7 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
           <Hold />
 
           <Headline z="z-50">
-            Earn{" "}
-            <Tile className="bg-lime text-ink">
-              <span className="text-[0.62em] leading-none tracking-[-0.04em]">P</span>
-            </Tile>
+            Earn <LogoCluster marks={YIELD_MARKS} />
             <br />
             on every deposit.
           </Headline>
@@ -116,33 +110,37 @@ function Headline({ z, children }: { z: string; children: ReactNode }) {
   );
 }
 
-/** A tilted tile that sits inside a headline line, sized to the type. */
-function Tile({ className, children }: { className: string; children: ReactNode }) {
-  return (
-    <span
-      aria-hidden
-      className={`float mx-[0.04em] inline-grid size-[0.95em] place-items-center rounded-[0.26em] align-[-0.14em] shadow-[0_0.12em_0.3em_rgba(18,32,24,0.22)] ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
+const tw = (path: string) => `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${path}/logo.png`;
+type Mark = { name: string; logo: string };
+const pick = (names: string[]): Mark[] => names.map((n) => PARTNERS.find((p) => p.name === n)).filter((p): p is Mark => !!p);
 
-/** Three well-known platform logos, overlapping, sized to the type. */
-const CLUSTER = ["Aave", "Lido", "Pendle"].map((name) => PARTNERS.find((p) => p.name === name)).filter((p) => !!p);
+/** Well-known platforms, for "find". */
+const PLATFORM_MARKS = pick(["Aave", "Lido", "Pendle"]);
+/** What you deposit with. */
+const DEPOSIT_MARKS: Mark[] = [
+  { name: "USDG", logo: tw("ethereum/assets/0xe343167631d89B6Ffc58B88d6b7fB0228795491D") },
+  { name: "ETH", logo: tw("ethereum/info") },
+];
+/** The vault tokens you hold while earning: Lido stETH, Ethena sUSDe, JitoSOL. */
+const YIELD_MARKS: Mark[] = [
+  { name: "stETH", logo: tw("ethereum/assets/0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84") },
+  { name: "sUSDe", logo: tw("ethereum/assets/0x9D39A5DE30e57443BfF2A8307A4256c8797A3497") },
+  { name: "JitoSOL", logo: tw("solana/assets/J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn") },
+];
 
-function LogoCluster() {
+/** Logos overlapping inside a headline line, sized to the type and bobbing gently. */
+function LogoCluster({ marks }: { marks: Mark[] }) {
   return (
-    <span aria-hidden className="mx-[0.04em] inline-flex align-[-0.12em]">
-      {CLUSTER.map((r, i) => (
+    <span aria-hidden className="float-soft mx-[0.04em] inline-flex align-[-0.12em]">
+      {marks.map((m, i) => (
         // eslint-disable-next-line @next/next/no-img-element -- logos come from many hosts
         <img
-          key={r.name}
-          src={r.logo}
+          key={m.name}
+          src={m.logo}
           alt=""
           referrerPolicy="no-referrer"
           className={`size-[0.9em] rounded-full bg-white object-cover ring-[0.06em] ring-[#f5f8ef] ${i ? "-ml-[0.28em]" : ""}`}
-          style={{ transform: `rotate(${[-8, 4, 10][i]}deg)` }}
+          style={{ transform: `rotate(${[-8, 4, 10][i % 3]}deg)` }}
         />
       ))}
     </span>
