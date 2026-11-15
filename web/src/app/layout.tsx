@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { OG_IMAGE } from "@/lib/meta";
 import localFont from "next/font/local";
 import { Nav } from "@/components/nav";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
@@ -30,9 +31,9 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} · ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     url: "/",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "PECUN Finance: put your money to work across EVM, Solana, Sui and Hyperliquid" }],
+    images: [OG_IMAGE],
   },
-  twitter: { card: "summary_large_image", title: `${SITE_NAME} · ${SITE_TAGLINE}`, description: SITE_DESCRIPTION },
+  twitter: { card: "summary_large_image", title: `${SITE_NAME} · ${SITE_TAGLINE}`, description: SITE_DESCRIPTION, images: [OG_IMAGE.url] },
   robots: { index: true, follow: true },
 };
 

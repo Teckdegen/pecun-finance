@@ -6,7 +6,8 @@
 <!--
   Photo: Mick Haupt on Unsplash (Big Bend, Texas), used under the Unsplash License.
   https://unsplash.com/photos/ELuTbEVQdBc
-  Query params: ?y=<0-100> moves the photo up and down; ?field=<px> sets where the motion blur starts.
+  Query params: ?y=<0-100> moves the photo up and down; ?field=<px> sets where the motion blur starts;
+  ?w=&h= set the canvas size (default 1500x500, the X banner); ?text=0 leaves the words off (share images).
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500&display=block" rel="stylesheet" />
@@ -21,7 +22,7 @@
 </style>
 </head>
 <body>
-<svg width="1500" height="500" viewBox="0 0 1500 500">
+<svg id="art" width="1500" height="500" viewBox="0 0 1500 500">
   <defs>
     <!-- Warm, olive, slightly muted: pulls the photo toward PECUN's greens without going neon. -->
     <filter id="grade" color-interpolation-filters="sRGB">
@@ -64,24 +65,36 @@
   <rect width="1500" height="240" fill="url(#skyWash)" />
 </svg>
 
-<div class="copy">Put your money<br />to work.</div>
+<div class="copy" id="copy">Put your money<br />to work.</div>
 
 <script>
   const q = new URLSearchParams(location.search);
+  const W = Number(q.get("w") ?? 1500), H = Number(q.get("h") ?? 500);
+  document.documentElement.style.width = document.body.style.width = W + "px";
+  document.documentElement.style.height = document.body.style.height = H + "px";
+  const art = document.getElementById("art");
+  art.setAttribute("width", W); art.setAttribute("height", H); art.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  art.querySelectorAll(":scope > rect").forEach((r) => r.setAttribute("width", W));
+  art.querySelector(":scope > rect:last-of-type").setAttribute("height", Math.round(H * 0.48));
+  art.querySelector(":scope > rect:first-of-type").setAttribute("height", H);
+  if (q.get("text") === "0") document.getElementById("copy").remove();
   const img = new Image();
   img.onload = () => {
-    const h = (1500 * img.naturalHeight) / img.naturalWidth;
-    const y = -(h - 500) * (Number(q.get("y") ?? 45) / 100);
-    for (const id of ["sharp", "blur"]) {
-      const el = document.getElementById(id);
+    const h = (W * img.naturalHeight) / img.naturalWidth;
+    const y = -(h - H) * (Number(q.get("y") ?? 45) / 100);
+    const sharp = document.getElementById("sharp"), blur = document.getElementById("blur");
+    sharp.setAttribute("width", W);
+    blur.setAttribute("x", -W * 0.13); blur.setAttribute("width", W * 1.26);
+    for (const el of [sharp, blur]) {
       el.setAttribute("height", h);
       el.setAttribute("y", y);
       el.setAttribute("preserveAspectRatio", "none");
     }
     const field = Number(q.get("field") ?? 210);
     const m = document.getElementById("maskRect");
+    m.setAttribute("width", W);
     m.setAttribute("y", field - 40);
-    m.setAttribute("height", 540 - field);
+    m.setAttribute("height", H + 40 - field);
     document.title = "ready";
   };
   img.src = "big-bend-mick-haupt-unsplash.jpg";

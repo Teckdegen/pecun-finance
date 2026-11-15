@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import { SITE_NAME } from "./site";
 
-const OG_IMAGE = {
-  url: "/opengraph-image",
-  width: 1200,
-  height: 630,
-  alt: "PECUN Finance: put your money to work across EVM, Solana, Sui and Hyperliquid",
-};
+/** The share image: the Big Bend photo from the X banner, no text (public/og.jpg). */
+export const OG_IMAGE = { url: "/og.jpg", width: 1200, height: 630, alt: "PECUN Finance: put your money to work" };
 
 /**
  * Title, description, canonical URL and matching social tags for one page.

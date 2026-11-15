@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { OG_IMAGE } from "@/lib/meta";
 import localFont from "next/font/local";
 import { AppShell } from "@/components/shell";
 import { CookieBanner } from "@/components/cookie-banner";
@@ -33,8 +34,8 @@ export const metadata: Metadata = {
   title: { default: `${SITE_NAME} · ${SITE_TAGLINE}`, template: "%s · PECUN" },
   description: SITE_DESCRIPTION,
   applicationName: "PECUN",
-  openGraph: { type: "website", siteName: SITE_NAME, title: SITE_NAME, description: SITE_DESCRIPTION, url: "/" },
-  twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESCRIPTION },
+  openGraph: { type: "website", siteName: SITE_NAME, title: SITE_NAME, description: SITE_DESCRIPTION, url: "/", images: [OG_IMAGE] },
+  twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESCRIPTION, images: [OG_IMAGE.url] },
   appleWebApp: { capable: true, title: "PECUN", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },
 };
