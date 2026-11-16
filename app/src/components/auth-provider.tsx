@@ -154,7 +154,8 @@ function DemoAuth({ children }: { children: ReactNode }) {
       signOut,
       // A fixed demo address so the wallet screens can be tried; nothing is ever sent from it.
       evmAddress: account ? "0x000000000000000000000000000000000000de40" : undefined,
-      sendEvmTransaction: async () => (await wait(1200), { ok: false, error: "Demo mode: nothing is sent. Connect Turnkey to send for real." }),
+      // Demo: pretends to send so the success screen can be seen. Nothing is signed or broadcast.
+      sendEvmTransaction: async () => (await wait(1400), { ok: true, hash: `0x${"de".repeat(32)}` as `0x${string}` }),
     }),
     [account, signOut],
   );

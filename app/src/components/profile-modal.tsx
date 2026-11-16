@@ -142,7 +142,7 @@ function Home({ account, address, bal, balErr, onClose, onSignOut, go }: {
       {/* Tokens held on Robinhood Chain, always listed, even at zero. */}
       <div className="mt-6">
         <p className="font-sans text-xs text-white/45">Balances</p>
-        <ul className="mt-2 divide-y divide-white/[0.06] rounded-2xl bg-white/[0.04]">
+        <ul className="mt-1 divide-y divide-white/[0.06]">
           <TokenRow logo={USDG_LOGO} symbol="USDG" name="Global Dollar" amount={bal?.usdg ?? 0} usd={bal?.usdg ?? 0} digits={2} />
           <TokenRow logo={ETH_LOGO} symbol="ETH" name="Network fees" amount={bal?.eth ?? 0} usd={(bal?.eth ?? 0) * (bal?.ethPrice ?? 0)} digits={6} />
         </ul>
@@ -168,7 +168,7 @@ function Avatar() {
 
 function TokenRow({ logo, symbol, name, amount, usd, digits }: { logo: string; symbol: string; name: string; amount: number; usd: number; digits: number }) {
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
+    <li className="flex items-center gap-3 py-3.5">
       <TokenIcon logo={logo} />
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-medium">{symbol}</span>
@@ -188,7 +188,7 @@ function TokenIcon({ logo, size = 36 }: { logo: string; size?: number }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={logo} alt="" className="rounded-full bg-white" style={{ width: size, height: size }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ROBINHOOD_LOGO} alt="" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-white ring-2 ring-[#16171a]" />
+      <img src={ROBINHOOD_LOGO} alt="" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-white ring-2 ring-[#121315]" />
     </span>
   );
 }
@@ -337,11 +337,20 @@ function SendView({ from, bal, live, close, back, onSent }: {
   const tokens = inUsd ? (price > 0 ? n / price : 0) : n;
   const usd = inUsd ? n : n * price;
   const tokenStr = tokens > 0 ? tokens.toFixed(Math.min(decimals, token === "USDG" ? 6 : 8)).replace(/\.?0+$/, "") : "0";
-  const amountOk = tokens > 0 && tokens <= balance && (!inUsd || price > 0);
+  // Demo mode holds nothing, so it skips the balance check to let the whole flow be tried.
+  const tooMuch = live && tokens > balance;
+  const amountOk = tokens > 0 && !tooMuch && (!inUsd || price > 0);
   const toOk = isAddress(to) && to.toLowerCase() !== from.toLowerCase();
 
   const review = async () => {
     setError("");
+    if (!live) {
+      // Demo: no real transaction is built.
+      setUnsigned("demo");
+      setFee(0.000002);
+      setStage("review");
+      return;
+    }
     try {
       const build = token === "USDG" ? buildUsdgTransfer : buildEthTransfer;
       const t = await build(from, to.trim() as `0x${string}`, tokenStr);
@@ -364,7 +373,8 @@ function SendView({ from, bal, live, close, back, onSent }: {
       return;
     }
     setHash(r.hash);
-    const ok = await waitForTx(r.hash).catch(() => true);
+    // Demo mode has no real transaction to wait for.
+    const ok = live ? await waitForTx(r.hash).catch(() => true) : true;
     if (!ok) {
       setError("The transfer failed on-chain. Nothing was moved.");
       setStage("review");
@@ -391,13 +401,37 @@ function SendView({ from, bal, live, close, back, onSent }: {
     return (
       <>
         {title}
-        <div className="py-6 text-center" role="status">
-          <span className="mx-auto grid size-14 place-items-center rounded-full bg-accent text-on-accent"><Check className="size-7" strokeWidth={2.5} /></span>
-          <h3 className="mt-5 text-[1.5rem] font-medium tracking-[-0.03em]">Sent</h3>
-          <p className="mt-1.5 font-sans text-sm text-white/55">{tokenStr} {token} to {shortAddress(to)}</p>
-          <a href={`${ROBINHOOD_EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 font-sans text-sm text-accent hover:underline">
-            View on explorer <ExternalLink className="size-3.5" />
-          </a>
+        <div className="pb-2 pt-8 text-center" role="status">
+          <span className="relative mx-auto grid size-20 place-items-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-accent/25 [animation-iteration-count:2]" />
+            <span className="relative grid size-20 place-items-center rounded-full bg-accent text-on-accent shadow-[0_0_40px_rgba(184,255,157,0.35)]">
+              <Check className="size-10" strokeWidth={2.75} />
+            </span>
+          </span>
+          <h3 className="mt-6 text-[1.7rem] font-medium tracking-[-0.03em]">Sent successfully</h3>
+          <p className="tabular mt-3 text-[2.2rem] font-medium leading-none tracking-[-0.04em]">${money(usd)}</p>
+          <p className="tabular mt-2 font-sans text-sm text-white/55">
+            {tokenStr} {token} to {shortAddress(to)}
+          </p>
+          <dl className="mt-6 divide-y divide-white/10 rounded-2xl border border-white/10 text-left font-sans text-sm">
+            {[
+              ["Status", "Confirmed"],
+              ["Network", "Robinhood Chain"],
+              ["Transaction", shortAddress(hash)],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between px-4 py-3">
+                <dt className="text-white/50">{k}</dt>
+                <dd className={`tabular ${k === "Status" ? "text-accent" : "text-white"}`}>{v}</dd>
+              </div>
+            ))}
+          </dl>
+          {live ? (
+            <a href={`${ROBINHOOD_EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 font-sans text-sm text-accent hover:underline">
+              View on explorer <ExternalLink className="size-3.5" />
+            </a>
+          ) : (
+            <p className="mt-4 font-sans text-xs text-white/40">Demo mode: nothing was actually sent.</p>
+          )}
           <button type="button" onClick={back} className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] hover:bg-white">
             Done
           </button>
@@ -427,7 +461,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
             </div>
           ))}
         </dl>
-        {bal && fee != null && bal.eth < fee + (token === "ETH" ? tokens : 0) && (
+        {live && bal && fee != null && bal.eth < fee + (token === "ETH" ? tokens : 0) && (
           <p className="mt-3 font-sans text-xs text-amber">You need a little more ETH on Robinhood Chain for the network fee.</p>
         )}
         <button
@@ -533,7 +567,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
       </label>
       {to && !isAddress(to) && <p className="mt-2 px-1 font-sans text-xs text-neg">That isn&apos;t a valid address.</p>}
       {isAddress(to) && !toOk && <p className="mt-2 px-1 font-sans text-xs text-neg">That&apos;s your own address.</p>}
-      {tokens > balance && <p className="mt-2 px-1 font-sans text-xs text-neg">That&apos;s more {token} than you have.</p>}
+      {tooMuch && <p className="mt-2 px-1 font-sans text-xs text-neg">That&apos;s more {token} than you have.</p>}
 
       <button
         type="button"
