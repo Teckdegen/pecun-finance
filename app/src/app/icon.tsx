@@ -1,10 +1,16 @@
 import { ImageResponse } from "next/og";
-import { Icon } from "@/components/app-icon";
+import { Mark } from "@/components/mark";
 
-export const size = { width: 32, height: 32 };
-export const contentType = "image/png";
+/** 16, 32 and 192px favicons. Next adds each one to the document head. */
+export function generateImageMetadata() {
+  return [16, 32, 192].map((size) => ({
+    id: String(size),
+    size: { width: size, height: size },
+    contentType: "image/png",
+  }));
+}
 
-/** Sharp PNG favicon for browsers that prefer it over favicon.ico. */
-export default function AppIcon() {
-  return new ImageResponse(<Icon size={32} />, size);
+export default async function Icon({ id }: { id: Promise<string> }) {
+  const size = Number(await id) || 32;
+  return new ImageResponse(<Mark size={size} />, { width: size, height: size });
 }
