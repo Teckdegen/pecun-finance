@@ -16,11 +16,12 @@ import Link from "next/link";
 import { DOCS_URL } from "@/lib/site";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { SignInModal } from "./sign-in-modal";
 import { PlatformLogos } from "./ui";
 
 /* ---------- shell state: the drawer is for phone and tablet. PC keeps the sidebar open. ---------- */
 
-type ShellCtx = { menuOpen: boolean; toggle: () => void; closeMenu: () => void };
+type ShellCtx = { menuOpen: boolean; toggle: () => void; closeMenu: () => void; signInOpen: boolean; openSignIn: () => void; closeSignIn: () => void };
 const Ctx = createContext<ShellCtx | null>(null);
 const useShell = () => useContext(Ctx)!;
 
@@ -28,8 +29,11 @@ function ShellState({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const toggle = useCallback(() => setMenuOpen((o) => !o), []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const openSignIn = useCallback(() => (setMenuOpen(false), setSignInOpen(true)), []);
+  const closeSignIn = useCallback(() => setSignInOpen(false), []);
 
-  return <Ctx.Provider value={{ menuOpen, toggle, closeMenu }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ menuOpen, toggle, closeMenu, signInOpen, openSignIn, closeSignIn }}>{children}</Ctx.Provider>;
 }
 
 /* ---------- navigation ---------- */
@@ -85,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function Frame({ children }: { children: ReactNode }) {
-  const { menuOpen, closeMenu } = useShell();
+  const { menuOpen, closeMenu, signInOpen, closeSignIn } = useShell();
   const path = usePathname();
   const onVault = path.startsWith("/earn");
 
@@ -108,6 +112,7 @@ function Frame({ children }: { children: ReactNode }) {
           </main>
         </div>
       </div>
+      <SignInModal open={signInOpen} onClose={closeSignIn} />
     </div>
   );
 }
@@ -182,7 +187,7 @@ function Sidebar() {
 /* ---------- header ---------- */
 
 function Header() {
-  const { toggle, menuOpen } = useShell();
+  const { toggle, menuOpen, openSignIn } = useShell();
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
@@ -197,12 +202,13 @@ function Header() {
         <span className="hidden h-5 w-px shrink-0 bg-line lg:block" />
         <Crumb />
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            href="/portfolio"
+          <button
+            type="button"
+            onClick={openSignIn}
             className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent hover:bg-accent-deep"
           >
             Sign up / Sign in
-          </Link>
+          </button>
         </div>
       </div>
     </header>
