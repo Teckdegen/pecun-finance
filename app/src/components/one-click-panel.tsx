@@ -16,7 +16,7 @@ type Run = { side: Side; steps: { id: string; label: string; status: StepStatus;
  * amount, the minimum after slippage, price impact, fees and time.
  */
 export function OneClickPanel({ o }: { o: Opportunity }) {
-  const { signedIn, live, evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, signAccountsRequest } = useAuth();
+  const { signedIn, live, evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, suiAddress, sendSuiTransaction, signAccountsRequest } = useAuth();
   const adapter = useMemo(() => adapterFor(o)!, [o]);
   const [side, setSide] = useState<Side>("add");
   const [amount, setAmount] = useState("");
@@ -31,11 +31,11 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
     if (!evmAddress) return;
     const [b, p] = await Promise.all([
       getBalances(evmAddress).catch(() => null),
-      adapter.position({ address: evmAddress, solanaAddress }).catch(() => null),
+      adapter.position({ address: evmAddress, solanaAddress, suiAddress }).catch(() => null),
     ]);
     if (b) setUsdg(b.usdg);
     if (p !== null) setPos(p);
-  }, [evmAddress, solanaAddress, adapter]);
+  }, [evmAddress, solanaAddress, suiAddress, adapter]);
   useEffect(() => void load(), [load]);
 
   const n = Number(amount) || 0;
@@ -47,13 +47,13 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
   useEffect(() => {
     if (!evmAddress || !(n > 0) || run) return;
     const t = setTimeout(() => {
-      const who = { address: evmAddress, solanaAddress };
+      const who = { address: evmAddress, solanaAddress, suiAddress };
       (side === "add" ? adapter.previewDeposit(who, amount) : adapter.previewWithdraw(who, amount))
         .then((p) => setPreview({ key, p }))
         .catch((e) => setPreview({ key, error: e instanceof Error ? e.message : String(e) }));
     }, 500);
     return () => clearTimeout(t);
-  }, [key, n, side, amount, evmAddress, solanaAddress, adapter, run]);
+  }, [key, n, side, amount, evmAddress, solanaAddress, suiAddress, adapter, run]);
   const shown = preview?.key === key ? preview : null;
 
   const go = async () => {
@@ -62,7 +62,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
     setRun({ side, steps: template.map((s) => ({ ...s, status: "pending" })) });
     const on = (id: string, status: StepStatus, detail?: string) =>
       setRun((r) => (r ? { ...r, steps: r.steps.map((s) => (s.id === id ? { ...s, status, detail: detail ?? s.detail } : s)) } : r));
-    const signer = { address: evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, signAccountsRequest };
+    const signer = { address: evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, suiAddress, sendSuiTransaction, signAccountsRequest };
     try {
       const result =
         side === "add" ? await adapter.deposit(signer, amount, on) : await adapter.withdraw(signer, n >= (pos ?? 0) - 1e-9 ? "max" : amount, on);
@@ -172,7 +172,7 @@ function QuoteView({ q }: { q: { p?: Preview; error?: string } | null }) {
       {rows.map(([k, v]) => (
         <div key={k} className="flex justify-between gap-3">
           <dt className="text-muted">{k}</dt>
-          <dd className={k === "Price impact" && Math.abs(p.impactPct) > 1 ? "text-red-300" : "text-ink"}>{v}</dd>
+          <dd className={k === "Price impact" && p.impactPct < -1 ? "text-red-300" : "text-ink"}>{v}</dd>
         </div>
       ))}
     </dl>

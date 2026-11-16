@@ -2,6 +2,8 @@
 
 import { createPublicClient, encodeFunctionData, erc20Abi, formatUnits, http, parseAbi, parseUnits, serializeTransaction, type Address, type Hex } from "viem";
 import { base64ToHex, confirmSolana, createTokenAccountTx, hasTokenAccount, lamports, SOLANA_CHAIN_ID, SOLANA_RPC, splBalance, splDecimals, txFromInstructions } from "./solana";
+import { coinWithBalance, Transaction as SuiTx } from "@mysten/sui/transactions";
+import { SUI_CHAIN_ID, SUI_TYPE, suiBalance } from "./sui";
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_RPC, USDG, USDG_DECIMALS } from "./wallet";
 
 /**
@@ -29,8 +31,11 @@ export type Signer = {
   solanaAddress?: string;
   sendEvmTransaction: (unsigned: string, rpcUrl: string) => Promise<{ ok: true; hash: Hex } | { ok: false; error: string }>;
   sendSolanaTransaction: (unsignedHex: string, rpcUrl: string) => Promise<{ ok: true; signature: string } | { ok: false; error: string }>;
+  suiAddress?: string;
+  sendSuiTransaction: (tx: SuiTx | string) => Promise<{ ok: true; digest: string } | { ok: false; error: string }>;
   signAccountsRequest: () => Promise<unknown | null>;
 };
+type Who = Pick<Signer, "address" | "solanaAddress" | "suiAddress">;
 
 export type StepStatus = "pending" | "running" | "done" | "skipped" | "failed";
 export type Progress = (id: string, status: StepStatus, detail?: string) => void;
@@ -52,9 +57,9 @@ export type Adapter = {
   positionSymbol: string;
   depositSteps: Step[];
   withdrawSteps: Step[];
-  position: (s: Pick<Signer, "address" | "solanaAddress">) => Promise<number>;
-  previewDeposit: (s: Pick<Signer, "address" | "solanaAddress">, usdg: string) => Promise<Preview>;
-  previewWithdraw: (s: Pick<Signer, "address" | "solanaAddress">, amount: string) => Promise<Preview>;
+  position: (s: Who) => Promise<number>;
+  previewDeposit: (s: Who, usdg: string) => Promise<Preview>;
+  previewWithdraw: (s: Who, amount: string) => Promise<Preview>;
   deposit: (s: Signer, usdg: string, on: Progress) => Promise<string>;
   withdraw: (s: Signer, amount: string | "max", on: Progress) => Promise<string>;
 };
@@ -216,12 +221,20 @@ async function relay(s: Signer, p: RelayLeg) {
   throw new ExecError("The transfer is taking longer than usual. It will still arrive; check your balance in a few minutes.");
 }
 
-/** Waits until a balance rises above `before`; returns how much arrived. */
-async function waitForArrival(read: () => Promise<bigint>, before: bigint): Promise<bigint> {
-  for (let i = 0; i < 60; i++) {
-    const now = await read();
+/**
+ * Waits until a balance rises above `before`; returns how much arrived. `failed` (optional) reports a bridge failure
+ * early instead of waiting out the timeout.
+ */
+async function waitForArrival(read: () => Promise<bigint>, before: bigint, timeoutMs = 120_000, failed?: () => Promise<string | null>): Promise<bigint> {
+  const end = Date.now() + timeoutMs;
+  for (let i = 0; Date.now() < end; i++) {
+    const now = await read().catch(() => before);
     if (now > before) return now - before;
-    await sleep(2000);
+    if (failed && i % 3 === 2) {
+      const why = await failed().catch(() => null);
+      if (why) throw new ExecError(why);
+    }
+    await sleep(3000);
   }
   throw new ExecError("Funds haven't arrived yet. They will; check again in a few minutes.");
 }
@@ -471,6 +484,280 @@ function jupiterLend(jlToken: string, assetSymbol: string): Adapter {
   };
 }
 
+/* ---------------- Sui: LI.FI legs (Base USDC <-> Sui, via Mayan) ---------------- */
+
+const LIFI = "https://li.quest/v1";
+const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address;
+/** Gas a Sui transaction may use (MIST). The gas tank tops up when the user has less. */
+const SUI_GAS = BigInt(20_000_000); // 0.02 SUI
+
+type LifiLeg = { fromChain: number; toChain: number; fromToken: string; toToken: string; amount: bigint; from: string; to: string };
+type LifiFee = { amountUSD?: string; included?: boolean };
+type LifiRoute = {
+  toAmount: string;
+  toAmountMin: string;
+  fromAmountUSD?: string;
+  toAmountUSD?: string;
+  toToken: { symbol: string; decimals: number };
+  steps: { estimate: { executionDuration?: number; feeCosts?: LifiFee[]; gasCosts?: LifiFee[] }; action?: { slippage?: number } }[];
+};
+
+/** Best route (price only; nothing is built), so previews work before the user has gas on the far side. */
+async function lifiRoute(p: LifiLeg): Promise<LifiRoute> {
+  const res = await fetch(`${LIFI}/advanced/routes`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      fromChainId: p.fromChain,
+      toChainId: p.toChain,
+      fromTokenAddress: p.fromToken,
+      toTokenAddress: p.toToken,
+      fromAmount: p.amount.toString(),
+      fromAddress: p.from,
+      toAddress: p.to,
+      options: { order: "CHEAPEST" },
+    }),
+  });
+  const j = (await res.json().catch(() => ({}))) as { routes?: LifiRoute[]; message?: string };
+  if (!j.routes?.length) throw new ExecError(`No route right now${j.message ? `: ${j.message}` : ""}.`);
+  return j.routes[0];
+}
+
+type LifiQuote = { transactionRequest: { to?: Address; data: string; value?: string }; estimate: { approvalAddress?: Address; toAmount: string } };
+
+/** A ready-to-sign transaction for one leg (EVM call data, or base64 Sui transaction bytes). */
+async function lifiQuote(p: LifiLeg): Promise<LifiQuote> {
+  const q = new URLSearchParams({
+    fromChain: String(p.fromChain),
+    toChain: String(p.toChain),
+    fromToken: p.fromToken,
+    toToken: p.toToken,
+    fromAmount: p.amount.toString(),
+    fromAddress: p.from,
+    toAddress: p.to,
+  });
+  const res = await fetch(`${LIFI}/quote?${q}`);
+  const j = (await res.json().catch(() => ({}))) as Partial<LifiQuote> & { message?: string };
+  if (!j.transactionRequest?.data) throw new ExecError(`Couldn't build the transfer${j.message ? `: ${j.message}` : ""}.`);
+  return j as LifiQuote;
+}
+
+/** LI.FI's view of a transfer: a message if it failed or was refunded, else null. */
+const lifiFailed = (txHash: string, fromChain: number, toChain: number) => async () => {
+  const st = (await fetch(`${LIFI}/status?${new URLSearchParams({ txHash, fromChain: String(fromChain), toChain: String(toChain) })}`).then((r) => r.json())) as {
+    status?: string;
+    substatus?: string;
+  };
+  if (st.status === "FAILED") return "The transfer failed. Any funds taken are refunded by the bridge.";
+  if (st.status === "DONE" && st.substatus === "REFUNDED") return "The transfer was refunded instead of completing.";
+  return null;
+};
+
+const usd = (fees?: LifiFee[], onlyIncluded = false) => (fees ?? []).filter((f) => !onlyIncluded || f.included).reduce((t, f) => t + (Number(f.amountUSD) || 0), 0);
+
+/** Merges two back-to-back legs (Relay then LI.FI, or LI.FI then Relay) into one preview. */
+function chainPreview(first: Preview, firstOut: bigint, firstMin: bigint, second: Preview, secondOutRaw: bigint, secondMinRaw: bigint, decimals: number): Preview {
+  // The second leg's minimum, scaled by how much the first leg could fall short.
+  const min = firstOut > BigInt(0) ? (secondMinRaw * firstMin) / firstOut : secondMinRaw;
+  return {
+    out: second.out,
+    outSymbol: second.outSymbol,
+    minOut: formatUnits(min < secondOutRaw ? min : secondOutRaw, decimals),
+    slippagePct: first.slippagePct + second.slippagePct,
+    impactPct: first.impactPct + second.impactPct,
+    feesUsd: first.feesUsd + second.feesUsd,
+    seconds: first.seconds + second.seconds,
+  };
+}
+
+function lifiPreview(r: LifiRoute): Preview {
+  const fromUsd = Number(r.fromAmountUSD) || 0;
+  const toUsd = Number(r.toAmountUSD) || 0;
+  const included = r.steps.reduce((t, st) => t + usd(st.estimate.feeCosts, true), 0);
+  return {
+    out: formatUnits(BigInt(r.toAmount), r.toToken.decimals),
+    outSymbol: r.toToken.symbol,
+    minOut: formatUnits(BigInt(r.toAmountMin), r.toToken.decimals),
+    slippagePct: r.steps.reduce((t, st) => Math.max(t, (st.action?.slippage ?? 0) * 100), 0),
+    impactPct: fromUsd ? ((toUsd + included) / fromUsd - 1) * 100 : 0,
+    feesUsd: r.steps.reduce((t, st) => t + usd(st.estimate.feeCosts) + usd(st.estimate.gasCosts), 0),
+    seconds: r.steps.reduce((t, st) => t + (st.estimate.executionDuration ?? 0), 0),
+  };
+}
+
+const needSui = (s: { suiAddress?: string }) => {
+  if (!s.suiAddress) throw new ExecError("Your Sui account is still being set up. Try again in a moment.");
+  return s.suiAddress;
+};
+
+/** Signs and runs a Sui transaction with the user's session, after the gas tank covers `spendSui` plus gas. */
+async function sendSui(s: Signer, tx: () => Promise<SuiTx | string> | SuiTx | string, spendSui = BigInt(0)): Promise<string> {
+  const me = needSui(s);
+  await ensureGas(s, SUI_CHAIN_ID, me, SUI_GAS + spendSui, await suiBalance(me));
+  const r = await s.sendSuiTransaction(await tx());
+  if (!r.ok) throw new ExecError(r.error);
+  return r.digest;
+}
+
+/* ---------------- Scallop (Sui lending) ---------------- */
+
+const SCALLOP_ADDRESSES = "https://sui.apis.scallop.io/addresses/67c44a103fe1b8c454eb9699";
+const SCALLOP_POOLS = "https://sdk.api.scallop.io/api/market/migrate";
+/** Current objects, used if Scallop's address API is unreachable. */
+const SCALLOP_FALLBACK = {
+  protocol: "0xde5c09ad171544aa3724dc67216668c80e754860f419136a68d78504eb2e2805",
+  version: "0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7",
+  market: "0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9",
+};
+/** Assets LI.FI can deliver to and take from Sui directly (checked against live routes). */
+const SUI_ROUTABLE = new Set(["USDC", "SUI", "haSUI", "afSUI", "vSUI", "wETH", "sbETH", "sbUSDT", "CETUS", "FDUSD", "WAL", "xBTC", "USDsui", "XAUm"]);
+
+let scallopCore: Promise<typeof SCALLOP_FALLBACK> | null = null;
+const scallopObjects = () =>
+  (scallopCore ??= fetch(SCALLOP_ADDRESSES)
+    .then((r) => r.json())
+    .then((j: { mainnet: { core: { version: string; market: string; packages: { protocol: { id: string } } } } }) => ({
+      protocol: j.mainnet.core.packages.protocol.id,
+      version: j.mainnet.core.version,
+      market: j.mainnet.core.market,
+    }))
+    .catch(() => SCALLOP_FALLBACK));
+
+type ScallopPool = { coinType: string; symbol: string; coinDecimal: number; marketCoinType: string; conversionRate: number };
+let scallopPools: { at: number; pools: Promise<ScallopPool[]> } | null = null;
+async function scallopPool(coinType: string): Promise<ScallopPool> {
+  if (!scallopPools || Date.now() - scallopPools.at > 60_000) {
+    const pools = fetch(SCALLOP_POOLS).then((r) => r.json()).then((j: { pools: ScallopPool[] }) => j.pools);
+    pools.catch(() => (scallopPools = null));
+    scallopPools = { at: Date.now(), pools };
+  }
+  const p = (await scallopPools.pools).find((x) => x.coinType === coinType);
+  if (!p) throw new ExecError("This Scallop pool isn't available right now.");
+  return p;
+}
+
+function scallop(coinType: string, symbol: string): Adapter {
+  const isSui = coinType === SUI_TYPE || coinType === "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
+  const usdcOnBase = (s: { address: Address }) => () => erc20Balance(BASE_CHAIN_ID, BASE_USDC, s.address);
+  const netOf = (usdg: string) => parseUnits(usdg, USDG_DECIMALS) - (parseUnits(usdg, USDG_DECIMALS) * BigInt(feeBps)) / BigInt(10_000);
+  const lifiType = isSui ? SUI_TYPE : coinType;
+
+  return {
+    positionSymbol: symbol,
+    depositSteps: [IN_STEPS[0], { id: "bridge", label: "Move funds" }, { id: "sui", label: `Swap into ${symbol}` }, IN_STEPS[2]],
+    withdrawSteps: [OUT_STEPS[0], { id: "sui", label: `Swap out of ${symbol}` }, OUT_STEPS[1], OUT_STEPS[2]],
+
+    position: async (s) => {
+      if (!s.suiAddress) return 0;
+      const p = await scallopPool(coinType);
+      const shares = await suiBalance(s.suiAddress, p.marketCoinType);
+      return (Number(shares) * p.conversionRate) / 10 ** p.coinDecimal;
+    },
+
+    previewDeposit: async (s, usdg) => {
+      const sui = needSui(s);
+      const rq = await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: netOf(usdg), user: s.address, recipient: s.address });
+      const out1 = BigInt(rq.details?.currencyOut?.amount ?? "0");
+      const min1 = BigInt(rq.details?.currencyOut?.minimumAmount ?? out1.toString());
+      const r = await lifiRoute({ fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: lifiType, amount: out1, from: s.address, to: sui });
+      return chainPreview(toPreview(rq, "USDC"), out1, min1, lifiPreview(r), BigInt(r.toAmount), BigInt(r.toAmountMin), r.toToken.decimals);
+    },
+
+    previewWithdraw: async (s, amount) => {
+      const sui = needSui(s);
+      const p = await scallopPool(coinType);
+      const r = await lifiRoute({ fromChain: SUI_CHAIN_ID, toChain: BASE_CHAIN_ID, fromToken: lifiType, toToken: BASE_USDC, amount: parseUnits(amount, p.coinDecimal), from: sui, to: s.address });
+      const out1 = BigInt(r.toAmount);
+      const rq = await relayQuote({ from: BASE_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: BASE_USDC, outToken: USDG, amount: out1, user: s.address, recipient: s.address });
+      const out2 = BigInt(rq.details?.currencyOut?.amount ?? "0");
+      const min2 = BigInt(rq.details?.currencyOut?.minimumAmount ?? out2.toString());
+      return chainPreview(lifiPreview(r), out1, BigInt(r.toAmountMin), toPreview(rq, "USDG"), out2, min2, USDG_DECIMALS);
+    },
+
+    deposit: async (s, usdg, on) => {
+      const sui = needSui(s);
+      const [p, obj] = await Promise.all([scallopPool(coinType), scallopObjects()]);
+      const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
+
+      on("bridge", "running");
+      const baseBefore = await usdcOnBase(s)();
+      await relay(s, { from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: net, user: s.address, recipient: s.address });
+      const usdc = await waitForArrival(usdcOnBase(s), baseBefore);
+      on("bridge", "done", `${formatUnits(usdc, 6)} USDC`);
+
+      on("sui", "running");
+      const q = await lifiQuote({ fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: lifiType, amount: usdc, from: s.address, to: sui });
+      const spender = q.estimate.approvalAddress ?? q.transactionRequest.to!;
+      const allowance = await chainClient(BASE_CHAIN_ID).readContract({ address: BASE_USDC, abi: erc20Abi, functionName: "allowance", args: [s.address, spender] });
+      if (allowance < usdc) await sendEvm(s, BASE_CHAIN_ID, { to: BASE_USDC, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, usdc] }) });
+      const readAsset = () => suiBalance(sui, coinType);
+      const suiBefore = await readAsset();
+      const hash = await sendEvm(s, BASE_CHAIN_ID, { to: q.transactionRequest.to!, data: q.transactionRequest.data as Hex, value: q.transactionRequest.value ? BigInt(q.transactionRequest.value) : undefined });
+      const got = await waitForArrival(readAsset, suiBefore, 15 * 60_000, lifiFailed(hash, BASE_CHAIN_ID, SUI_CHAIN_ID));
+      const shown = `${formatUnits(got, p.coinDecimal)} ${symbol}`;
+      on("sui", "done", shown);
+
+      on("deposit", "running");
+      await sendSui(
+        s,
+        () => {
+          const tx = new SuiTx();
+          tx.moveCall({
+            target: `${obj.protocol}::mint::mint_entry`,
+            typeArguments: [coinType],
+            arguments: [tx.object(obj.version), tx.object(obj.market), coinWithBalance({ type: coinType, balance: got }), tx.object.clock()],
+          });
+          return tx;
+        },
+        isSui ? got : BigInt(0),
+      );
+      on("deposit", "done");
+      return shown;
+    },
+
+    withdraw: async (s, amount, on) => {
+      const sui = needSui(s);
+      const [p, obj] = await Promise.all([scallopPool(coinType), scallopObjects()]);
+
+      on("withdraw", "running");
+      const shares = await suiBalance(sui, p.marketCoinType);
+      if (shares === BigInt(0)) throw new ExecError("You don't have a position in this vault.");
+      let take = shares;
+      if (amount !== "max") {
+        // Shares for the requested amount, rounded up and capped at what the user holds.
+        const want = BigInt(Math.ceil((Number(parseUnits(amount, p.coinDecimal)) / p.conversionRate) * 1.000001));
+        if (want < shares) take = want;
+      }
+      const readAsset = () => suiBalance(sui, coinType);
+      const before = await readAsset();
+      await sendSui(s, () => {
+        const tx = new SuiTx();
+        tx.moveCall({
+          target: `${obj.protocol}::redeem::redeem_entry`,
+          typeArguments: [coinType],
+          arguments: [tx.object(obj.version), tx.object(obj.market), coinWithBalance({ type: p.marketCoinType, balance: take, useGasCoin: false }), tx.object.clock()],
+        });
+        return tx;
+      });
+      const out = (await readAsset()) - before;
+      if (out <= BigInt(0)) throw new ExecError("The vault didn't release any funds.");
+      on("withdraw", "done", `${formatUnits(out, p.coinDecimal)} ${symbol}`);
+
+      on("sui", "running");
+      const baseBefore = await usdcOnBase(s)();
+      const digest = await sendSui(
+        s,
+        async () => (await lifiQuote({ fromChain: SUI_CHAIN_ID, toChain: BASE_CHAIN_ID, fromToken: lifiType, toToken: BASE_USDC, amount: out, from: sui, to: s.address })).transactionRequest.data,
+        isSui ? out : BigInt(0),
+      );
+      const usdc = await waitForArrival(usdcOnBase(s), baseBefore, 15 * 60_000, lifiFailed(digest, SUI_CHAIN_ID, BASE_CHAIN_ID));
+      on("sui", "done", `${formatUnits(usdc, 6)} USDC`);
+
+      return backToUsdg(s, { from: BASE_CHAIN_ID, inToken: BASE_USDC, amount: usdc, user: s.address }, on);
+    },
+  };
+}
+
 /* ---------------- which vaults get one-click ---------------- */
 
 type Opp = { chain: string; protocol: string; asset: string; ticker?: string; address?: string; id: string; ref?: { source: string; id: string } };
@@ -485,6 +772,9 @@ export function adapterFor(o: Opp): Adapter | null {
       const jl = o.id.split(":")[2];
       if (jl) return jupiterLend(jl, o.asset);
     }
+  }
+  if (o.chain === "Sui" && o.protocol === "Scallop" && SUI_ROUTABLE.has(o.asset) && o.id.startsWith("scallop:sui:")) {
+    return scallop(o.id.slice("scallop:sui:".length), o.asset);
   }
   return null;
 }

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const notConfigured = () =>
-  NextResponse.json({ error: "Pecun's gas tank isn't set up: add GAS_TANK_EVM_PRIVATE_KEY and GAS_TANK_SOLANA_PRIVATE_KEY on the server." }, { status: 503 });
+  NextResponse.json({ error: "Pecun's gas tank isn't set up: add GAS_TANK_EVM_PRIVATE_KEY, GAS_TANK_SOLANA_PRIVATE_KEY and GAS_TANK_SUI_PRIVATE_KEY on the server." }, { status: 503 });
 
 /** GET: the gas tank addresses and balances, so they can be funded. Public (addresses and balances are public on-chain). */
 export async function GET() {
@@ -21,7 +21,7 @@ export async function GET() {
 
 /**
  * POST { signed, chainId, address, need }: `signed` is a list-wallet-accounts request stamped with the user's session.
- * Turnkey confirms which addresses the user owns; a top-up only goes to one of them. `need` is wei (EVM) or lamports (Solana).
+ * Turnkey confirms which addresses the user owns; a top-up only goes to one of them. `need` is wei (EVM), lamports (Solana) or MIST (Sui).
  */
 export async function POST(req: Request) {
   if (!gasTankConfigured()) return notConfigured();

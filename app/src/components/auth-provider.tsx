@@ -2,6 +2,7 @@
 
 import { AuthState, OtpType, TurnkeyProvider, useTurnkey, type TurnkeyProviderConfig } from "@turnkey/react-wallet-kit";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { Transaction as SuiTransaction } from "@mysten/sui/transactions";
 import { authConfigured, EVM_ACCOUNT, friendlyError, PECUN_WALLET, SOLANA_ACCOUNT, SUI_ACCOUNT, TURNKEY_AUTH_PROXY_ID, TURNKEY_ORGANIZATION_ID, type AuthResult, type WalletSetup } from "@/lib/auth";
 
 /** What the sign-in modal and the header need, whether Turnkey is live or the demo is running. */
@@ -21,6 +22,9 @@ export type AuthActions = {
   solanaAddress?: string;
   /** Signs an unsigned Solana transaction (hex) with the user's wallet and broadcasts it. Returns the signature. */
   sendSolanaTransaction: (unsignedHex: string, rpcUrl: string) => Promise<{ ok: true; signature: string } | { ok: false; error: string }>;
+  suiAddress?: string;
+  /** Signs (with the user's session, no prompt) and executes a Sui transaction: a built Transaction or base64 bytes. */
+  sendSuiTransaction: (tx: SuiTransaction | string) => Promise<{ ok: true; digest: string } | { ok: false; error: string }>;
   /** Signs an unsigned EVM transaction (hex, no 0x) with the user's wallet and broadcasts it. Returns the tx hash. */
   sendEvmTransaction: (unsigned: string, rpcUrl: string) => Promise<{ ok: true; hash: `0x${string}` } | { ok: false; error: string }>;
   /** Solana and Sui addresses Pecun holds for this user as server wallets. Used for routing, never shown. */
@@ -69,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 function LiveAuth({ children }: { children: ReactNode }) {
   const {
     authState, user, wallets, session, httpClient, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout,
-    signAndSendTransaction, createWallet, createWalletAccounts, refreshWallets,
+    signAndSendTransaction, signMessage, createWallet, createWalletAccounts, refreshWallets,
   } = useTurnkey();
 
   const accounts = useMemo(() => wallets?.flatMap((w) => w.accounts ?? []) ?? [], [wallets]);
@@ -203,6 +207,21 @@ function LiveAuth({ children }: { children: ReactNode }) {
           return { ok: false, error: friendlyError(e, `The Solana transaction didn't go through: ${msg.slice(0, 160)}`) };
         }
       },
+      suiAddress: suiAccount?.address,
+      sendSuiTransaction: async (tx) => {
+        if (!suiAccount?.publicKey) return { ok: false, error: "Your Sui account is still being set up. Try again in a moment." };
+        try {
+          const { TurnkeySuiSigner, executeSui } = await import("@/lib/sui");
+          const signer = new TurnkeySuiSigner(suiAccount.publicKey, suiAccount.address, (digestHex) =>
+            signMessage({ walletAccount: suiAccount, message: digestHex, encoding: "PAYLOAD_ENCODING_HEXADECIMAL", hashFunction: "HASH_FUNCTION_NOT_APPLICABLE" }),
+          );
+          return { ok: true, digest: await executeSui(tx, suiAccount.address, signer) };
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "";
+          if (/insufficient.*(gas|balance)|gas selection/i.test(msg)) return { ok: false, error: "Not enough SUI for the network fee." };
+          return { ok: false, error: friendlyError(e, `The Sui transaction didn't go through: ${msg.slice(0, 160)}`) };
+        }
+      },
       routing,
       setupWallets,
       accountReady: !!evmAccount && !!routing?.solana && !!routing?.sui,
@@ -220,7 +239,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest, solAccount],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest, solAccount, suiAccount, signMessage],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -258,6 +277,8 @@ function DemoAuth({ children }: { children: ReactNode }) {
       signAccountsRequest: async () => null,
       solanaAddress: account ? "PecunDemo1111111111111111111111111111111111" : undefined,
       sendSolanaTransaction: async () => (await wait(1200), { ok: true, signature: "demo" }),
+      suiAddress: account ? "0x7d20dcdb2bca4f508ea9613994683eb4e76e9c4ed371169677c1be02aaf0b58e" : undefined,
+      sendSuiTransaction: async () => (await wait(1200), { ok: true, digest: "demo" }),
       signOut,
       // A fixed demo address so the wallet screens can be tried; nothing is ever sent from it.
       evmAddress: account ? "0x000000000000000000000000000000000000de40" : undefined,
