@@ -82,11 +82,11 @@ const LIDO: Featured = {
   href: APP_URL,
 };
 
-/** Shown when the app can't be reached (e.g. during a build). Rough figures from the catalog in Nov 2026. */
+/** Shown only when the app can't be reached (e.g. during a build). Round figures close to the live catalog in Nov 2026. */
 const FALLBACK: Live = {
-  vaults: 1800,
+  vaults: 1900,
   vaultProducts: 600,
-  platforms: 25,
+  platforms: 40,
   chains: 30,
   chainMarks: CHAINS,
   worthMarks: PARTNERS.filter((p) => !p.infra)
@@ -224,7 +224,8 @@ export async function getLive(): Promise<Live> {
 async function loadLive(): Promise<Live> {
   const res = await fetch(`${APP_URL}/api/opportunities`, {
     cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
+    // The app can take up to ~25s on a cold start while it loads every source; the result is cached for 5 minutes after.
+    signal: AbortSignal.timeout(45_000),
   });
   if (!res.ok) throw new Error(`catalog ${res.status}`);
   const { opportunities: all } = (await res.json()) as {

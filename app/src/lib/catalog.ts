@@ -1,6 +1,7 @@
 import { aave, aaveV4, beefy, euler, fluid, lagoon, lido, morpho, pendle, savingsGho, upshift, yearn } from "./adapters/evm.ts";
 import { aftermath, ember, hyperliquid, jupiterLend, kamino, marinade, meteora, navi, scallop, solanaStaking } from "./adapters/nonevm.ts";
 import { compound, ethena, sky, spark } from "./adapters/onchain.ts";
+import { avantis, etherfi, frax, gmx, hyperlend, jupiterJlp, kinetiq, resolv, rocketPool, silo, spectra, venus, volo } from "./adapters/more.ts";
 import { gearbox, moonwell, suilend } from "./adapters/sdk.ts";
 import { delistedVaults, reconcile } from "./listing-state.ts";
 import { getLogoIndex, withLogos } from "./logos.ts";
@@ -36,6 +37,19 @@ const SOURCES: [string, () => Promise<Opportunity[]>][] = [
   ["Ethena", ethena],
   ["Marinade", marinade],
   ["Meteora", meteora],
+  ["Venus", venus],
+  ["Silo", silo],
+  ["GMX", gmx],
+  ["Jupiter", jupiterJlp],
+  ["Volo", volo],
+  ["Rocket Pool", rocketPool],
+  ["Frax", frax],
+  ["ether.fi", etherfi],
+  ["Resolv", resolv],
+  ["Kinetiq", kinetiq],
+  ["Spectra", spectra],
+  ["Avantis", avantis],
+  ["HyperLend", hyperlend],
 ];
 
 /** Testnet deployments sometimes appear in protocol lists; never show them. */

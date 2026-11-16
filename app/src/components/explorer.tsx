@@ -131,6 +131,8 @@ export function Explorer({ catalog, initialQuery = "", initialEarn }: { catalog:
   // Category is chosen in the sidebar or the Filters modal, so it does not count as an extra filter.
   const active = (Object.keys(DEFAULTS) as (keyof Filters)[]).filter((k) => k !== "cat" && filters[k] !== DEFAULTS[k]).length;
   const catMeta = CATS.find((c) => c.id === filters.cat)!;
+  // One per vault, the same way the list counts them.
+  const opportunityCount = useMemo(() => mergeDeployments(all).length, [all]);
 
 
   return (
@@ -141,7 +143,7 @@ export function Explorer({ catalog, initialQuery = "", initialEarn }: { catalog:
         {CAT_TEXT[filters.cat] && <p className="mt-1 font-sans text-sm text-muted">{CAT_TEXT[filters.cat]}</p>}
       </header>
 
-      <YieldBanner />
+      <YieldBanner count={opportunityCount} />
 
       <div className="mt-5 flex items-center gap-2">
         <label className="relative block min-w-0 flex-1">
@@ -456,14 +458,16 @@ const CAT_TEXT: Record<Cat, string> = {
 };
 
 /** Lime banner, Hood "Savings" style: a short headline and the platforms Pecun integrates. No yields, no button. */
-function YieldBanner() {
+function YieldBanner({ count }: { count: number }) {
   return (
     <section className="lime-banner mt-5 overflow-hidden rounded-2xl">
       <div className="flex flex-col gap-4 p-5 md:flex-row md:items-end md:justify-between md:gap-8 md:px-8 md:py-7">
         <div className="min-w-0">
           <span className="lb-pill inline-flex rounded-full px-3 py-1 font-sans text-sm">Earn</span>
           <h2 className="mt-3 text-[1.45rem] font-medium leading-tight tracking-[-0.035em] md:text-[1.9rem]">Put your money to work.</h2>
-          <p className="lb-muted mt-1.5 font-sans text-sm">Vaults, lending and staking from the platforms below, in one place.</p>
+          <p className="lb-muted mt-1.5 font-sans text-sm">
+            <b className="tabular font-medium text-[#0a0b0d]">{count.toLocaleString("en-US")}</b> opportunities from the platforms below, in one place.
+          </p>
         </div>
         <PlatformLogos max={7} size={30} />
       </div>

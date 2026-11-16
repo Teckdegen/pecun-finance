@@ -16,7 +16,7 @@ const B = ({ children }: { children: ReactNode }) => <span className="font-mediu
 
 /** Protocols Pecun currently lists. Kept here so the Terms name them plainly. */
 const PROTOCOLS =
-  "Aave, Morpho, Euler, Compound, Spark, Sky, Fluid, Moonwell, Pendle, Yearn, Beefy, Lagoon, Lido, Ember, Upshift, Gearbox, Kamino, Jupiter Lend, Marinade, Meteora, Jito and other Solana stake pools, NAVI, Scallop, Suilend, Aftermath and Hyperliquid";
+  "Aave, Morpho, Euler, Compound, Spark, Sky, Fluid, Moonwell, Pendle, Yearn, Beefy, Lagoon, Lido, Ember, Upshift, Gearbox, Kamino, Jupiter Lend, Marinade, Meteora, Jito and other Solana stake pools, NAVI, Scallop, Suilend, Aftermath, Hyperliquid, Venus, Silo, GMX, Jupiter, Volo, Rocket Pool, Frax, ether.fi, Resolv, Kinetiq, Spectra, Avantis and HyperLend";
 
 const SECTIONS: LegalSection[] = [
   {

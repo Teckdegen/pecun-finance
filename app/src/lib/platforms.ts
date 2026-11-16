@@ -27,6 +27,19 @@ export const PLATFORMS: { name: string; logo: string }[] = [
   { name: "Sky", logo: "https://static.debank.com/image/eth_token/logo_url/0x56072c95faa701256059aa122697b133aded9279/6ee24b04e01abbd4f2ace465a430fad4.png" },
   { name: "Marinade", logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey/logo.png" },
   { name: "Meteora", logo: "https://assets.meteora.ag/met-token.svg" },
+  { name: "Venus", logo: "/logos/protocols/venus.png" },
+  { name: "Silo", logo: "/logos/protocols/silo.png" },
+  { name: "GMX", logo: "/logos/protocols/gmx.png" },
+  { name: "Jupiter", logo: "/logos/protocols/jupiter.png" },
+  { name: "Volo", logo: "/logos/protocols/volo.ico" },
+  { name: "Rocket Pool", logo: "/logos/protocols/rocketpool.png" },
+  { name: "Frax", logo: "/logos/protocols/frax.ico" },
+  { name: "ether.fi", logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xFe0c30065B384F05761f15d0CC899D4F9F9Cc0eB/logo.png" },
+  { name: "Resolv", logo: "/logos/protocols/resolv.svg" },
+  { name: "Kinetiq", logo: "/logos/protocols/kinetiq.svg" },
+  { name: "Spectra", logo: "/logos/protocols/spectra.ico" },
+  { name: "Avantis", logo: "/logos/protocols/avantis.png" },
+  { name: "HyperLend", logo: "/logos/protocols/hyperlend.ico" },
 ];
 
 export const PLATFORM_LOGO: Record<string, string> = Object.fromEntries(PLATFORMS.map((p) => [p.name, p.logo]));

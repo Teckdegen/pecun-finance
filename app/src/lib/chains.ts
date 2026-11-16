@@ -1,5 +1,10 @@
 /** EVM chain id → display name. Non-EVM chains use their own names directly. */
 const EVM: Record<number, string> = {
+  43111: "Hemi",
+  1776: "Injective",
+  204: "opBNB",
+  50: "XDC",
+  14: "Flare",
   1: "Ethereum",
   10: "Optimism",
   56: "BNB Chain",
