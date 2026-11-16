@@ -15,6 +15,10 @@ export type AuthActions = {
   signInWithPasskey: () => Promise<AuthResult>;
   createPasskey: () => Promise<AuthResult>;
   signOut: () => Promise<void>;
+  /** The user's EVM address (Robinhood Chain and every EVM chain). Solana and Sui addresses stay behind the scenes. */
+  evmAddress?: `0x${string}`;
+  /** Signs an unsigned EVM transaction (hex, no 0x) with the user's wallet and broadcasts it. Returns the tx hash. */
+  sendEvmTransaction: (unsigned: string, rpcUrl: string) => Promise<{ ok: true; hash: `0x${string}` } | { ok: false; error: string }>;
 };
 
 const Ctx = createContext<AuthActions | null>(null);
@@ -49,7 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 function LiveAuth({ children }: { children: ReactNode }) {
-  const { authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout } = useTurnkey();
+  const { authState, user, wallets, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, signAndSendTransaction } = useTurnkey();
+  const evmAccount = useMemo(
+    () => wallets?.flatMap((w) => w.accounts ?? []).find((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"),
+    [wallets],
+  );
   // initOtp returns an encryption bundle that completeOtp needs; keep it per code request.
   const bundles = useRef(new Map<string, string>());
 
@@ -105,8 +113,20 @@ function LiveAuth({ children }: { children: ReactNode }) {
       signOut: async () => {
         await logout();
       },
+      evmAddress: evmAccount?.address as `0x${string}` | undefined,
+      sendEvmTransaction: async (unsigned, rpcUrl) => {
+        if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
+        try {
+          const hash = await signAndSendTransaction({ walletAccount: evmAccount, unsignedTransaction: unsigned, transactionType: "TRANSACTION_TYPE_ETHEREUM", rpcUrl });
+          return { ok: true, hash: (hash.startsWith("0x") ? hash : `0x${hash}`) as `0x${string}` };
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "";
+          if (/insufficient funds/i.test(msg)) return { ok: false, error: "Not enough ETH on Robinhood Chain to pay the network fee." };
+          return { ok: false, error: friendlyError(e, "The transfer didn't go through. Nothing was sent.") };
+        }
+      },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -132,6 +152,9 @@ function DemoAuth({ children }: { children: ReactNode }) {
       signInWithPasskey: async () => (await wait(900), setAccount("Passkey (demo)"), { ok: true }),
       createPasskey: async () => (await wait(900), setAccount("Passkey (demo)"), { ok: true }),
       signOut,
+      // A fixed demo address so the wallet screens can be tried; nothing is ever sent from it.
+      evmAddress: account ? "0x000000000000000000000000000000000000de40" : undefined,
+      sendEvmTransaction: async () => (await wait(1200), { ok: false, error: "Demo mode: nothing is sent. Connect Turnkey to send for real." }),
     }),
     [account, signOut],
   );
