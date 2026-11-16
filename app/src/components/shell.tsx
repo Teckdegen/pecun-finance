@@ -34,6 +34,11 @@ function ShellState({ children }: { children: ReactNode }) {
   const [signInOpen, setSignInOpen] = useState(false);
   const openSignIn = useCallback(() => (setMenuOpen(false), setSignInOpen(true)), []);
   const closeSignIn = useCallback(() => setSignInOpen(false), []);
+  // Any part of the app can ask for the sign-in modal (e.g. a vault's Add button when signed out).
+  useEffect(() => {
+    window.addEventListener("pecun:open-signin", openSignIn);
+    return () => window.removeEventListener("pecun:open-signin", openSignIn);
+  }, [openSignIn]);
 
   return <Ctx.Provider value={{ menuOpen, toggle, closeMenu, signInOpen, openSignIn, closeSignIn }}>{children}</Ctx.Provider>;
 }

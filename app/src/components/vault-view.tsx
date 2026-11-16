@@ -7,6 +7,8 @@ import type { History, Opportunity } from "@/lib/types.ts";
 import { LineChart } from "./line-chart";
 import { LendingLayout } from "./lending-layout";
 import { MorphoLayout } from "./morpho-layout";
+import { OneClickPanel } from "./one-click-panel";
+import { supportsOneClick } from "@/lib/execute";
 import { AddressPill, display, Logo, pct, PlatformLogos, short, usd, VaultMark } from "./ui";
 
 type Win = "7d" | "30d" | "60d" | "90d";
@@ -104,7 +106,7 @@ export function VaultView({ o, deployments }: { o: Opportunity; deployments: Opp
           <Overview o={o} deployments={deployments} history={history} loading={loading} />
         )}
       </div>
-      <DepositPanel o={o} />
+      {supportsOneClick(o) ? <OneClickPanel o={o} /> : <DepositPanel o={o} />}
       <PhoneDepositBar o={o} />
     </div>
   );

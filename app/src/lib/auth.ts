@@ -23,14 +23,18 @@ export type AuthResult = { ok: true; otpId?: string; /** true for a brand-new ac
 export type WalletSetup = { ok: true; created: boolean } | { ok: false; error: string };
 
 /**
- * Every new account gets one wallet the user controls: an EVM address (Robinhood Chain and every EVM chain).
- * Solana and Sui are handled by server wallets Pecun creates for the user (see lib/server-wallets.ts).
+ * Every account's wallet lives in the user's own Turnkey sub-organization: Turnkey holds the keys, and only the
+ * user's sign-in (email code or passkey session) can move funds. Pecun's server key has no access to it.
+ * The EVM address is the one users see (Robinhood Chain and every EVM chain); Solana and Sui stay hidden and are
+ * used behind the scenes for deposits on those chains.
  */
+export const EVM_ACCOUNT = { curve: "CURVE_SECP256K1" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/60'/0'/0/0", addressFormat: "ADDRESS_FORMAT_ETHEREUM" as const };
+export const SOLANA_ACCOUNT = { curve: "CURVE_ED25519" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/501'/0'/0'", addressFormat: "ADDRESS_FORMAT_SOLANA" as const };
+export const SUI_ACCOUNT = { curve: "CURVE_ED25519" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/784'/0'/0'/0'", addressFormat: "ADDRESS_FORMAT_SUI" as const };
+
 export const PECUN_WALLET = {
   walletName: "Pecun Wallet",
-  walletAccounts: [
-    { curve: "CURVE_SECP256K1" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/60'/0'/0/0", addressFormat: "ADDRESS_FORMAT_ETHEREUM" as const },
-  ],
+  walletAccounts: [EVM_ACCOUNT, SOLANA_ACCOUNT, SUI_ACCOUNT],
 };
 
 /** Turns an SDK error into one plain sentence for the modal. */

@@ -2,7 +2,7 @@
 
 import { AuthState, OtpType, TurnkeyProvider, useTurnkey, type TurnkeyProviderConfig } from "@turnkey/react-wallet-kit";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { authConfigured, friendlyError, PECUN_WALLET, TURNKEY_AUTH_PROXY_ID, TURNKEY_ORGANIZATION_ID, type AuthResult, type WalletSetup } from "@/lib/auth";
+import { authConfigured, EVM_ACCOUNT, friendlyError, PECUN_WALLET, SOLANA_ACCOUNT, SUI_ACCOUNT, TURNKEY_AUTH_PROXY_ID, TURNKEY_ORGANIZATION_ID, type AuthResult, type WalletSetup } from "@/lib/auth";
 
 /** What the sign-in modal and the header need, whether Turnkey is live or the demo is running. */
 export type AuthActions = {
@@ -27,6 +27,8 @@ export type AuthActions = {
   accountReady: boolean;
   /** Creates whatever is missing (EVM wallet in the user's account, then the server wallets); ok only when all exist. */
   ensureAccount: () => Promise<WalletSetup>;
+  /** A "list my wallet accounts" request signed with the user's session, so Pecun's server can confirm who they are. */
+  signAccountsRequest: () => Promise<{ url: string; body: string; stamp: { stampHeaderName: string; stampHeaderValue: string } } | null>;
 };
 
 const Ctx = createContext<AuthActions | null>(null);
@@ -61,37 +63,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 function LiveAuth({ children }: { children: ReactNode }) {
-  const { authState, user, wallets, session, httpClient, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, signAndSendTransaction, createWallet, refreshWallets } = useTurnkey();
-  const [routing, setRouting] = useState<{ solana: string; sui: string } | undefined>();
+  const {
+    authState, user, wallets, session, httpClient, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout,
+    signAndSendTransaction, createWallet, createWalletAccounts, refreshWallets,
+  } = useTurnkey();
 
-  // Once signed in, make sure the user's server wallets (Solana, Sui) exist. The request is signed with the user's
-  // own session so the server can confirm with Turnkey who is asking. Safe to repeat: it returns existing addresses.
+  const accounts = useMemo(() => wallets?.flatMap((w) => w.accounts ?? []) ?? [], [wallets]);
+  const evmAccount = accounts.find((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM");
+  const solAccount = accounts.find((a) => a.addressFormat === "ADDRESS_FORMAT_SOLANA");
+  const suiAccount = accounts.find((a) => a.addressFormat === "ADDRESS_FORMAT_SUI");
+  const routing = solAccount && suiAccount ? { solana: solAccount.address, sui: suiAccount.address } : undefined;
+
   // The session appears a moment after sign-in completes, so setup reads the latest values through a ref.
-  const latest = useRef({ session, httpClient });
-  latest.current = { session, httpClient };
+  const latest = useRef({ session, wallets });
+  latest.current = { session, wallets };
 
+  /**
+   * Makes sure the user's own wallet has all three accounts (EVM, Solana, Sui), creating any that are missing with the
+   * user's session. Everything stays inside the user's Turnkey account; ok only once all three are confirmed.
+   */
   const setupWallets = useCallback(async (): Promise<WalletSetup> => {
-    // Wait (up to 15s) for the new session to be stored.
-    for (let i = 0; i < 30 && !(latest.current.session?.organizationId && latest.current.httpClient); i++) {
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    const { session: s, httpClient: hc } = latest.current;
-    if (!s?.organizationId || !hc) return { ok: false, error: "Your session didn't start. Sign out and sign in again." };
+    for (let i = 0; i < 30 && !latest.current.session?.organizationId; i++) await new Promise((r) => setTimeout(r, 500));
+    if (!latest.current.session?.organizationId) return { ok: false, error: "Your session didn't start. Sign out and sign in again." };
     try {
-      const signed = await hc.stampGetWhoami({ organizationId: s.organizationId });
-      if (!signed) return { ok: false, error: "Couldn't sign the wallet request with your session." };
-      const res = await fetch("/api/wallets", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ signed }) });
-      const body = (await res.json().catch(() => ({}))) as { solana?: string; sui?: string; created?: boolean; error?: string };
-      if (!res.ok) return { ok: false, error: body.error || `Wallet setup failed (${res.status}).` };
-      if (!body.solana || !body.sui) return { ok: false, error: "Wallet setup didn't return both Solana and Sui addresses." };
-      setRouting({ solana: body.solana, sui: body.sui });
-      return { ok: true, created: !!body.created };
+      let list = await refreshWallets();
+      let created = false;
+      const has = (fmt: string) => list.some((w) => w.accounts?.some((a) => a.addressFormat === fmt));
+      // The wallet that holds the user's EVM account, or a new one.
+      let wallet = list.find((w) => w.accounts?.some((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM")) ?? list[0];
+      if (!wallet) {
+        await createWallet({ walletName: PECUN_WALLET.walletName, accounts: PECUN_WALLET.walletAccounts });
+        created = true;
+        list = await refreshWallets();
+        wallet = list[0];
+      }
+      const missing = [
+        !has("ADDRESS_FORMAT_ETHEREUM") && EVM_ACCOUNT,
+        !has("ADDRESS_FORMAT_SOLANA") && SOLANA_ACCOUNT,
+        !has("ADDRESS_FORMAT_SUI") && SUI_ACCOUNT,
+      ].filter(Boolean) as (typeof EVM_ACCOUNT | typeof SOLANA_ACCOUNT | typeof SUI_ACCOUNT)[];
+      if (missing.length && wallet) {
+        await createWalletAccounts({ walletId: wallet.walletId, accounts: missing });
+        created = true;
+        list = await refreshWallets();
+      }
+      if (!has("ADDRESS_FORMAT_ETHEREUM") || !has("ADDRESS_FORMAT_SOLANA") || !has("ADDRESS_FORMAT_SUI")) {
+        return { ok: false, error: "Turnkey didn't confirm all your wallet accounts yet. Try again." };
+      }
+      return { ok: true, created };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Wallet setup failed." };
+      return { ok: false, error: `Couldn't set up your wallet: ${e instanceof Error ? e.message : String(e)}` };
     }
-  }, []);
+  }, [createWallet, createWalletAccounts, refreshWallets]);
+  const ensureAccount = setupWallets;
+  const signAccountsRequest = useCallback(async () => {
+    const org = latest.current.session?.organizationId;
+    if (!org || !httpClient) return null;
+    return (await httpClient.stampGetWalletAccounts({ organizationId: org })) ?? null;
+  }, [httpClient]);
 
-  // A returning visitor whose session survived a reload never sees the sign-in modal, so check their wallets here too.
+  // A returning visitor whose session survived a reload never sees the sign-in modal, so check their accounts here too.
   const orgId = authState === AuthState.Authenticated ? session?.organizationId : undefined;
   const checked = useRef<string | null>(null);
   useEffect(() => {
@@ -99,32 +130,6 @@ function LiveAuth({ children }: { children: ReactNode }) {
     checked.current = orgId;
     void setupWallets();
   }, [orgId, routing, setupWallets]);
-  const evmAccount = useMemo(
-    () => wallets?.flatMap((w) => w.accounts ?? []).find((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"),
-    [wallets],
-  );
-  const ensureAccount = useCallback(async (): Promise<WalletSetup> => {
-    let created = false;
-    if (!evmAccount) {
-      // The user's own EVM wallet is missing: create it in their Turnkey account.
-      try {
-        await createWallet({ walletName: PECUN_WALLET.walletName, accounts: PECUN_WALLET.walletAccounts });
-        const fresh = await refreshWallets();
-        if (!fresh?.some((w) => w.accounts?.some((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"))) {
-          return { ok: false, error: "Your EVM wallet was created but didn't show up yet. Try again." };
-        }
-        created = true;
-      } catch (e) {
-        return { ok: false, error: `Couldn't create your EVM wallet: ${e instanceof Error ? e.message : String(e)}` };
-      }
-    }
-    if (!routing?.solana || !routing?.sui) {
-      const r = await setupWallets();
-      if (!r.ok) return r;
-      created ||= r.created;
-    }
-    return { ok: true, created };
-  }, [evmAccount, routing, createWallet, refreshWallets, setupWallets]);
 
   // initOtp returns an encryption bundle that completeOtp needs; keep it per code request.
   const bundles = useRef(new Map<string, string>());
@@ -186,6 +191,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
       setupWallets,
       accountReady: !!evmAccount && !!routing?.solana && !!routing?.sui,
       ensureAccount,
+      signAccountsRequest,
       sendEvmTransaction: async (unsigned, rpcUrl) => {
         if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
         try {
@@ -198,7 +204,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -233,6 +239,7 @@ function DemoAuth({ children }: { children: ReactNode }) {
       setupWallets: async () => (await wait(lastNew.current ? 2200 : 1200), setDemoReady(true), { ok: true, created: lastNew.current }),
       accountReady: !!account && demoReady,
       ensureAccount: async () => (await wait(2000), setDemoReady(true), { ok: true, created: true }),
+      signAccountsRequest: async () => null,
       signOut,
       // A fixed demo address so the wallet screens can be tried; nothing is ever sent from it.
       evmAddress: account ? "0x000000000000000000000000000000000000de40" : undefined,
