@@ -9,6 +9,8 @@ import type { AllocationRow, History, Opportunity, VaultProfile } from "./types.
 const DAY_S = 86_400;
 const cache = new Map<string, { at: number; h: History }>();
 const TTL = 10 * 60_000;
+/** Most vault histories kept in memory at once; expired and oldest entries are dropped first. */
+const MAX_ENTRIES = 300;
 
 const sortAsc = (s: [number, number][]) => s.filter(([, y]) => Number.isFinite(y)).sort((a, b) => a[0] - b[0]);
 
@@ -194,6 +196,16 @@ export async function getHistory(o: Opportunity): Promise<History> {
   } catch {
     h = {};
   }
+  cache.delete(key);
   cache.set(key, { at: Date.now(), h });
+  if (cache.size > MAX_ENTRIES) {
+    const now = Date.now();
+    for (const [k, v] of cache) if (now - v.at >= TTL) cache.delete(k);
+    // Map keeps insertion order, so the first keys are the oldest.
+    for (const k of cache.keys()) {
+      if (cache.size <= MAX_ENTRIES) break;
+      cache.delete(k);
+    }
+  }
   return h;
 }

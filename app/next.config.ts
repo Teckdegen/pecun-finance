@@ -5,6 +5,11 @@ const DOCS_URL = process.env.NODE_ENV === "production" ? "https://docs.pecun.fin
 const nextConfig: NextConfig = {
   // Heavy chain SDKs are loaded at runtime on the server instead of being bundled.
   serverExternalPackages: ["@suilend/sdk", "@mysten/sui", "@gearbox-protocol/sdk", "viem"],
+  // viem/window loads a tiny side-effect file (viem/_esm/types/window.js) that Vercel's file tracing skips, which
+  // crashed /api/wallets ("Cannot find module …/types/window.js"). Ship viem's type stubs with every server route.
+  outputFileTracingIncludes: {
+    "/**": ["./node_modules/viem/_esm/types/**", "./node_modules/viem/_cjs/types/**"],
+  },
   // Vault pages moved from /vault/* to /earn/*; keep old links working.
   async redirects() {
     return [
