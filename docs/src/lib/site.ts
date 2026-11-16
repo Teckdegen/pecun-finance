@@ -75,6 +75,7 @@ export const PROTOCOLS: { name: string; logo: string; kind: string }[] = [
   { name: "Moonwell", logo: debank("mobm_token/logo_url/0x511ab53f793683763e5a8829738301368a2411e3/b82e97dd371cfdacb522ffebd7840729.png"), kind: "Lending" },
   { name: "Fluid", logo: "https://etherscan.io/token/images/fluid_32.png", kind: "Lending" },
   { name: "Spark", logo: debank("eth_token/logo_url/0xc20059e0317de91738d13af027dfc4a50781b066/0a37a6ea8ac42a95d75ee255142c102c.png"), kind: "Savings and lending" },
+  { name: "Ethena", logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x57e114B691Db790C35207b2e685D4A43181e6061/logo.png", kind: "Delta-neutral" },
   { name: "Sky", logo: debank("eth_token/logo_url/0x56072c95faa701256059aa122697b133aded9279/6ee24b04e01abbd4f2ace465a430fad4.png"), kind: "Savings" },
   { name: "Marinade", logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey/logo.png", kind: "Liquid staking" },
   { name: "Meteora", logo: "https://assets.meteora.ag/met-token.svg", kind: "Liquidity pools" },

@@ -234,6 +234,47 @@ export async function sky(): Promise<Opportunity[]> {
   ];
 }
 
+/* ---------------- Ethena (sUSDe on Ethereum) ---------------- */
+// Execution: sUSDe is ERC-4626, so `deposit(assets, receiver)` stakes USDe. Unstaking goes through Ethena's cooldown
+// (`cooldownShares`, then `unstake` once it ends); the cooldown length is read live from the contract.
+
+const SUSDE: Address = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497";
+const ETHENA_ABI = parseAbi(["function cooldownDuration() view returns (uint24)"]);
+type EthenaYield = { value?: number };
+
+export async function ethena(): Promise<Opportunity[]> {
+  const p = client(1);
+  const [assets, cooldown, y] = await Promise.all([
+    p.readContract({ address: SUSDE, abi: ERC4626, functionName: "totalAssets" }),
+    p.readContract({ address: SUSDE, abi: ETHENA_ABI, functionName: "cooldownDuration" }),
+    // Ethena's own yield feed, in percent.
+    getJson<{ stakingYield?: EthenaYield; avg30dSusdeYield?: EthenaYield }>("https://ethena.fi/api/yields/protocol-and-staking-yield"),
+  ]);
+  const days = Math.round(Number(cooldown) / 86_400);
+  return [
+    {
+      id: `ethena:1:${SUSDE}`,
+      protocol: "Ethena",
+      name: "Ethena Staked USDe (sUSDe)",
+      ticker: "sUSDe",
+      asset: "USDe",
+      kind: "Vault",
+      category: "Delta-neutral",
+      chain: "Ethereum",
+      apy: y.stakingYield?.value != null ? y.stakingYield.value / 100 : null,
+      apy7d: null,
+      apy30d: y.avg30dSusdeYield?.value != null ? y.avg30dSusdeYield.value / 100 : null,
+      apyNote: "Funding and basis from Ethena's hedged positions, plus staking yield on its collateral",
+      tvlUsd: Number(assets) / 1e18,
+      manager: "Ethena",
+      redemption: Number(cooldown) === 0 ? "Instant" : `${days}-day cooldown`,
+      stablecoin: true,
+      url: "https://app.ethena.fi/earn",
+      address: SUSDE,
+    },
+  ];
+}
+
 /* ---------------- Spark (SparkLend + Spark Savings) ---------------- */
 // Execution:
 //  - SparkLend is an Aave v3 fork: Pool `supply(asset, amount, onBehalfOf, 0)` / `withdraw(asset, amount, to)`.

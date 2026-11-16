@@ -224,7 +224,7 @@ export function ShareCalculator() {
   );
 }
 
-export type Range = { label: string; low: number; high: number; weight?: string; highlight?: boolean };
+export type Range = { label: string; low: number; high: number; weight?: string; highlight?: boolean; /** Show one value (the high) instead of a range. */ single?: boolean };
 
 /** Horizontal low-to-high ranges on one shared scale, for estimated yields. */
 export function RangeBars({ rows, max }: { rows: Range[]; max: number }) {
@@ -244,7 +244,7 @@ export function RangeBars({ rows, max }: { rows: Range[]; max: number }) {
                   className={`absolute inset-y-1 flex items-center justify-center rounded-full text-[12px] font-medium ${r.highlight ? "bg-[#122018] text-lime" : "bg-[#2f7d1c] text-white"}`}
                   style={{ left: `${(r.low / max) * 100}%`, width: `${Math.max(9, ((r.high - r.low) / max) * 100)}%` }}
                 >
-                  {r.low}–{r.high}%
+                  {r.single ? `${r.high}%` : `${r.low}–${r.high}%`}
                 </span>
               ) : (
                 <span className="absolute inset-y-0 left-3 flex items-center text-[12px] text-[#8a8a83]">No yield</span>

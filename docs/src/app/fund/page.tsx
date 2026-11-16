@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 
 /** Target split of the Fund. The live split is published on this page once the Fund is running. */
 const ALLOCATION: Slice[] = [
-  { label: "Delta-neutral strategies", value: 30, color: "#0a0a0a", note: "Earn funding and basis while staying hedged against price moves." },
+  { label: "Delta-neutral strategies", value: 30, color: "#0a0a0a", note: "Mainly Ethena's sUSDe: funding and basis, hedged against price moves." },
   { label: "Yield vaults", value: 25, color: "#2f7d1c", note: "Curated vaults that allocate across lending and liquidity markets." },
   { label: "$PEN buybacks", value: 15, color: "#1c3a28", note: "Buys $PEN on the market and takes it out of circulation." },
   { label: "Lending markets", value: 15, color: "#7ed957", note: "Supply stablecoins and blue-chip assets to borrowers." },
-  { label: "Liquid staking", value: 10, color: "#b8ff9d", note: "Staking yield, held as liquid staking tokens." },
+  { label: "Liquid staking", value: 10, color: "#b8ff9d", note: "Lido's stETH and similar liquid staking tokens." },
   { label: "Cash reserve", value: 5, color: "#d8d2c2", note: "Stablecoins kept ready to pay holders who sell." },
 ];
 
@@ -93,6 +93,30 @@ export default function Fund() {
         is the yield: funding paid by traders on perpetuals markets, or the gap between spot and futures prices. The Fund uses these strategies because
         they can earn without betting on the market going up.
       </P>
+      <P>
+        The Fund gets this exposure mainly through <A href="https://docs.ethena.fi/">Ethena</A>. Ethena holds crypto collateral and opens an equal short
+        position on perpetuals exchanges against it, so the two cancel out. Staking USDe as sUSDe passes the funding, basis and collateral yield on to
+        holders. It&apos;s one of the largest delta-neutral products on-chain, with over $1B staked.
+      </P>
+      <ChartCard
+        title="sUSDe yield over time"
+        caption="Monthly average sUSDe staking yield. Source: Ethena's yield feed and DeFiLlama. Past yield doesn't predict future yield."
+      >
+        <RangeBars
+          max={60}
+          rows={[
+            { label: "Peak, Mar 2024", single: true, low: 0, high: 56 },
+            { label: "2024 average", single: true, low: 0, high: 20 },
+            { label: "Since launch", single: true, low: 0, high: 10 },
+            { label: "2026 so far", single: true, low: 0, high: 4 },
+            { label: "Now", weight: "Nov 2026", single: true, low: 0, high: 5, highlight: true },
+          ]}
+        />
+      </ChartCard>
+      <P>
+        sUSDe&apos;s yield follows how much traders are willing to pay to hold leveraged long positions. In strong markets that has meant 20% and more,
+        with a peak of 56% in March 2024. In calmer markets it falls to a few percent: it has averaged about 4% through 2026, and it pays around 5% today.
+      </P>
       <List
         items={[
           "Earns from: funding rates, basis and the yield on the collateral itself.",
@@ -130,6 +154,8 @@ export default function Fund() {
       <H3>Liquid staking (10%)</H3>
       <P>
         Liquid staking earns staking rewards while holding a token that can still be sold or used. It adds a long-term, network-level yield to the Fund.
+        The Fund holds it mainly as <A href="https://lido.fi/">Lido</A>&apos;s stETH, the largest liquid staking token, which currently earns around 2.5% a
+        year.
       </P>
       <List
         items={[
@@ -162,8 +188,8 @@ export default function Fund() {
       <H2>What the Fund could earn</H2>
       <P>
         Each strategy earns at a different rate, and those rates move all the time. Based on the ranges these strategies have paid recently, the Fund
-        as a whole could earn somewhere around 4% to 9% a year. The money that&apos;s actually invested, leaving out buybacks, could earn around 5% to
-        10%.
+        as a whole could earn somewhere around 3% to 9% a year: nearer the bottom of that range in calm markets like today&apos;s, and nearer the top in
+        strong ones. The money that&apos;s actually invested, leaving out buybacks, could earn around 4% to 10%.
       </P>
       <ChartCard
         title="Estimated yield by strategy"
@@ -172,13 +198,13 @@ export default function Fund() {
         <RangeBars
           max={20}
           rows={[
-            { label: "Delta-neutral", weight: "30% of the Fund", low: 8, high: 15 },
+            { label: "Delta-neutral (Ethena)", weight: "30% of the Fund", low: 4, high: 15 },
             { label: "Yield vaults", weight: "25%", low: 5, high: 10 },
             { label: "Lending markets", weight: "15%", low: 3, high: 7 },
-            { label: "Liquid staking", weight: "10%", low: 3, high: 4 },
+            { label: "Liquid staking (Lido)", weight: "10%", low: 2, high: 4 },
             { label: "Cash reserve", weight: "5%", low: 0, high: 4 },
             { label: "$PEN buybacks", weight: "15%", low: 0, high: 0 },
-            { label: "Whole Fund", weight: "Blended estimate", low: 4, high: 9, highlight: true },
+            { label: "Whole Fund", weight: "Blended estimate", low: 3, high: 9, highlight: true },
           ]}
         />
       </ChartCard>
@@ -260,17 +286,39 @@ export default function Fund() {
         why the cash reserve never drops below 5%.
       </Callout>
 
-      <H2>How the Fund rotates</H2>
+      <H2>The Fund Manager</H2>
       <P>
-        Rates move all the time, so the Fund doesn&apos;t sit still. It reviews its positions regularly and moves money when a better risk-adjusted rate
-        opens up, using the same live rates you see in the app.
+        The Fund is run by the Fund Manager, an algorithm that decides where the money in each section sits. The split between sections stays at its
+        target. Inside each section, the Fund Manager moves money between vaults from time to time, towards the best rate it can get for the risk.
       </P>
+      <ChartCard title="How the Fund Manager decides" caption="It runs on the same live data as the Pecun app, inside the risk limits below.">
+        <Flow
+          steps={[
+            { title: "Read", body: "Live APY, TVL, liquidity and withdrawal terms for every vault in the section." },
+            { title: "Score", body: "Each vault's rate after fees, weighed against its risk and how easily it can exit.", tone: "lime" },
+            { title: "Check limits", body: "Caps per protocol and per vault, and the cash reserve." },
+            { title: "Rebalance", body: "Moves money only when the gain beats the cost of moving.", tone: "dark" },
+          ]}
+        />
+      </ChartCard>
       <Steps
         items={[
-          { title: "Compare", body: "Every strategy's current rate is compared, after fees, against the alternatives in its bucket." },
-          { title: "Check the risk", body: "A higher rate only counts if it fits the Fund's limits: liquidity, track record and how much is already there." },
-          { title: "Move", body: "Money moves when the gain is worth the cost of moving it. Small differences aren't chased." },
-          { title: "Publish", body: "Every change in allocation is shown on this page." },
+          {
+            title: "Section by section",
+            body: "Delta-neutral, yield vaults, lending, liquid staking and the cash reserve are each managed on their own. Rates in one section never pull money out of another.",
+          },
+          {
+            title: "Rotates within a section",
+            body: "If one lending market starts paying clearly more than another, or a vault's rate drops, the Fund Manager shifts money between them.",
+          },
+          {
+            title: "Doesn't chase noise",
+            body: "Small or short-lived differences are ignored. Money only moves when the better rate is likely to last long enough to pay for the move.",
+          },
+          {
+            title: "Every move is public",
+            body: "Each rebalance is published here with the date, the vaults, the amount and the reason.",
+          },
         ]}
       />
 

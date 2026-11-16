@@ -1,6 +1,6 @@
 import { aave, aaveV4, beefy, euler, fluid, lagoon, lido, morpho, pendle, savingsGho, upshift, yearn } from "./adapters/evm.ts";
 import { aftermath, ember, hyperliquid, jupiterLend, kamino, marinade, meteora, navi, scallop, solanaStaking } from "./adapters/nonevm.ts";
-import { compound, sky, spark } from "./adapters/onchain.ts";
+import { compound, ethena, sky, spark } from "./adapters/onchain.ts";
 import { gearbox, moonwell, suilend } from "./adapters/sdk.ts";
 import { delistedVaults, reconcile } from "./listing-state.ts";
 import { getLogoIndex, withLogos } from "./logos.ts";
@@ -33,6 +33,7 @@ const SOURCES: [string, () => Promise<Opportunity[]>][] = [
   ["Fluid", fluid],
   ["Spark", spark],
   ["Sky", sky],
+  ["Ethena", ethena],
   ["Marinade", marinade],
   ["Meteora", meteora],
 ];
