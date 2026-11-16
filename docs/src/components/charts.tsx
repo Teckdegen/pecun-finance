@@ -119,25 +119,41 @@ export function SplitBar({ data }: { data: Slice[] }) {
 }
 
 /** Boxes joined by arrows: across on wide screens, down on phones. */
+/**
+ * Numbered steps joined by arrows. Every card is the same height; the tone darkens along the way to show where the
+ * money ends up. Arrows sit on the seam between cards (right on desktop, below on phones).
+ */
 export function Flow({ steps }: { steps: { title: string; body: string; tone?: "lime" | "dark" | "plain" }[] }) {
-  const tone = (t?: string) => (t === "lime" ? "bg-lime text-ink" : t === "dark" ? "bg-[#122018] text-white" : "bg-[#f5f8ef] text-ink");
+  const tone = (t?: string) =>
+    t === "lime" ? "bg-lime text-ink" : t === "dark" ? "bg-[#122018] text-white" : "bg-[#f5f8ef] text-ink ring-1 ring-inset ring-black/[0.04]";
   return (
-    <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
-      {steps.map((s, i) => (
-        <div key={s.title} className="contents">
-          <div className={`flex-1 rounded-2xl p-4 ${tone(s.tone)}`}>
-            <p className="font-tight font-medium tracking-[-0.02em]">{s.title}</p>
-            <p className={`mt-1 text-[13px] leading-snug ${s.tone === "dark" ? "text-white/65" : "text-[#5e5e58]"}`}>{s.body}</p>
-          </div>
-          {i < steps.length - 1 && (
-            <span className="grid place-items-center text-[#8a8a83]">
-              <ArrowDown className="size-5 md:hidden" />
-              <ArrowRight className="hidden size-5 md:block" />
+    <ol className="grid gap-4 md:auto-cols-fr md:grid-flow-col md:gap-5">
+      {steps.map((s, i) => {
+        const dark = s.tone === "dark";
+        return (
+          <li key={s.title} className={`relative flex flex-col rounded-[1.4rem] p-5 md:min-h-[11.5rem] ${tone(s.tone)}`}>
+            <span
+              className={`tabular inline-flex size-7 items-center justify-center rounded-full text-[11px] font-semibold ${
+                dark ? "bg-lime text-ink" : s.tone === "lime" ? "bg-ink text-lime" : "bg-white text-ink ring-1 ring-black/10"
+              }`}
+            >
+              {String(i + 1).padStart(2, "0")}
             </span>
-          )}
-        </div>
-      ))}
-    </div>
+            <p className="mt-auto pt-6 font-tight text-[1.15rem] font-medium leading-tight tracking-[-0.025em]">{s.title}</p>
+            <p className={`mt-1.5 text-[13.5px] leading-snug ${dark ? "text-white/65" : "text-[#5e5e58]"}`}>{s.body}</p>
+            {i < steps.length - 1 && (
+              <span
+                aria-hidden
+                className="absolute -bottom-[1.15rem] left-1/2 z-10 grid size-8 -translate-x-1/2 place-items-center rounded-full border border-line bg-white text-ink shadow-[0_2px_8px_rgba(10,10,10,0.08)] md:-right-[1.4rem] md:bottom-auto md:left-auto md:top-1/2 md:-translate-y-1/2 md:translate-x-0"
+              >
+                <ArrowDown className="size-4 md:hidden" />
+                <ArrowRight className="hidden size-4 md:block" />
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -197,28 +213,80 @@ export function TaxCalculator() {
   );
 }
 
-/** Enter how many tokens you hold and what the Fund is worth; see your share of it. */
+const SUPPLY = 1_000_000_000;
+const TOKEN_PRESETS = [100_000, 1_000_000, 10_000_000];
+const FUND_PRESETS = [100_000, 500_000, 2_000_000];
+const shortNum = (n: number) => (n >= 1e6 ? `${n / 1e6}M` : `${n / 1e3}K`);
+const toNum = (v: string) => Math.max(0, Number(v.replace(/[^0-9.]/g, "")) || 0);
+
+/** One number input with its unit and a few quick picks under it. */
+function CalcField({ label, unit, value, onChange, presets, fmt }: {
+  label: string; unit: string; value: number; onChange: (n: number) => void; presets: number[]; fmt: (n: number) => string;
+}) {
+  return (
+    <div>
+      <label className="text-[13px] font-medium text-[#5e5e58]">
+        {label}
+        <span className="mt-2 flex items-center gap-1 rounded-2xl border border-line bg-white px-4 transition focus-within:border-ink/40 focus-within:shadow-[0_0_0_4px_rgba(184,255,157,0.45)]">
+          {unit === "$" && <span className="font-tight text-[1.25rem] text-[#8a8a83]">$</span>}
+          <input
+            inputMode="numeric"
+            value={value.toLocaleString("en-US")}
+            onChange={(e) => onChange(toNum(e.target.value))}
+            className="tabular min-w-0 flex-1 bg-transparent py-3 font-tight text-[1.25rem] font-medium tracking-[-0.02em] text-ink outline-none"
+          />
+          {unit !== "$" && <span className="text-[12px] font-medium text-[#8a8a83]">{unit}</span>}
+        </span>
+      </label>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {presets.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onChange(p)}
+            className={`tabular rounded-full px-3 py-1 text-[12px] transition ${value === p ? "bg-ink text-lime" : "bg-[#f5f8ef] text-[#5e5e58] hover:bg-[#eaf0df]"}`}
+          >
+            {fmt(p)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Enter how many tokens you hold and what the Fund is worth; see your share, with the sum written out. */
 export function ShareCalculator() {
   const [tokens, setTokens] = useState(1_000_000);
   const [fund, setFund] = useState(500_000);
-  const pct = tokens / 1_000_000_000;
-  const field = "mt-1.5 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 font-tight text-[1.1rem] text-ink outline-none focus:border-ink/40";
-  const num = (v: string) => Math.max(0, Number(v.replace(/[^0-9.]/g, "")) || 0);
+  const pct = tokens / SUPPLY;
+  const share = pct * fund;
+  const money = `$${share.toLocaleString("en-US", { minimumFractionDigits: share < 100 ? 2 : 0, maximumFractionDigits: share < 100 ? 2 : 0 })}`;
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
-      <div className="flex flex-col gap-4">
-        <label className="text-[14px] text-[#5e5e58]">
-          $PEN you hold
-          <input inputMode="numeric" value={tokens.toLocaleString("en-US")} onChange={(e) => setTokens(Math.min(1e9, num(e.target.value)))} className={field} />
-        </label>
-        <label className="text-[14px] text-[#5e5e58]">
-          Fund value, in dollars
-          <input inputMode="numeric" value={fund.toLocaleString("en-US")} onChange={(e) => setFund(num(e.target.value))} className={field} />
-        </label>
+    <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-stretch">
+      <div className="flex flex-col gap-5">
+        <CalcField label="$PEN you hold" unit="PEN" value={tokens} onChange={(n) => setTokens(Math.min(SUPPLY, n))} presets={TOKEN_PRESETS} fmt={shortNum} />
+        <CalcField label="Fund value" unit="$" value={fund} onChange={setFund} presets={FUND_PRESETS} fmt={(n) => `$${shortNum(n)}`} />
       </div>
-      <div className="flex flex-col gap-2.5">
-        <Stat label="Your share of the supply" value={`${(pct * 100).toFixed(pct < 0.0001 ? 6 : 4)}%`} />
-        <Stat label="Your share of the Fund" value={usd(pct * fund)} strong />
+
+      <div className="relative flex flex-col overflow-hidden rounded-[1.4rem] bg-[#122018] p-6 text-white">
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-lime/20 blur-3xl" />
+        <p className="relative text-[13px] text-white/60">Your share of the Fund</p>
+        <p className="tabular relative mt-2 font-tight text-[2.75rem] font-medium leading-none tracking-[-0.04em] text-lime">{money}</p>
+
+        <div className="relative mt-6">
+          <div className="flex items-baseline justify-between text-[13px]">
+            <span className="text-white/60">Your share of the supply</span>
+            <span className="tabular font-medium">{(pct * 100).toFixed(pct < 0.0001 ? 6 : 4)}%</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+            {/* Scaled ×20 so a typical holding is visible; a 5% holder fills the bar. */}
+            <div className="h-full rounded-full bg-lime" style={{ width: `${Math.min(100, Math.max(pct * 2000, pct > 0 ? 1.5 : 0))}%` }} />
+          </div>
+        </div>
+
+        <p className="tabular relative mt-auto pt-6 text-[12px] leading-relaxed text-white/45">
+          {tokens.toLocaleString("en-US")} ÷ {SUPPLY.toLocaleString("en-US")} × ${fund.toLocaleString("en-US")} = {money}
+        </p>
       </div>
     </div>
   );

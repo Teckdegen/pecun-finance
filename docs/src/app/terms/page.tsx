@@ -85,7 +85,7 @@ const SECTIONS: LegalSection[] = [
       </>,
       <>
         <B>Data providers</B> — each Third-Party Protocol&apos;s own APIs and software development kits, LI.FI&apos;s token and price data, and blockchain
-        node (RPC) providers such as PublicNode and each network&apos;s public endpoints.
+        node (RPC) provider Alchemy.
       </>,
       <>
         <B>Hosting and infrastructure</B> — cloud hosting, content delivery and logging providers that run the website and App.

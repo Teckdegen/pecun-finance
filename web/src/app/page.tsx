@@ -181,7 +181,7 @@ function Faq() {
       "What is the Pecun Fund?",
       <>
         The pool 70% of the $PEN tax pays into. It&apos;s put to work across delta-neutral strategies, yield vaults, lending, liquid staking and $PEN
-        buybacks, and as it grows it can add tokenized stocks and company investments. Its wallet and positions are public, and its value can go down
+        buybacks, and as it grows it can add tokenized stocks and bonds. Its wallet and positions are public, and its value can go down
         as well as up. {docs("/fund", "See how the Fund works")}.
       </>,
     ],

@@ -17,7 +17,7 @@ export default function Providers() {
           ["Aftermath", "Swap aggregation for some deposits and withdrawals."],
           ["Transaction sponsors", "Relayers and paymasters that pay network fees on your behalf."],
           ["Protocol data", "Each protocol's own APIs and SDKs, plus LI.FI's token and price data, for rates, TVL and prices."],
-          ["Node providers", "Services such as PublicNode that read and submit on-chain data."],
+          ["Alchemy", "Node provider. Reads and submits on-chain data."],
         ]}
       />
     </Doc>

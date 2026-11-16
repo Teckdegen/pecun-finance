@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 
 /** Target split of the Fund. The live split is published on this page once the Fund is running. */
 const ALLOCATION: Slice[] = [
-  { label: "Delta-neutral strategies", value: 30, color: "#0a0a0a", note: "Mainly Ethena's sUSDe: funding and basis, hedged against price moves." },
+  { label: "Delta-neutral strategies", value: 30, color: "#0a0a0a", note: "Funding and basis yield, hedged against price moves." },
   { label: "Yield vaults", value: 25, color: "#2f7d1c", note: "Curated vaults that allocate across lending and liquidity markets." },
   { label: "$PEN buybacks", value: 15, color: "#1c3a28", note: "Buys $PEN on the market and takes it out of circulation." },
   { label: "Lending markets", value: 15, color: "#7ed957", note: "Supply stablecoins and blue-chip assets to borrowers." },
-  { label: "Liquid staking", value: 10, color: "#b8ff9d", note: "Lido's stETH and similar liquid staking tokens." },
+  { label: "Liquid staking", value: 10, color: "#b8ff9d", note: "Widely used liquid staking tokens." },
   { label: "Cash reserve", value: 5, color: "#d8d2c2", note: "Stablecoins kept ready to pay holders who sell." },
 ];
 
@@ -94,28 +94,8 @@ export default function Fund() {
         they can earn without betting on the market going up.
       </P>
       <P>
-        The Fund gets this exposure mainly through <A href="https://docs.ethena.fi/">Ethena</A>. Ethena holds crypto collateral and opens an equal short
-        position on perpetuals exchanges against it, so the two cancel out. Staking USDe as sUSDe passes the funding, basis and collateral yield on to
-        holders. It&apos;s one of the largest delta-neutral products on-chain, with over $1B staked.
-      </P>
-      <ChartCard
-        title="sUSDe yield over time"
-        caption="Monthly average sUSDe staking yield. Source: Ethena's yield feed and DeFiLlama. Past yield doesn't predict future yield."
-      >
-        <RangeBars
-          max={60}
-          rows={[
-            { label: "Peak, Mar 2024", single: true, low: 0, high: 56 },
-            { label: "2024 average", single: true, low: 0, high: 20 },
-            { label: "Since launch", single: true, low: 0, high: 10 },
-            { label: "2026 so far", single: true, low: 0, high: 4 },
-            { label: "Now", weight: "Nov 2026", single: true, low: 0, high: 5, highlight: true },
-          ]}
-        />
-      </ChartCard>
-      <P>
-        sUSDe&apos;s yield follows how much traders are willing to pay to hold leveraged long positions. In strong markets that has meant 20% and more,
-        with a peak of 56% in March 2024. In calmer markets it falls to a few percent: it has averaged about 4% through 2026, and it pays around 5% today.
+        These yields follow how much traders are willing to pay to hold leveraged positions. In strong markets that can mean 20% and more; in calmer
+        markets it falls to a few percent.
       </P>
       <List
         items={[
@@ -153,9 +133,8 @@ export default function Fund() {
 
       <H3>Liquid staking (10%)</H3>
       <P>
-        Liquid staking earns staking rewards while holding a token that can still be sold or used. It adds a long-term, network-level yield to the Fund.
-        The Fund holds it mainly as <A href="https://lido.fi/">Lido</A>&apos;s stETH, the largest liquid staking token, which currently earns around 2.5% a
-        year.
+        Liquid staking earns staking rewards while holding a token that can still be sold or used. It adds a long-term, network-level yield to the Fund,
+        typically a few percent a year.
       </P>
       <List
         items={[
@@ -198,10 +177,10 @@ export default function Fund() {
         <RangeBars
           max={20}
           rows={[
-            { label: "Delta-neutral (Ethena)", weight: "30% of the Fund", low: 4, high: 15 },
+            { label: "Delta-neutral", weight: "30% of the Fund", low: 4, high: 15 },
             { label: "Yield vaults", weight: "25%", low: 5, high: 10 },
             { label: "Lending markets", weight: "15%", low: 3, high: 7 },
-            { label: "Liquid staking (Lido)", weight: "10%", low: 2, high: 4 },
+            { label: "Liquid staking", weight: "10%", low: 2, high: 4 },
             { label: "Cash reserve", weight: "5%", low: 0, high: 4 },
             { label: "$PEN buybacks", weight: "15%", low: 0, high: 0 },
             { label: "Whole Fund", weight: "Blended estimate", low: 3, high: 9, highlight: true },
@@ -225,12 +204,8 @@ export default function Fund() {
             body: "Delta-neutral strategies, yield vaults, lending and liquid staking, plus buybacks and a cash reserve. Everything stays liquid.",
           },
           {
-            title: "Stage 2: adding real-world assets ($1M to $10M)",
+            title: "Stage 2: adding real-world assets ($1M and up)",
             body: "Part of the Fund moves into tokenized stocks and tokenized government bonds, for returns that don't depend only on crypto.",
-          },
-          {
-            title: "Stage 3: backing companies ($10M and up)",
-            body: "A slice goes into direct stakes in companies, from early-stage angel investments to shares in growing businesses, held for the long term.",
           },
         ]}
       />
@@ -250,7 +225,7 @@ export default function Fund() {
             />
           </div>
           <div>
-            <p className="mb-3 text-[15px] font-medium text-ink">Stage 2 · $1M to $10M</p>
+            <p className="mb-3 text-[15px] font-medium text-ink">Stage 2 · $1M and up</p>
             <SplitBar
               data={[
                 { label: "Delta-neutral", value: 25, color: "#0a0a0a" },
@@ -263,27 +238,11 @@ export default function Fund() {
               ]}
             />
           </div>
-          <div>
-            <p className="mb-3 text-[15px] font-medium text-ink">Stage 3 · $10M and up</p>
-            <SplitBar
-              data={[
-                { label: "Delta-neutral", value: 20, color: "#0a0a0a" },
-                { label: "Tokenized stocks and bonds", value: 20, color: "#5b8def" },
-                { label: "Company and angel investments", value: 15, color: "#e8a33c" },
-                { label: "Yield vaults", value: 15, color: "#2f7d1c" },
-                { label: "$PEN buybacks", value: 15, color: "#1c3a28" },
-                { label: "Lending", value: 5, color: "#7ed957" },
-                { label: "Liquid staking", value: 5, color: "#b8ff9d" },
-                { label: "Cash reserve", value: 5, color: "#d8d2c2" },
-              ]}
-            />
-          </div>
         </div>
       </ChartCard>
-      <Callout tone="warn" title="Bigger stages carry different risks">
-        Company and angel investments can take years to pay off, can&apos;t be sold quickly, and often fail completely. Tokenized stocks follow the stock
-        market and aren&apos;t available everywhere. That&apos;s why these stages only start once the Fund is large enough to keep most of its money liquid, and
-        why the cash reserve never drops below 5%.
+      <Callout tone="warn" title="Stage 2 carries different risks">
+        Tokenized stocks and bonds follow traditional markets and aren&apos;t available everywhere. That&apos;s why Stage 2 only starts once the Fund is
+        large enough to keep most of its money liquid, and why the cash reserve never drops below 5%.
       </Callout>
 
       <H2>The Fund Manager</H2>
@@ -329,7 +288,7 @@ export default function Fund() {
           "No more than 15% of the Fund in any single vault or market.",
           "At least 5% kept in stablecoins as a cash reserve for payouts.",
           "On-chain, only products Pecun lists, with deep liquidity and a track record.",
-          "Tokenized assets and company investments only from the stages below, once the Fund is big enough.",
+          "Tokenized assets only from Stage 2, once the Fund is big enough.",
           "Leverage only inside delta-neutral strategies, where it's hedged.",
           "Buybacks capped at 15% of the Fund.",
         ]}
