@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ChartCard, Donut, Flow, ShareCalculator, TaxCalculator, type Slice } from "@/components/charts";
+import { ChartCard, Donut, Flow, RangeBars, ShareCalculator, SplitBar, TaxCalculator, type Slice } from "@/components/charts";
 import { A, Callout, Doc, Facts, H2, H3, List, P, Steps } from "@/components/chrome";
 
 export const metadata: Metadata = {
@@ -21,7 +21,8 @@ export default function Fund() {
   return (
     <Doc href="/fund">
       <P>
-        The Pecun Fund is the shared pool behind $PEN. Every $PEN trade pays a 3% tax into it, and Pecun invests that money across the same protocols
+        The Pecun Fund is the shared pool behind $PEN. Every $PEN trade pays a 3% tax: 70% of it goes into the Fund and 30% pays for running Pecun.
+        Pecun invests the Fund across the same protocols
         the app lists: hedged delta-neutral strategies, yield vaults, lending markets and liquid staking, and uses part of it to buy back $PEN. The Fund
         belongs to $PEN holders. Each holder
         owns a slice of it in proportion to their tokens, and gets that slice paid out when they sell.
@@ -34,7 +35,7 @@ export default function Fund() {
       <H2>The Fund at a glance</H2>
       <Facts
         rows={[
-          ["Funded by", "A 3% tax on every $PEN trade."],
+          ["Funded by", "70% of the 3% tax on every $PEN trade. The other 30% pays Pecun's running costs."],
           ["Owned by", "$PEN holders, in proportion to the tokens they hold."],
           ["Invested in", "Delta-neutral strategies, yield vaults, lending markets and liquid staking, on the protocols Pecun lists, plus $PEN buybacks."],
           ["Managed by", "Pecun, following the allocation and risk limits on this page."],
@@ -49,17 +50,31 @@ export default function Fund() {
           steps={[
             { title: "A $PEN trade", body: "Someone buys or sells $PEN." },
             { title: "3% tax", body: "3% of the trade is set aside by the token contract.", tone: "lime" },
-            { title: "Pecun Fund", body: "The tax lands in the Fund's wallet.", tone: "dark" },
+            { title: "Pecun Fund", body: "70% of the tax lands in the Fund's wallet. 30% covers running costs.", tone: "dark" },
             { title: "Put to work", body: "It's deployed across the strategies below." },
           ]}
         />
       </ChartCard>
 
+      <ChartCard title="Where the tax goes" caption="Out of every $100 traded, $3 is tax: $2.10 goes into the Fund and $0.90 pays for running Pecun.">
+        <SplitBar
+          data={[
+            { label: "Pecun Fund", value: 70, color: "#2f7d1c", note: "Invested for holders: $2.10 of every $100 traded." },
+            { label: "Running costs", value: 30, color: "#0a0a0a", note: "The team, infrastructure, security audits and the network fees Pecun covers." },
+          ]}
+        />
+      </ChartCard>
+
       <P>
-        Because the tax is a share of every trade, the Fund grows fastest when $PEN trades the most. The calculator shows how much the tax alone adds at
+        Running costs keep Pecun going: the people building it, servers and data, security audits, and the network fees Pecun pays on users&apos; behalf.
+        They&apos;re reported alongside the Fund, so it&apos;s clear where every part of the tax goes.
+      </P>
+
+      <P>
+        Because the tax is a share of every trade, the Fund grows fastest when $PEN trades the most. The calculator shows how much the Fund's 70% of the tax adds at
         different daily volumes, before the Fund earns any yield.
       </P>
-      <ChartCard title="What the tax adds" caption="Tax income only, at a steady daily volume. Real volume goes up and down, and these figures don't include yield or losses.">
+      <ChartCard title="What the tax adds to the Fund" caption="The Fund's 70% of the tax only, at a steady daily volume. Real volume goes up and down, and these figures don't include yield or losses.">
         <TaxCalculator />
       </ChartCard>
 
@@ -144,6 +159,107 @@ export default function Fund() {
         the Fund room to move into a better opportunity quickly.
       </P>
 
+      <H2>What the Fund could earn</H2>
+      <P>
+        Each strategy earns at a different rate, and those rates move all the time. Based on the ranges these strategies have paid recently, the Fund
+        as a whole could earn somewhere around 4% to 9% a year. The money that&apos;s actually invested, leaving out buybacks, could earn around 5% to
+        10%.
+      </P>
+      <ChartCard
+        title="Estimated yield by strategy"
+        caption="Typical ranges these strategies have paid recently, not a forecast or a promise. Real yields change daily and can be lower, or negative."
+      >
+        <RangeBars
+          max={20}
+          rows={[
+            { label: "Delta-neutral", weight: "30% of the Fund", low: 8, high: 15 },
+            { label: "Yield vaults", weight: "25%", low: 5, high: 10 },
+            { label: "Lending markets", weight: "15%", low: 3, high: 7 },
+            { label: "Liquid staking", weight: "10%", low: 3, high: 4 },
+            { label: "Cash reserve", weight: "5%", low: 0, high: 4 },
+            { label: "$PEN buybacks", weight: "15%", low: 0, high: 0 },
+            { label: "Whole Fund", weight: "Blended estimate", low: 4, high: 9, highlight: true },
+          ]}
+        />
+      </ChartCard>
+      <P>
+        The blended figure is each strategy&apos;s range weighted by its share of the Fund. Buybacks don&apos;t earn yield, so they pull the blended number
+        down, but they shrink the supply and raise every holder&apos;s share instead.
+      </P>
+
+      <H2>The strategy grows with the Fund</H2>
+      <P>
+        What the Fund invests in depends on how big it is. A small Fund stays in liquid on-chain yield it can move in and out of quickly. As it grows, it
+        can take on investments that need more size and more patience, so the mix changes stage by stage.
+      </P>
+      <Steps
+        items={[
+          {
+            title: "Stage 1: on-chain yield (under $1M)",
+            body: "Delta-neutral strategies, yield vaults, lending and liquid staking, plus buybacks and a cash reserve. Everything stays liquid.",
+          },
+          {
+            title: "Stage 2: adding real-world assets ($1M to $10M)",
+            body: "Part of the Fund moves into tokenized stocks and tokenized government bonds, for returns that don't depend only on crypto.",
+          },
+          {
+            title: "Stage 3: backing companies ($10M and up)",
+            body: "A slice goes into direct stakes in companies, from early-stage angel investments to shares in growing businesses, held for the long term.",
+          },
+        ]}
+      />
+      <ChartCard title="Target allocation at each stage" caption="Indicative targets. The actual mix at each stage will be published here before the Fund moves into it.">
+        <div className="flex flex-col gap-7">
+          <div>
+            <p className="mb-3 text-[15px] font-medium text-ink">Stage 1 · under $1M</p>
+            <SplitBar
+              data={[
+                { label: "Delta-neutral", value: 30, color: "#0a0a0a" },
+                { label: "Yield vaults", value: 25, color: "#2f7d1c" },
+                { label: "$PEN buybacks", value: 15, color: "#1c3a28" },
+                { label: "Lending", value: 15, color: "#7ed957" },
+                { label: "Liquid staking", value: 10, color: "#b8ff9d" },
+                { label: "Cash reserve", value: 5, color: "#d8d2c2" },
+              ]}
+            />
+          </div>
+          <div>
+            <p className="mb-3 text-[15px] font-medium text-ink">Stage 2 · $1M to $10M</p>
+            <SplitBar
+              data={[
+                { label: "Delta-neutral", value: 25, color: "#0a0a0a" },
+                { label: "Tokenized stocks and bonds", value: 20, color: "#5b8def" },
+                { label: "Yield vaults", value: 20, color: "#2f7d1c" },
+                { label: "$PEN buybacks", value: 15, color: "#1c3a28" },
+                { label: "Lending", value: 10, color: "#7ed957" },
+                { label: "Liquid staking", value: 5, color: "#b8ff9d" },
+                { label: "Cash reserve", value: 5, color: "#d8d2c2" },
+              ]}
+            />
+          </div>
+          <div>
+            <p className="mb-3 text-[15px] font-medium text-ink">Stage 3 · $10M and up</p>
+            <SplitBar
+              data={[
+                { label: "Delta-neutral", value: 20, color: "#0a0a0a" },
+                { label: "Tokenized stocks and bonds", value: 20, color: "#5b8def" },
+                { label: "Company and angel investments", value: 15, color: "#e8a33c" },
+                { label: "Yield vaults", value: 15, color: "#2f7d1c" },
+                { label: "$PEN buybacks", value: 15, color: "#1c3a28" },
+                { label: "Lending", value: 5, color: "#7ed957" },
+                { label: "Liquid staking", value: 5, color: "#b8ff9d" },
+                { label: "Cash reserve", value: 5, color: "#d8d2c2" },
+              ]}
+            />
+          </div>
+        </div>
+      </ChartCard>
+      <Callout tone="warn" title="Bigger stages carry different risks">
+        Company and angel investments can take years to pay off, can&apos;t be sold quickly, and often fail completely. Tokenized stocks follow the stock
+        market and aren&apos;t available everywhere. That&apos;s why these stages only start once the Fund is large enough to keep most of its money liquid, and
+        why the cash reserve never drops below 5%.
+      </Callout>
+
       <H2>How the Fund rotates</H2>
       <P>
         Rates move all the time, so the Fund doesn&apos;t sit still. It reviews its positions regularly and moves money when a better risk-adjusted rate
@@ -164,7 +280,8 @@ export default function Fund() {
           "No more than 25% of the Fund in any single protocol.",
           "No more than 15% of the Fund in any single vault or market.",
           "At least 5% kept in stablecoins as a cash reserve for payouts.",
-          "Only products Pecun lists, with deep liquidity and a track record.",
+          "On-chain, only products Pecun lists, with deep liquidity and a track record.",
+          "Tokenized assets and company investments only from the stages below, once the Fund is big enough.",
           "Leverage only inside delta-neutral strategies, where it's hedged.",
           "Buybacks capped at 15% of the Fund.",
         ]}
@@ -188,7 +305,7 @@ export default function Fund() {
         items={[
           "Nothing to claim: the payout happens in the same sale.",
           "Paid from the cash reserve first, so sellers don't have to wait for a strategy to unwind.",
-          "The 3% tax still applies to the sale, and goes back into the Fund for the holders who stay.",
+          "The 3% tax still applies to the sale, and 70% of it goes back into the Fund for the holders who stay.",
         ]}
       />
 
@@ -199,7 +316,7 @@ export default function Fund() {
           "The live allocation chart replaces the target chart above once the Fund is running.",
           "Every move between strategies is listed, with the date, the amount and the reason.",
           "Every buyback and burn is listed, with the amount spent and the tokens burned.",
-          "A regular report shows tax collected, yield earned, payouts made and the Fund's value.",
+          "A regular report shows tax collected, what went to running costs, yield earned, payouts made and the Fund's value.",
         ]}
       />
 
@@ -213,7 +330,7 @@ export default function Fund() {
       <H2>Questions about the Fund</H2>
       <Facts
         rows={[
-          ["Can Pecun take money out of the Fund?", "The Fund is only for investing and for paying holders. Its wallet and every movement are public, so anyone can check."],
+          ["Can Pecun take money out of the Fund?", "No. Pecun's running costs come from its 30% of the tax, before anything reaches the Fund. The Fund is only for investing and for paying holders, and its wallet and every movement are public."],
           ["What if a strategy loses money?", "The Fund's value goes down, and so does every holder's share. Spreading money across strategies and protocols is how the Fund limits that."],
           ["Does the Fund buy $PEN?", "Yes, with 15% of the Fund. Bought-back tokens are burned, which shrinks the supply and raises every remaining holder's share."],
           ["Where are the numbers?", "On this page: the Fund's wallet, the live allocation and regular reports, once it's running."],

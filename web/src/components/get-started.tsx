@@ -568,12 +568,12 @@ function FundTile() {
   );
 }
 
-/** A trade receipt: $97 goes through, $3 goes to the Fund, and the Fund's tally ticks up. */
+/** A trade receipt: $97 goes through, $2.10 of the $3 tax goes to the Fund, $0.90 to running costs, and the Fund's tally ticks up. */
 function FundTaxCard() {
   const ref = useRef<HTMLElement>(null);
   const tick = useTicker(6, 1600, ref);
   return (
-    <Card tone="lime" title="3% of every $PEN trade goes into the Fund." cardRef={ref}>
+    <Card tone="lime" title="A 3% tax on every $PEN trade. 70% of it goes into the Fund." cardRef={ref}>
       <div className="absolute inset-x-6 top-1/2 flex -translate-y-1/2 flex-col gap-3 lg:inset-x-9">
         <div className="rounded-[24px] bg-white p-5 shadow-[0_18px_40px_rgba(18,32,24,0.12)]">
           <div className="flex items-center justify-between">
@@ -581,21 +581,28 @@ function FundTaxCard() {
             <span className="tabular text-[1.6rem] font-medium leading-none tracking-[-0.04em]">$100.00</span>
           </div>
           <div className="mt-4 flex h-2.5 gap-[3px] overflow-hidden rounded-full">
-            <span className="h-full rounded-l-full bg-[#0a0a0a]" style={{ width: "97%" }} />
-            <span className="h-full flex-1 rounded-r-full bg-[#2f7d1c]" />
+            <span className="h-full min-w-0 flex-1 rounded-l-full bg-[#d8d2c2]" />
+            <span className="h-full min-w-[6px] bg-[#2f7d1c]" style={{ width: "2.1%" }} />
+            <span className="h-full min-w-[4px] rounded-r-full bg-[#0a0a0a]" style={{ width: "0.9%" }} />
           </div>
           <dl className="mt-4 grid gap-2.5 text-[15px]">
             <div className="flex items-center justify-between">
               <dt className="flex items-center gap-2 text-[#5e5e58]">
-                <span className="size-2 rounded-full bg-[#0a0a0a]" /> Goes through
+                <span className="size-2 rounded-full bg-[#d8d2c2]" /> Goes through
               </dt>
               <dd className="tabular font-medium">$97.00</dd>
             </div>
             <div className="flex items-center justify-between">
               <dt className="flex items-center gap-2 text-[#5e5e58]">
-                <span className="size-2 rounded-full bg-[#2f7d1c]" /> Tax to the Fund
+                <span className="size-2 rounded-full bg-[#2f7d1c]" /> To the Fund
               </dt>
-              <dd className="tabular font-medium text-[#2f7d1c]">$3.00</dd>
+              <dd className="tabular font-medium text-[#2f7d1c]">$2.10</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="flex items-center gap-2 text-[#5e5e58]">
+                <span className="size-2 rounded-full bg-[#0a0a0a]" /> Running costs
+              </dt>
+              <dd className="tabular font-medium">$0.90</dd>
             </div>
           </dl>
         </div>
@@ -608,7 +615,7 @@ function FundTaxCard() {
             Pecun Fund
           </span>
           <span key={tick} className="pop tabular text-[15px] font-medium text-lime">
-            +${(3 * (tick + 1)).toFixed(2)}
+            +${(2.1 * (tick + 1)).toFixed(2)}
           </span>
         </div>
       </div>

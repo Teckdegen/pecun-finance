@@ -173,15 +173,16 @@ function Faq() {
     [
       "What is $PEN?",
       <>
-        Pecun&apos;s token. Every $PEN trade pays a 3% tax into the Pecun Fund, and holders own a share of that Fund. The supply is 1,000,000,000,
-        and it&apos;s a fair launch with no presale. {docs("/token", "Read about $PEN")}.
+        Pecun&apos;s token. Every $PEN trade pays a 3% tax: 70% goes into the Pecun Fund, which holders own a share of, and 30% pays for running
+        Pecun. The supply is 1,000,000,000, and it&apos;s a fair launch with no presale. {docs("/token", "Read about $PEN")}.
       </>,
     ],
     [
       "What is the Pecun Fund?",
       <>
-        The pool the $PEN tax pays into. It&apos;s put to work across delta-neutral strategies, yield vaults, lending, liquid staking and $PEN buybacks,
-        and its wallet and positions are public. Its value can go down as well as up. {docs("/fund", "See how the Fund works")}.
+        The pool 70% of the $PEN tax pays into. It&apos;s put to work across delta-neutral strategies, yield vaults, lending, liquid staking and $PEN
+        buybacks, and as it grows it can add tokenized stocks and company investments. Its wallet and positions are public, and its value can go down
+        as well as up. {docs("/fund", "See how the Fund works")}.
       </>,
     ],
     [

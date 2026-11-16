@@ -11,8 +11,8 @@ export default function Token() {
   return (
     <Doc href="/token">
       <P>
-        $PEN is the Pecun token. Every trade pays a 3% tax into the Pecun Fund, a pool that Pecun puts to work in yield vaults across the protocols it
-        lists. Holders own a share of the Fund in proportion to how many tokens they hold. The idea is a pool that keeps working for everyone who
+        $PEN is the Pecun token. Every trade pays a 3% tax. 70% of it goes into the Pecun Fund, a pool that Pecun puts to work in yield vaults across
+        the protocols it lists, and 30% pays for running Pecun. Holders own a share of the Fund in proportion to how many tokens they hold. The idea is a pool that keeps working for everyone who
         holds, much like a long-term national savings fund.
       </P>
 
@@ -23,7 +23,7 @@ export default function Token() {
           ["Total supply", "1,000,000,000 PEN at launch, shrinking as buybacks burn tokens."],
           ["Launch", "Fair launch, with no presale."],
           ["Network", "Robinhood Chain"],
-          ["Tax", "3% on each trade, paid into the Pecun Fund."],
+          ["Tax", "3% on each trade: 70% to the Pecun Fund, 30% to running costs."],
           ["Contract address", "Published here at launch. Don't trust any address you see elsewhere first."],
         ]}
       />
@@ -39,27 +39,32 @@ export default function Token() {
 
       <H2>The 3% tax</H2>
       <P>
-        Every $PEN trade, buy or sell, pays 3% to the Pecun Fund. The other 97% goes through as normal. None of the tax goes to the team: all of it goes
-        into the Fund that holders own.
+        Every $PEN trade, buy or sell, pays a 3% tax. The other 97% goes through as normal. Of the tax, 70% goes into the Fund that holders own and 30%
+        pays for running Pecun: the team, infrastructure, security audits and the network fees Pecun covers.
       </P>
-      <ChartCard title="Where each trade goes" caption="Out of every $100 traded, $3 goes into the Pecun Fund.">
+      <ChartCard title="Where each trade goes" caption="Out of every $100 traded, $3 is tax.">
         <Donut
           data={[
             { label: "Trade goes through", value: 97, color: "#0a0a0a", note: "$97 of every $100 traded." },
-            { label: "Pecun Fund", value: 3, color: "#b8ff9d", note: "$3 of every $100, invested for holders." },
+            { label: "Tax", value: 3, color: "#b8ff9d", note: "$3 of every $100: $2.10 to the Fund, $0.90 to running costs." },
           ]}
           center="3%"
-          sub="of every trade to the Fund"
+          sub="tax on every trade"
         />
       </ChartCard>
-      <ChartCard title="Where the tax goes">
-        <SplitBar data={[{ label: "Pecun Fund", value: 100, color: "#b8ff9d", note: "Invested in vaults and strategies for holders." }]} />
+      <ChartCard title="Where the tax goes" caption="Running costs and the Fund are reported side by side.">
+        <SplitBar
+          data={[
+            { label: "Pecun Fund", value: 70, color: "#2f7d1c", note: "Invested in vaults and strategies for holders." },
+            { label: "Running costs", value: 30, color: "#0a0a0a", note: "The team, infrastructure, audits and network fees." },
+          ]}
+        />
       </ChartCard>
 
       <H2>How the Pecun Fund works</H2>
       <Steps
         items={[
-          { title: "The tax comes in", body: "3% of every $PEN trade goes to the Pecun Fund." },
+          { title: "The tax comes in", body: "Every $PEN trade pays 3%, and 70% of it goes to the Pecun Fund." },
           {
             title: "The Fund is put to work",
             body: (

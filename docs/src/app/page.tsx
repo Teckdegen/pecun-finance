@@ -34,7 +34,7 @@ export default function Introduction() {
           ["Products", "Lending markets, vaults, liquid staking, savings rates and fixed yield."],
           ["Protocols", `${PROTOCOLS.length} platforms, including Aave, Morpho, Lido, Pendle, Kamino and Hyperliquid.`],
           ["Fees", "A small fee on deposits and withdrawals, always shown before you confirm. Network fees are currently paid by Pecun."],
-          ["Token", <>$PEN, whose 3% trading tax funds the Pecun Fund. See <A href="/token">$PEN token</A>.</>],
+          ["Token", <>$PEN. 70% of its 3% trading tax funds the Pecun Fund. See <A href="/token">$PEN token</A>.</>],
           ["Where", <>Most of the world, with some exceptions. See <A href="/availability">Availability</A>.</>],
         ]}
       />

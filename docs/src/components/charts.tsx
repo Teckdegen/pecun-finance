@@ -152,11 +152,12 @@ function Stat({ label, value, strong }: { label: string; value: string; strong?:
 
 const VOLUMES = [100_000, 250_000, 500_000, 1_000_000, 2_500_000, 5_000_000, 10_000_000];
 
-/** Pick a daily trading volume and see what the 3% tax adds to the Fund, before any yield. */
+/** Pick a daily trading volume and see what the Fund's 70% of the 3% tax adds, before any yield. */
 export function TaxCalculator() {
   const [i, setI] = useState(3);
   const volume = VOLUMES[i];
-  const day = volume * 0.03;
+  // 3% tax on each trade; 70% of it goes to the Fund, 30% to running costs.
+  const day = volume * 0.03 * 0.7;
   const months = [1, 3, 6, 12];
   const max = day * 365;
   return (
@@ -218,6 +219,47 @@ export function ShareCalculator() {
       <div className="flex flex-col gap-2.5">
         <Stat label="Your share of the supply" value={`${(pct * 100).toFixed(pct < 0.0001 ? 6 : 4)}%`} />
         <Stat label="Your share of the Fund" value={usd(pct * fund)} strong />
+      </div>
+    </div>
+  );
+}
+
+export type Range = { label: string; low: number; high: number; weight?: string; highlight?: boolean };
+
+/** Horizontal low-to-high ranges on one shared scale, for estimated yields. */
+export function RangeBars({ rows, max }: { rows: Range[]; max: number }) {
+  const ticks = Array.from({ length: Math.floor(max / 5) + 1 }, (_, i) => i * 5);
+  return (
+    <div>
+      <ul className="flex flex-col gap-3.5">
+        {rows.map((r) => (
+          <li key={r.label} className="grid grid-cols-[1fr] gap-1.5 sm:grid-cols-[11rem_1fr] sm:items-center sm:gap-4">
+            <span className={`flex items-baseline justify-between gap-2 text-[15px] sm:block ${r.highlight ? "font-tight font-medium text-ink" : "text-[#3a3a36]"}`}>
+              {r.label}
+              {r.weight && <span className="text-[13px] text-[#8a8a83] sm:block">{r.weight}</span>}
+            </span>
+            <div className="relative h-7 rounded-full bg-[#f1f1ec]">
+              {r.high > 0 ? (
+                <span
+                  className={`absolute inset-y-1 flex items-center justify-center rounded-full text-[12px] font-medium ${r.highlight ? "bg-[#122018] text-lime" : "bg-[#2f7d1c] text-white"}`}
+                  style={{ left: `${(r.low / max) * 100}%`, width: `${Math.max(9, ((r.high - r.low) / max) * 100)}%` }}
+                >
+                  {r.low}–{r.high}%
+                </span>
+              ) : (
+                <span className="absolute inset-y-0 left-3 flex items-center text-[12px] text-[#8a8a83]">No yield</span>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 hidden grid-cols-[11rem_1fr] gap-4 sm:grid">
+        <span />
+        <div className="flex justify-between text-[11px] text-[#8a8a83]">
+          {ticks.map((t) => (
+            <span key={t}>{t}%</span>
+          ))}
+        </div>
       </div>
     </div>
   );
