@@ -2,11 +2,12 @@ import "server-only";
 import { Turnkey } from "@turnkey/sdk-server";
 
 /**
- * Pecun's own Turnkey access, server side only. It acts in Pecun's parent organization (the gas tank and the fee
- * treasury). It has NO access to users' wallets: each user's wallet lives in their own sub-organization, where only
- * their sign-in can approve anything.
+ * Server-side Turnkey helpers. `verifyUserAccounts` needs no API key: it forwards a request the user signed with their
+ * own session, and Turnkey confirms who they are and which addresses they own. Pecun has NO access to users' wallets:
+ * each lives in the user's own sub-organization, where only their sign-in can approve anything.
  *
- * Needs (never NEXT_PUBLIC): TURNKEY_API_PUBLIC_KEY and TURNKEY_API_PRIVATE_KEY, plus NEXT_PUBLIC_TURNKEY_ORGANIZATION_ID.
+ * `turnkey()` (Pecun's own API client) is only for future server tasks in Pecun's parent organization and needs
+ * TURNKEY_API_PUBLIC_KEY and TURNKEY_API_PRIVATE_KEY (never NEXT_PUBLIC).
  */
 
 export const TURNKEY_API_BASE = "https://api.turnkey.com";
