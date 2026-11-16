@@ -23,6 +23,10 @@ export type AuthActions = {
   routing?: { solana: string; sui: string };
   /** Creates the user's Solana and Sui server wallets if they don't exist yet; ok only once both are confirmed. */
   setupWallets: () => Promise<WalletSetup>;
+  /** True once the user has all three: their EVM wallet and their Solana and Sui server wallets. */
+  accountReady: boolean;
+  /** Creates whatever is missing (EVM wallet in the user's account, then the server wallets); ok only when all exist. */
+  ensureAccount: () => Promise<WalletSetup>;
 };
 
 const Ctx = createContext<AuthActions | null>(null);
@@ -57,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 function LiveAuth({ children }: { children: ReactNode }) {
-  const { authState, user, wallets, session, httpClient, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, signAndSendTransaction } = useTurnkey();
+  const { authState, user, wallets, session, httpClient, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, signAndSendTransaction, createWallet, refreshWallets } = useTurnkey();
   const [routing, setRouting] = useState<{ solana: string; sui: string } | undefined>();
 
   // Once signed in, make sure the user's server wallets (Solana, Sui) exist. The request is signed with the user's
@@ -99,6 +103,29 @@ function LiveAuth({ children }: { children: ReactNode }) {
     () => wallets?.flatMap((w) => w.accounts ?? []).find((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"),
     [wallets],
   );
+  const ensureAccount = useCallback(async (): Promise<WalletSetup> => {
+    let created = false;
+    if (!evmAccount) {
+      // The user's own EVM wallet is missing: create it in their Turnkey account.
+      try {
+        await createWallet({ walletName: PECUN_WALLET.walletName, accounts: PECUN_WALLET.walletAccounts });
+        const fresh = await refreshWallets();
+        if (!fresh?.some((w) => w.accounts?.some((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"))) {
+          return { ok: false, error: "Your EVM wallet was created but didn't show up yet. Try again." };
+        }
+        created = true;
+      } catch (e) {
+        return { ok: false, error: `Couldn't create your EVM wallet: ${e instanceof Error ? e.message : String(e)}` };
+      }
+    }
+    if (!routing?.solana || !routing?.sui) {
+      const r = await setupWallets();
+      if (!r.ok) return r;
+      created ||= r.created;
+    }
+    return { ok: true, created };
+  }, [evmAccount, routing, createWallet, refreshWallets, setupWallets]);
+
   // initOtp returns an encryption bundle that completeOtp needs; keep it per code request.
   const bundles = useRef(new Map<string, string>());
 
@@ -157,6 +184,8 @@ function LiveAuth({ children }: { children: ReactNode }) {
       evmAddress: evmAccount?.address as `0x${string}` | undefined,
       routing,
       setupWallets,
+      accountReady: !!evmAccount && !!routing?.solana && !!routing?.sui,
+      ensureAccount,
       sendEvmTransaction: async (unsigned, rpcUrl) => {
         if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
         try {
@@ -169,7 +198,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -179,10 +208,11 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** No email is sent: any 6-digit code signs in (000000 shows a wrong code). Nobody is really signed in. */
 function DemoAuth({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<string | undefined>();
-  const signOut = useCallback(async () => setAccount(undefined), []);
+  const signOut = useCallback(async () => (setAccount(undefined), setDemoReady(false)), []);
   // Demo: the first sign-in with an email this visit counts as a new account, later ones as returning.
   const seen = useRef(new Set<string>());
   const lastNew = useRef(false);
+  const [demoReady, setDemoReady] = useState(false);
   const value = useMemo<AuthActions>(
     () => ({
       live: false,
@@ -200,14 +230,16 @@ function DemoAuth({ children }: { children: ReactNode }) {
       },
       signInWithPasskey: async () => (await wait(900), (lastNew.current = false), setAccount("Passkey (demo)"), { ok: true, isNew: false }),
       createPasskey: async () => (await wait(900), (lastNew.current = true), setAccount("Passkey (demo)"), { ok: true, isNew: true }),
-      setupWallets: async () => (await wait(lastNew.current ? 2200 : 1200), { ok: true, created: lastNew.current }),
+      setupWallets: async () => (await wait(lastNew.current ? 2200 : 1200), setDemoReady(true), { ok: true, created: lastNew.current }),
+      accountReady: !!account && demoReady,
+      ensureAccount: async () => (await wait(2000), setDemoReady(true), { ok: true, created: true }),
       signOut,
       // A fixed demo address so the wallet screens can be tried; nothing is ever sent from it.
       evmAddress: account ? "0x000000000000000000000000000000000000de40" : undefined,
       // Demo: pretends to send so the success screen can be seen. Nothing is signed or broadcast.
       sendEvmTransaction: async () => (await wait(1400), { ok: true, hash: `0x${"de".repeat(32)}` as `0x${string}` }),
     }),
-    [account, signOut],
+    [account, signOut, demoReady],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

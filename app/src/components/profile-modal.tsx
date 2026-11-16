@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowDownUp, ArrowLeft, ArrowUpRight, Check, ChevronDown, Copy, ExternalLink, Loader2, Power, Send, X } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowLeft, ArrowUpRight, Check, ChevronDown, Copy, ExternalLink, Loader2, Power, RotateCw, Send, X } from "lucide-react";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -19,7 +19,7 @@ import {
 } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
 
-type View = "home" | "receive" | "send";
+type View = "home" | "receive" | "send" | "setup";
 
 const ROBINHOOD_LOGO = "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/robinhood.svg";
 const money = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -29,8 +29,12 @@ const money = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 
  * Solana and Sui addresses exist on the account but are only used behind the scenes.
  */
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { account, evmAddress, signOut, live } = useAuth();
+  const { account, evmAddress, signOut, live, accountReady, ensureAccount } = useAuth();
   const [view, setView] = useState<View>("home");
+  const [setupErr, setSetupErr] = useState("");
+  const settingUp = useRef(false);
+  const ready = useRef(accountReady);
+  ready.current = accountReady;
   const [bal, setBal] = useState<Balances | null>(null);
   const [balErr, setBalErr] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
@@ -45,10 +49,32 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
     }
   }, [evmAddress]);
 
+  /** Creates whatever the account is missing (EVM wallet, or the background ones), then opens the wallet. */
+  const runSetup = useCallback(async () => {
+    if (settingUp.current) return;
+    settingUp.current = true;
+    setSetupErr("");
+    const r = await ensureAccount();
+    settingUp.current = false;
+    if (!r.ok) {
+      console.error("[pecun] account setup failed:", r.error);
+      setSetupErr(r.error);
+      return;
+    }
+    setView("home");
+    void refresh();
+  }, [ensureAccount, refresh]);
+
+  useEffect(() => {
+    if (open && view === "setup" && !setupErr) void runSetup();
+  }, [open, view, setupErr, runSetup]);
+
   // Load on open, then keep the balance fresh every 20 seconds while the wallet is open.
   useEffect(() => {
     if (!open) return;
-    setView("home");
+    // Anything missing (EVM wallet or the background wallets) is created first.
+    setSetupErr("");
+    setView(ready.current ? "home" : "setup");
     void refresh();
     const t = setInterval(() => void refresh(), 20_000);
     const prev = document.body.style.overflow;
@@ -77,6 +103,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
         aria-label="Your Pecun wallet"
         className="relative max-h-[92dvh] w-full max-w-[440px] overflow-y-auto rounded-t-[28px] border border-white/10 bg-[#121315] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-6 shadow-[0_30px_90px_rgba(0,0,0,0.7)] sm:rounded-[28px] sm:pb-7"
       >
+        {view === "setup" && <AccountSetup error={setupErr} onRetry={() => void runSetup()} onClose={onClose} />}
         {view === "home" && (
           <Home
             account={account}
@@ -98,6 +125,52 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
       </div>
     </div>,
     document.body,
+  );
+}
+
+/* ---------- account setup ---------- */
+
+function AccountSetup({ error, onRetry, onClose }: { error: string; onRetry: () => void; onClose: () => void }) {
+  return (
+    <div className="text-center" role="status" aria-live="polite">
+      <div className="flex justify-end">
+        <IconBtn label="Close" onClick={onClose}><X className="size-5" /></IconBtn>
+      </div>
+      <div className="relative mx-auto grid h-[200px] w-full max-w-[300px] place-items-center">
+        <div
+          aria-hidden
+          className={`absolute inset-0 ${error ? "" : "animate-pulse"}`}
+          style={{
+            backgroundImage: "radial-gradient(rgba(184,255,157,0.55) 1.3px, transparent 1.6px)",
+            backgroundSize: "11px 11px",
+            WebkitMaskImage: "radial-gradient(circle at center, #000 18%, rgba(0,0,0,0.5) 42%, transparent 68%)",
+            maskImage: "radial-gradient(circle at center, #000 18%, rgba(0,0,0,0.5) 42%, transparent 68%)",
+          }}
+        />
+        <span className="relative grid size-[84px] place-items-center rounded-full bg-[#1d2a1a] shadow-[0_0_0_8px_#121315,0_0_50px_rgba(184,255,157,0.25)]">
+          <svg aria-hidden width={36} height={36} viewBox="12 12 40 40">
+            <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+            <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+          </svg>
+        </span>
+      </div>
+      <h2 className="mt-2 text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">{error ? "Account setup failed" : "Creating your account…"}</h2>
+      <p className="mt-1.5 font-sans text-[15px] text-white/55">{error ? "Your account couldn't be finished." : "This may take a moment."}</p>
+      {error && (
+        <>
+          <p role="alert" className="mt-4 break-words rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 text-left font-sans text-sm leading-relaxed text-white/85">
+            {error}
+          </p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] transition hover:bg-white"
+          >
+            <RotateCw className="size-4" /> Try again
+          </button>
+        </>
+      )}
+    </div>
   );
 }
 
