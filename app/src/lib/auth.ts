@@ -18,7 +18,9 @@ export const demoMode = !authConfigured;
 /** How long before "Resend code" can be used again, as Turnkey rate-limits OTP emails. */
 export const RESEND_SECONDS = 30;
 
-export type AuthResult = { ok: true; otpId?: string } | { ok: false; error: string };
+export type AuthResult = { ok: true; otpId?: string; /** true for a brand-new account */ isNew?: boolean } | { ok: false; error: string };
+
+export type WalletSetup = { ok: true; created: boolean } | { ok: false; error: string };
 
 /**
  * Every new account gets one wallet the user controls: an EVM address (Robinhood Chain and every EVM chain).

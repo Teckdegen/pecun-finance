@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, KeyRound, Loader2, ShieldCheck, X } from "lucide-react";
+import { ArrowLeft, Check, KeyRound, Loader2, RotateCw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { RESEND_SECONDS } from "@/lib/auth";
 import { useAuth } from "./auth-provider";
@@ -9,7 +9,7 @@ import { DOCS_URL } from "@/lib/site";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const CODE_LENGTH = 6;
 
-type Step = "start" | "code" | "done";
+type Step = "start" | "code" | "setup" | "done";
 
 /**
  * Sign in or sign up in one step: email (a 6-digit code) or a passkey. No seed phrase; Turnkey holds the wallet keys
@@ -17,7 +17,9 @@ type Step = "start" | "code" | "done";
  * whole flow runs without sending anything.
  */
 export function SignInModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { live, sendEmailCode, verifyEmailCode, signInWithPasskey, createPasskey } = useAuth();
+  const { live, sendEmailCode, verifyEmailCode, signInWithPasskey, createPasskey, setupWallets } = useAuth();
+  const [isNew, setIsNew] = useState(false);
+  const [setupError, setSetupError] = useState("");
   const [step, setStep] = useState<Step>("start");
   const [email, setEmail] = useState("");
   const [otpId, setOtpId] = useState("");
@@ -91,6 +93,15 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
     if (validEmail && !busy) void sendCode();
   };
 
+  /** After sign-in: create (or confirm) the user's Solana and Sui server wallets; success only once both exist. */
+  const runSetup = async () => {
+    setStep("setup");
+    setSetupError("");
+    const r = await setupWallets();
+    if (!r.ok) return setSetupError(r.error);
+    setStep("done");
+  };
+
   const onPasskey = async (create = false) => {
     if (busy) return;
     setBusy(create ? "newPasskey" : "passkey");
@@ -99,7 +110,8 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
     setBusy(null);
     if (!r.ok) return setError(r.error);
     setVia("passkey");
-    setStep("done");
+    setIsNew(!!r.isNew);
+    void runSetup();
   };
 
   /** Returns true when the code was accepted, so the boxes know whether to clear. */
@@ -114,7 +126,8 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
       return false;
     }
     setVia("email");
-    setStep("done");
+    setIsNew(!!r.isNew);
+    void runSetup();
     return true;
   };
 
@@ -215,15 +228,68 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
           />
         )}
 
+        {step === "setup" && (
+          <div className="pt-6" role="status" aria-live="polite">
+            <h2 id="signin-title" className="text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">
+              {setupError ? "Wallet setup didn't finish" : isNew ? "Creating your wallets" : "Signing you in"}
+            </h2>
+            <p className="mt-1.5 font-sans text-[15px] text-white/55">
+              {setupError
+                ? "You're signed in, but your wallets aren't ready yet."
+                : isNew
+                  ? "Setting up your Pecun wallet and the Solana and Sui wallets behind it."
+                  : "Checking your Solana and Sui wallets are in place."}
+            </p>
+            <ul className="mt-6 space-y-2.5">
+              {[
+                { label: "Pecun wallet", sub: "EVM · yours to control", done: true },
+                { label: "Solana wallet", sub: "Pecun-held, for routing", done: false },
+                { label: "Sui wallet", sub: "Pecun-held, for routing", done: false },
+              ].map((w) => (
+                <li key={w.label} className="flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-medium">{w.label}</span>
+                    <span className="block font-sans text-xs text-white/45">{w.sub}</span>
+                  </span>
+                  {w.done ? (
+                    <span className="grid size-6 place-items-center rounded-full bg-accent text-on-accent"><Check className="size-4" strokeWidth={3} /></span>
+                  ) : setupError ? (
+                    <span className="grid size-6 place-items-center rounded-full bg-neg/20 text-neg"><X className="size-4" strokeWidth={3} /></span>
+                  ) : (
+                    <Loader2 className="size-5 animate-spin text-white/60" />
+                  )}
+                </li>
+              ))}
+            </ul>
+            {setupError && (
+              <>
+                <p role="alert" className="mt-4 rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white/85">
+                  {setupError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void runSetup()}
+                  className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] transition hover:bg-white"
+                >
+                  <RotateCw className="size-4" /> Try again
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         {step === "done" && (
           <div className="py-6 text-center" role="status">
             <span className="mx-auto grid size-14 place-items-center rounded-full bg-accent text-on-accent">
               <Check className="size-7" strokeWidth={2.5} />
             </span>
-            <h2 id="signin-title" className="mt-5 text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">You&apos;re in</h2>
+            <h2 id="signin-title" className="mt-5 text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">
+              {isNew ? "Your wallets are ready" : "You're in"}
+            </h2>
             <p className="mt-1.5 font-sans text-[15px] text-white/55">
               {via === "passkey" ? "Signed in with your passkey." : `Signed in as ${email.trim()}.`}
             </p>
+            <p className="mt-1 font-sans text-xs text-white/40">Solana and Sui wallets confirmed.</p>
           </div>
         )}
 
@@ -237,7 +303,7 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
             {error}
           </p>
         )}
-        {!live && step !== "done" && (
+        {!live && step !== "done" && step !== "setup" && (
           <p className="mt-4 text-center font-sans text-xs text-white/40">
             Demo mode: no email is sent. Any 6-digit code works ({"000000"} shows a wrong code).
           </p>

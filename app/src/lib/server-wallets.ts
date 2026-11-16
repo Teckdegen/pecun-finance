@@ -25,7 +25,7 @@ const API_PRIVATE = process.env.TURNKEY_API_PRIVATE_KEY ?? "";
 
 export const serverWalletsConfigured = Boolean(PARENT_ORG && API_PUBLIC && API_PRIVATE);
 
-export type RoutingAddresses = { solana: string; sui: string };
+export type RoutingAddresses = { solana: string; sui: string; /** true when this call created them */ created: boolean };
 
 let client: ReturnType<Turnkey["apiClient"]> | null = null;
 function api() {
@@ -81,16 +81,21 @@ export async function verifyUser(signed: { url: string; body: string; stamp: { s
     body: signed.body,
     cache: "no-store",
   });
-  if (!res.ok) throw new Error("not signed in");
+  if (!res.ok) throw new AuthError(`Turnkey didn't accept the sign-in (${res.status}). Sign out and in again.`);
   const who = (await res.json()) as { organizationId?: string };
   const subOrgId = who.organizationId;
-  if (!subOrgId || subOrgId === PARENT_ORG) throw new Error("not a user account");
-  // Only sub-organizations of Pecun's parent organization can be read with Pecun's API key.
-  await api().getWallets({ organizationId: subOrgId });
+  if (!subOrgId || subOrgId === PARENT_ORG) throw new AuthError("This isn't a Pecun user account.");
+  // Extra check that the account is one of Pecun's sub-organizations. If the API key can't read sub-organizations
+  // it fails here; that's logged rather than blocking, since the signed request above already proves who is asking.
+  await api()
+    .getWallets({ organizationId: subOrgId })
+    .catch((e) => console.warn("[wallets] couldn't confirm sub-organization", subOrgId, (e as Error).message));
   return subOrgId;
 }
 
-/** Returns the user's Solana and Sui routing addresses, creating them the first time. */
+export class AuthError extends Error {}
+
+/** Returns the user's Solana and Sui routing addresses, creating them the first time, and confirms both exist. */
 export async function ensureRoutingAddresses(subOrgId: string): Promise<RoutingAddresses> {
   const walletId = await routingWallet();
   const wanted = accountsFor(subOrgId);
@@ -104,11 +109,16 @@ export async function ensureRoutingAddresses(subOrgId: string): Promise<RoutingA
   );
   const missing = wanted.filter((_, i) => !found[i]);
   if (missing.length) {
-    const r = await api().createWalletAccounts({
+    await api().createWalletAccounts({
       walletId,
       accounts: missing.map(({ chain, ...p }) => ({ ...p, name: `${chain}:${subOrgId}` })),
     });
-    missing.forEach((m, i) => (found[wanted.indexOf(m)] = r.addresses[i]));
+    // Read them back so success is only reported once Turnkey actually has both accounts.
+    const confirmed = await Promise.all(
+      wanted.map((w) => api().getWalletAccount({ organizationId: PARENT_ORG, walletId, path: w.path }).then((r) => r.account.address)),
+    );
+    confirmed.forEach((a, i) => (found[i] = a));
   }
-  return { solana: found[0]!, sui: found[1]! };
+  if (!found[0] || !found[1]) throw new Error("Turnkey didn't return both addresses");
+  return { solana: found[0], sui: found[1], created: missing.length > 0 };
 }

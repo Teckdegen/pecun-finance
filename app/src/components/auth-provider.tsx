@@ -2,7 +2,7 @@
 
 import { AuthState, OtpType, TurnkeyProvider, useTurnkey, type TurnkeyProviderConfig } from "@turnkey/react-wallet-kit";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { authConfigured, friendlyError, PECUN_WALLET, TURNKEY_AUTH_PROXY_ID, TURNKEY_ORGANIZATION_ID, type AuthResult } from "@/lib/auth";
+import { authConfigured, friendlyError, PECUN_WALLET, TURNKEY_AUTH_PROXY_ID, TURNKEY_ORGANIZATION_ID, type AuthResult, type WalletSetup } from "@/lib/auth";
 
 /** What the sign-in modal and the header need, whether Turnkey is live or the demo is running. */
 export type AuthActions = {
@@ -21,6 +21,8 @@ export type AuthActions = {
   sendEvmTransaction: (unsigned: string, rpcUrl: string) => Promise<{ ok: true; hash: `0x${string}` } | { ok: false; error: string }>;
   /** Solana and Sui addresses Pecun holds for this user as server wallets. Used for routing, never shown. */
   routing?: { solana: string; sui: string };
+  /** Creates the user's Solana and Sui server wallets if they don't exist yet; ok only once both are confirmed. */
+  setupWallets: () => Promise<WalletSetup>;
 };
 
 const Ctx = createContext<AuthActions | null>(null);
@@ -60,24 +62,39 @@ function LiveAuth({ children }: { children: ReactNode }) {
 
   // Once signed in, make sure the user's server wallets (Solana, Sui) exist. The request is signed with the user's
   // own session so the server can confirm with Turnkey who is asking. Safe to repeat: it returns existing addresses.
+  // The session appears a moment after sign-in completes, so setup reads the latest values through a ref.
+  const latest = useRef({ session, httpClient });
+  latest.current = { session, httpClient };
+
+  const setupWallets = useCallback(async (): Promise<WalletSetup> => {
+    // Wait (up to 15s) for the new session to be stored.
+    for (let i = 0; i < 30 && !(latest.current.session?.organizationId && latest.current.httpClient); i++) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    const { session: s, httpClient: hc } = latest.current;
+    if (!s?.organizationId || !hc) return { ok: false, error: "Your session didn't start. Sign out and sign in again." };
+    try {
+      const signed = await hc.stampGetWhoami({ organizationId: s.organizationId });
+      if (!signed) return { ok: false, error: "Couldn't sign the wallet request with your session." };
+      const res = await fetch("/api/wallets", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ signed }) });
+      const body = (await res.json().catch(() => ({}))) as { solana?: string; sui?: string; created?: boolean; error?: string };
+      if (!res.ok) return { ok: false, error: body.error || `Wallet setup failed (${res.status}).` };
+      if (!body.solana || !body.sui) return { ok: false, error: "Wallet setup didn't return both Solana and Sui addresses." };
+      setRouting({ solana: body.solana, sui: body.sui });
+      return { ok: true, created: !!body.created };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Wallet setup failed." };
+    }
+  }, []);
+
+  // A returning visitor whose session survived a reload never sees the sign-in modal, so check their wallets here too.
   const orgId = authState === AuthState.Authenticated ? session?.organizationId : undefined;
+  const checked = useRef<string | null>(null);
   useEffect(() => {
-    if (!orgId || !httpClient) return;
-    let alive = true;
-    (async () => {
-      try {
-        const signed = await httpClient.stampGetWhoami({ organizationId: orgId });
-        if (!signed) return;
-        const res = await fetch("/api/wallets", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ signed }) });
-        if (res.ok && alive) setRouting((await res.json()) as { solana: string; sui: string });
-      } catch {
-        // Not critical for the wallet screens; it is retried on the next sign-in or reload.
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [orgId, httpClient]);
+    if (!orgId || routing || checked.current === orgId) return;
+    checked.current = orgId;
+    void setupWallets();
+  }, [orgId, routing, setupWallets]);
   const evmAccount = useMemo(
     () => wallets?.flatMap((w) => w.accounts ?? []).find((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"),
     [wallets],
@@ -104,7 +121,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         if (!bundle) return { ok: false, error: "That code request has expired. Send a new code." };
         try {
           // Logs in, or creates the account and its wallet on first sign-in.
-          await completeOtp({
+          const r = await completeOtp({
             otpId,
             otpCode: code,
             otpEncryptionTargetBundle: bundle,
@@ -113,7 +130,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
             createSubOrgParams: { userEmail: email, customWallet: PECUN_WALLET },
           });
           bundles.current.delete(otpId);
-          return { ok: true };
+          return { ok: true, isNew: String(r?.action) === "SIGNUP" };
         } catch (e) {
           return { ok: false, error: friendlyError(e, "That code isn't right. Check the email and try again.") };
         }
@@ -121,7 +138,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
       signInWithPasskey: async () => {
         try {
           await loginWithPasskey();
-          return { ok: true };
+          return { ok: true, isNew: false };
         } catch (e) {
           return { ok: false, error: friendlyError(e, "No Pecun passkey was found on this device. Create one, or use email.") };
         }
@@ -129,7 +146,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
       createPasskey: async () => {
         try {
           await signUpWithPasskey({ passkeyDisplayName: "Pecun", createSubOrgParams: { userName: "Pecun user", customWallet: PECUN_WALLET } });
-          return { ok: true };
+          return { ok: true, isNew: true };
         } catch (e) {
           return { ok: false, error: friendlyError(e, "Couldn't create a passkey on this device. Try email instead.") };
         }
@@ -139,6 +156,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
       },
       evmAddress: evmAccount?.address as `0x${string}` | undefined,
       routing,
+      setupWallets,
       sendEvmTransaction: async (unsigned, rpcUrl) => {
         if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
         try {
@@ -151,7 +169,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -162,6 +180,9 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function DemoAuth({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<string | undefined>();
   const signOut = useCallback(async () => setAccount(undefined), []);
+  // Demo: the first sign-in with an email this visit counts as a new account, later ones as returning.
+  const seen = useRef(new Set<string>());
+  const lastNew = useRef(false);
   const value = useMemo<AuthActions>(
     () => ({
       live: false,
@@ -171,11 +192,15 @@ function DemoAuth({ children }: { children: ReactNode }) {
       verifyEmailCode: async (email, _otpId, code) => {
         await wait(800);
         if (code === "000000") return { ok: false, error: "That code isn't right. Check the email and try again." };
+        const isNew = !seen.current.has(email);
+        seen.current.add(email);
+        lastNew.current = isNew;
         setAccount(email);
-        return { ok: true };
+        return { ok: true, isNew };
       },
-      signInWithPasskey: async () => (await wait(900), setAccount("Passkey (demo)"), { ok: true }),
-      createPasskey: async () => (await wait(900), setAccount("Passkey (demo)"), { ok: true }),
+      signInWithPasskey: async () => (await wait(900), (lastNew.current = false), setAccount("Passkey (demo)"), { ok: true, isNew: false }),
+      createPasskey: async () => (await wait(900), (lastNew.current = true), setAccount("Passkey (demo)"), { ok: true, isNew: true }),
+      setupWallets: async () => (await wait(lastNew.current ? 2200 : 1200), { ok: true, created: lastNew.current }),
       signOut,
       // A fixed demo address so the wallet screens can be tried; nothing is ever sent from it.
       evmAddress: account ? "0x000000000000000000000000000000000000de40" : undefined,

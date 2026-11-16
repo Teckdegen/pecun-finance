@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ensureRoutingAddresses, serverWalletsConfigured, verifyUser } from "@/lib/server-wallets";
+import { AuthError, ensureRoutingAddresses, serverWalletsConfigured, verifyUser } from "@/lib/server-wallets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
  * Verifies it with Turnkey, then returns (and on first call creates) the user's Solana and Sui routing addresses.
  */
 export async function POST(req: Request) {
-  if (!serverWalletsConfigured) return NextResponse.json({ error: "Server wallets aren't configured." }, { status: 503 });
+  if (!serverWalletsConfigured) {
+    return NextResponse.json({ error: "Wallet setup isn't switched on: TURNKEY_API_PUBLIC_KEY and TURNKEY_API_PRIVATE_KEY are missing on the server." }, { status: 503 });
+  }
   let signed: Parameters<typeof verifyUser>[0];
   try {
     ({ signed } = (await req.json()) as { signed: Parameters<typeof verifyUser>[0] });
@@ -19,13 +21,16 @@ export async function POST(req: Request) {
   let subOrgId: string;
   try {
     subOrgId = await verifyUser(signed);
-  } catch {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  } catch (e) {
+    console.error("[wallets] sign-in check failed:", (e as Error).message);
+    return NextResponse.json({ error: e instanceof AuthError ? e.message : "Couldn't confirm your sign-in. Try again." }, { status: 401 });
   }
   try {
     return NextResponse.json(await ensureRoutingAddresses(subOrgId));
   } catch (e) {
-    console.error("[wallets] provisioning failed:", (e as Error).message);
-    return NextResponse.json({ error: "Couldn't set up wallets." }, { status: 502 });
+    const msg = (e as Error).message;
+    console.error("[wallets] provisioning failed:", msg);
+    // Turnkey's own message (e.g. a permission or key problem) is safe to show and is what's needed to fix it.
+    return NextResponse.json({ error: `Turnkey couldn't create the wallets: ${msg.slice(0, 240)}` }, { status: 502 });
   }
 }
