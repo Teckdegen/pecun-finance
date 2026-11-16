@@ -99,7 +99,7 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
     setSetupError("");
     const r = await setupWallets();
     if (!r.ok) {
-      // The detail (often a server or Turnkey message) goes to the browser console for debugging, not on screen.
+      // Shown on screen and logged, so the exact reason is easy to report.
       console.error("[pecun] account setup failed:", r.error);
       return setSetupError(r.error);
     }
@@ -254,16 +254,21 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
               </span>
             </div>
             <h2 id="signin-title" className="mt-2 text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">
-              {setupError ? "Something went wrong" : isNew ? "Creating your wallet…" : "Signing you in…"}
+              {setupError ? "Wallet creation failed" : isNew ? "Creating your wallet…" : "Signing you in…"}
             </h2>
             <p className="mt-1.5 font-sans text-[15px] text-white/55">
-              {setupError ? "We couldn't finish setting up your account." : "This may take a moment."}
+              {setupError ? "Creating your wallet failed." : "This may take a moment."}
             </p>
+            {setupError && (
+              <p role="alert" className="mt-4 break-words rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 text-left font-sans text-sm leading-relaxed text-white/85">
+                {setupError}
+              </p>
+            )}
             {setupError && (
               <button
                 type="button"
                 onClick={() => void runSetup()}
-                className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] transition hover:bg-white"
+                className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] transition hover:bg-white"
               >
                 <RotateCw className="size-4" /> Try again
               </button>
