@@ -22,6 +22,8 @@ export type AuthActions = {
   solanaAddress?: string;
   /** Signs an unsigned Solana transaction (hex) with the user's wallet and broadcasts it. Returns the signature. */
   sendSolanaTransaction: (unsignedHex: string, rpcUrl: string) => Promise<{ ok: true; signature: string } | { ok: false; error: string }>;
+  /** Signs a 32-byte hash (EIP-712 digest) with the user's EVM key, no prompt. Returns a 65-byte 0x signature. */
+  signEvmDigest: (digestHex: `0x${string}`) => Promise<{ ok: true; signature: `0x${string}` } | { ok: false; error: string }>;
   suiAddress?: string;
   /** Signs (with the user's session, no prompt) and executes a Sui transaction: a built Transaction or base64 bytes. */
   sendSuiTransaction: (tx: SuiTransaction | string) => Promise<{ ok: true; digest: string } | { ok: false; error: string }>;
@@ -207,6 +209,17 @@ function LiveAuth({ children }: { children: ReactNode }) {
           return { ok: false, error: friendlyError(e, `The Solana transaction didn't go through: ${msg.slice(0, 160)}`) };
         }
       },
+      signEvmDigest: async (digestHex) => {
+        if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
+        try {
+          const { r, s: sv, v } = await signMessage({ walletAccount: evmAccount, message: digestHex, encoding: "PAYLOAD_ENCODING_HEXADECIMAL", hashFunction: "HASH_FUNCTION_NO_OP" });
+          const strip = (x: string) => x.replace(/^0x/, "").padStart(64, "0");
+          const vv = (parseInt(v || "0", 16) % 27) + 27;
+          return { ok: true, signature: `0x${strip(r)}${strip(sv)}${vv.toString(16)}` as `0x${string}` };
+        } catch (e) {
+          return { ok: false, error: friendlyError(e, "Couldn't sign with your wallet. Try again.") };
+        }
+      },
       suiAddress: suiAccount?.address,
       sendSuiTransaction: async (tx) => {
         if (!suiAccount?.publicKey) return { ok: false, error: "Your Sui account is still being set up. Try again in a moment." };
@@ -277,6 +290,7 @@ function DemoAuth({ children }: { children: ReactNode }) {
       signAccountsRequest: async () => null,
       solanaAddress: account ? "PecunDemo1111111111111111111111111111111111" : undefined,
       sendSolanaTransaction: async () => (await wait(1200), { ok: true, signature: "demo" }),
+      signEvmDigest: async () => (await wait(600), { ok: true, signature: `0x${"11".repeat(65)}` as `0x${string}` }),
       suiAddress: account ? "0x7d20dcdb2bca4f508ea9613994683eb4e76e9c4ed371169677c1be02aaf0b58e" : undefined,
       sendSuiTransaction: async () => (await wait(1200), { ok: true, digest: "demo" }),
       signOut,

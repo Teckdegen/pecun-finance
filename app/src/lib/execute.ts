@@ -1,10 +1,12 @@
 "use client";
 
-import { createPublicClient, encodeFunctionData, erc20Abi, formatUnits, http, parseAbi, parseUnits, serializeTransaction, type Address, type Hex } from "viem";
+import { encode as msgpack } from "@msgpack/msgpack";
+import { concat, createPublicClient, encodeFunctionData, fallback, erc20Abi, formatUnits, hashTypedData, http, keccak256, parseAbi, parseUnits, serializeTransaction, zeroAddress, type Address, type Hex } from "viem";
+import { chainIdByName, EVM_CHAINS } from "./exec-chains";
 import { base64ToHex, confirmSolana, createTokenAccountTx, hasTokenAccount, lamports, SOLANA_CHAIN_ID, SOLANA_RPC, splBalance, splDecimals, txFromInstructions } from "./solana";
 import { coinWithBalance, Transaction as SuiTx } from "@mysten/sui/transactions";
 import { SUI_CHAIN_ID, SUI_TYPE, suiBalance } from "./sui";
-import { ROBINHOOD_CHAIN_ID, ROBINHOOD_RPC, USDG, USDG_DECIMALS } from "./wallet";
+import { ROBINHOOD_CHAIN_ID, USDG, USDG_DECIMALS } from "./wallet";
 
 /**
  * One-click execution. A single press runs every step (Pecun's fee, Relay bridge + swap, gas top-ups, approvals, the
@@ -15,7 +17,7 @@ import { ROBINHOOD_CHAIN_ID, ROBINHOOD_RPC, USDG, USDG_DECIMALS } from "./wallet
  */
 
 export const BASE_CHAIN_ID = 8453;
-const RPC: Record<number, string> = { [ROBINHOOD_CHAIN_ID]: ROBINHOOD_RPC, [BASE_CHAIN_ID]: "https://mainnet.base.org" };
+const RPC: Record<number, string> = Object.fromEntries(EVM_CHAINS.map((c) => [c.id, c.rpc]));
 const RELAY = "https://api.relay.link";
 
 /** Pecun's fee on deposits and withdrawals, sent to the treasury. Off when either value is missing. */
@@ -31,6 +33,7 @@ export type Signer = {
   solanaAddress?: string;
   sendEvmTransaction: (unsigned: string, rpcUrl: string) => Promise<{ ok: true; hash: Hex } | { ok: false; error: string }>;
   sendSolanaTransaction: (unsignedHex: string, rpcUrl: string) => Promise<{ ok: true; signature: string } | { ok: false; error: string }>;
+  signEvmDigest: (digestHex: Hex) => Promise<{ ok: true; signature: Hex } | { ok: false; error: string }>;
   suiAddress?: string;
   sendSuiTransaction: (tx: SuiTx | string) => Promise<{ ok: true; digest: string } | { ok: false; error: string }>;
   signAccountsRequest: () => Promise<unknown | null>;
@@ -72,7 +75,14 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const clients = new Map<number, ReturnType<typeof createPublicClient>>();
 export function chainClient(chainId: number) {
   let c = clients.get(chainId);
-  if (!c) clients.set(chainId, (c = createPublicClient({ transport: http(RPC[chainId], { timeout: 25_000, retryCount: 2 }) })));
+  if (!c) {
+    const ch = EVM_CHAINS.find((x) => x.id === chainId);
+    const urls = ch ? [ch.rpc, ...(ch.backups ?? [])] : [RPC[chainId]];
+    // Each RPC fails fast (no per-RPC retry: viem would honour a rate-limit's Retry-After and stall); the fallback
+    // moves to the next one and retries the set.
+    c = createPublicClient({ transport: fallback(urls.map((u) => http(u, { timeout: 15_000, retryCount: 0 })), { retryCount: 2 }) });
+    clients.set(chainId, c);
+  }
   return c;
 }
 
@@ -140,7 +150,22 @@ async function sendSol(s: Signer, unsignedHex: () => Promise<string>): Promise<s
 /* ---------------- Relay (bridge + swap) ---------------- */
 
 type RelayItem = {
-  data: { to?: Address; data?: Hex; value?: string; chainId?: number; instructions?: Parameters<typeof txFromInstructions>[1]; addressLookupTableAddresses?: string[] };
+  data: {
+    to?: Address;
+    data?: Hex;
+    value?: string;
+    chainId?: number;
+    instructions?: Parameters<typeof txFromInstructions>[1];
+    addressLookupTableAddresses?: string[];
+    // Signature steps (EIP-712), e.g. leaving Hyperliquid
+    sign?: { signatureKind: string; domain: Record<string, unknown>; types: Record<string, { name: string; type: string }[]>; value: Record<string, unknown>; primaryType: string };
+    post?: { endpoint: string; method: string; body: unknown };
+    // Hyperliquid user-signed action
+    action?: { type: string; parameters: Record<string, unknown> };
+    nonce?: number;
+    eip712Types?: Record<string, { name: string; type: string }[]>;
+    eip712PrimaryType?: string;
+  };
   check?: { endpoint: string };
 };
 type RelayQuote = {
@@ -198,10 +223,19 @@ async function relay(s: Signer, p: RelayLeg) {
   const q = await relayQuote(p);
   let check: string | undefined;
   for (const step of q.steps!) {
-    if (step.kind !== "transaction") throw new ExecError("This route needs a signature step Pecun doesn't support yet.");
     for (const item of step.items) {
       const d = item.data;
-      if (d.instructions) {
+      if (step.kind === "signature") {
+        if (!d.sign || d.sign.signatureKind !== "eip712" || !d.post) throw new ExecError("This route needs a signature Pecun doesn't support yet.");
+        const digest = hashTypedData({ domain: d.sign.domain, types: d.sign.types, primaryType: d.sign.primaryType, message: d.sign.value });
+        const sig = await signDigest(s, digest);
+        const res = await fetch(`${RELAY}${d.post.endpoint}?signature=${sig}`, { method: d.post.method, headers: { "content-type": "application/json" }, body: JSON.stringify(d.post.body) });
+        if (!res.ok) throw new ExecError(`The transfer wasn't authorized (${res.status}).`);
+      } else if (step.kind !== "transaction") {
+        throw new ExecError("This route needs a step Pecun doesn't support yet.");
+      } else if (d.action && d.eip712Types && d.eip712PrimaryType && d.nonce !== undefined) {
+        await hlUserAction(s, { action: d.action, nonce: d.nonce, eip712Types: d.eip712Types, eip712PrimaryType: d.eip712PrimaryType });
+      } else if (d.instructions) {
         await sendSol(s, () => txFromInstructions(s.solanaAddress!, d.instructions!, d.addressLookupTableAddresses ?? []));
       } else if (d.to && d.chainId) {
         await sendEvm(s, d.chainId, { to: d.to, data: d.data, value: d.value ? BigInt(d.value) : undefined });
@@ -212,7 +246,7 @@ async function relay(s: Signer, p: RelayLeg) {
     }
   }
   if (!check) return;
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 150; i++) {
     const st = (await fetch(`${RELAY}${check}`).then((r) => r.json()).catch(() => ({}))) as { status?: string };
     if (st.status === "success") return;
     if (st.status === "failure" || st.status === "refund") throw new ExecError(`The transfer didn't complete (${st.status}). Relay refunds any funds.`);
@@ -276,8 +310,115 @@ const OUT_STEPS: Step[] = [
   { id: "fee", label: "Pecun fee" },
 ];
 
-/* ---------------- Base ERC-4626 vaults (Morpho) ---------------- */
+/* ---------------- EVM vaults: one adapter, a small protocol object per family ---------------- */
 
+type Call = { to: Address; data: Hex };
+type TokenMeta = { address: Address; decimals: number; symbol: string };
+/** What differs between EVM vault families. Amounts are in the underlying asset's smallest units. */
+type Proto = {
+  asset: () => Promise<TokenMeta>;
+  position: (owner: Address) => Promise<bigint>;
+  spender: () => Promise<Address>;
+  deposit: (owner: Address, amount: bigint) => Promise<Call>;
+  withdraw: (owner: Address, amount: bigint | "max") => Promise<Call>;
+};
+
+const MAX_UINT = BigInt(2) ** BigInt(256) - BigInt(1);
+const isAddr = (a?: string | null): a is Address => !!a && /^0x[0-9a-fA-F]{40}$/.test(a);
+/** Robinhood Chain USDG: already the user's wallet token, so there is nothing to bridge or swap. */
+const isHomeUsdg = (chainId: number, token: string) => chainId === ROBINHOOD_CHAIN_ID && token.toLowerCase() === USDG.toLowerCase();
+
+async function tokenMeta(chainId: number, token: Address): Promise<TokenMeta> {
+  const c = chainClient(chainId);
+  const [decimals, symbol] = await Promise.all([
+    c.readContract({ address: token, abi: erc20Abi, functionName: "decimals" }),
+    c.readContract({ address: token, abi: erc20Abi, functionName: "symbol" }).catch(() => "token"),
+  ]);
+  return { address: token, decimals, symbol };
+}
+
+/** Caches a lazy async value, retrying after a failure. */
+function lazy<T>(f: () => Promise<T>): () => Promise<T> {
+  let p: Promise<T> | undefined;
+  return () => (p ??= f().catch((e) => ((p = undefined), Promise.reject(e))));
+}
+
+const sameAmountPreview = (amount: string, symbol: string): Preview => ({ out: amount, outSymbol: symbol, minOut: amount, slippagePct: 0, impactPct: 0, feesUsd: 0, seconds: 0 });
+const netOfFee = (usdg: string) => parseUnits(usdg, USDG_DECIMALS) - (parseUnits(usdg, USDG_DECIMALS) * BigInt(feeBps)) / BigInt(10_000);
+
+function evmVault(chainId: number, proto: Proto, label: string): Adapter {
+  const asset = lazy(proto.asset);
+  const home = async () => isHomeUsdg(chainId, (await asset()).address);
+  return {
+    positionSymbol: label,
+    depositSteps: IN_STEPS,
+    withdrawSteps: OUT_STEPS,
+
+    position: async (s) => {
+      const [a, p] = await Promise.all([asset(), proto.position(s.address)]);
+      return Number(formatUnits(p, a.decimals));
+    },
+
+    previewDeposit: async (s, usdg) => {
+      const a = await asset();
+      const net = netOfFee(usdg);
+      if (await home()) return sameAmountPreview(formatUnits(net, USDG_DECIMALS), "USDG");
+      return toPreview(await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: a.address, amount: net, user: s.address, recipient: s.address }), a.symbol);
+    },
+
+    previewWithdraw: async (s, amount) => {
+      const a = await asset();
+      if (await home()) return sameAmountPreview(amount, "USDG");
+      return toPreview(await relayQuote({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: a.address, outToken: USDG, amount: parseUnits(amount, a.decimals), user: s.address, recipient: s.address }), "USDG");
+    },
+
+    deposit: async (s, usdg, on) => {
+      const a = await asset();
+      const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
+      let received = net;
+      if (await home()) {
+        on("bridge", "skipped");
+      } else {
+        on("bridge", "running");
+        const read = () => erc20Balance(chainId, a.address, s.address);
+        const before = await read();
+        await relay(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: a.address, amount: net, user: s.address, recipient: s.address });
+        received = await waitForArrival(read, before, 10 * 60_000);
+        on("bridge", "done", `${formatUnits(received, a.decimals)} ${a.symbol}`);
+      }
+      on("deposit", "running");
+      const spender = await proto.spender();
+      const allowance = await chainClient(chainId).readContract({ address: a.address, abi: erc20Abi, functionName: "allowance", args: [s.address, spender] });
+      if (allowance < received) await sendEvm(s, chainId, { to: a.address, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, received] }) });
+      const before = await proto.position(s.address);
+      await sendEvm(s, chainId, await proto.deposit(s.address, received));
+      // Some lenders (Compound-style) report errors without reverting, so confirm the position actually grew.
+      if ((await proto.position(s.address)) <= before) throw new ExecError("The vault didn't accept the deposit. Your funds are still in your wallet.");
+      on("deposit", "done");
+      return `${formatUnits(received, a.decimals)} ${a.symbol}`;
+    },
+
+    withdraw: async (s, amount, on) => {
+      const a = await asset();
+      on("withdraw", "running");
+      if ((await proto.position(s.address)) === BigInt(0)) throw new ExecError("You don't have a position in this vault.");
+      const read = () => erc20Balance(chainId, a.address, s.address);
+      const before = await read();
+      await sendEvm(s, chainId, await proto.withdraw(s.address, amount === "max" ? "max" : parseUnits(amount, a.decimals)));
+      const out = (await read()) - before;
+      if (out <= BigInt(0)) throw new ExecError("The vault didn't release any funds. It may be short of liquidity right now.");
+      on("withdraw", "done", `${formatUnits(out, a.decimals)} ${a.symbol}`);
+      if (await home()) {
+        on("bridge", "skipped");
+        const kept = await takeUsdgFee(s, out, on);
+        return `${formatUnits(kept, USDG_DECIMALS)} USDG`;
+      }
+      return backToUsdg(s, { from: chainId, inToken: a.address, amount: out, user: s.address }, on);
+    },
+  };
+}
+
+/* ERC-4626 vaults: Morpho vaults, Euler, Yearn v3, Fluid, Gearbox, Silo, Sky, Spark savings, sfrxETH. */
 const VAULT_ABI = parseAbi([
   "function asset() view returns (address)",
   "function balanceOf(address) view returns (uint256)",
@@ -287,75 +428,336 @@ const VAULT_ABI = parseAbi([
   "function withdraw(uint256 assets, address receiver, address owner) returns (uint256)",
 ]);
 
-async function vaultInfo(vault: Address) {
-  const c = chainClient(BASE_CHAIN_ID);
-  const asset = await c.readContract({ address: vault, abi: VAULT_ABI, functionName: "asset" });
-  const [decimals, symbol] = await Promise.all([
-    c.readContract({ address: asset, abi: erc20Abi, functionName: "decimals" }),
-    c.readContract({ address: asset, abi: erc20Abi, functionName: "symbol" }),
-  ]);
-  return { asset, decimals, symbol };
-}
-
-async function vaultShares(vault: Address, owner: Address) {
-  const c = chainClient(BASE_CHAIN_ID);
-  const shares = await c.readContract({ address: vault, abi: VAULT_ABI, functionName: "balanceOf", args: [owner] });
-  const assets = shares > BigInt(0) ? await c.readContract({ address: vault, abi: VAULT_ABI, functionName: "convertToAssets", args: [shares] }) : BigInt(0);
-  return { shares, assets };
-}
-
-function baseVault(vault: Address, assetSymbol: string): Adapter {
-  let infoP: ReturnType<typeof vaultInfo> | undefined;
-  const info = () => (infoP ??= vaultInfo(vault).catch((e) => ((infoP = undefined), Promise.reject(e))));
+function erc4626(chainId: number, vault: Address): Proto {
+  const c = () => chainClient(chainId);
+  const shares = (owner: Address) => c().readContract({ address: vault, abi: VAULT_ABI, functionName: "balanceOf", args: [owner] });
   return {
-    positionSymbol: assetSymbol,
-    depositSteps: IN_STEPS,
-    withdrawSteps: OUT_STEPS,
-    position: async (s) => {
-      const [i, p] = await Promise.all([info(), vaultShares(vault, s.address)]);
-      return Number(formatUnits(p.assets, i.decimals));
+    asset: async () => tokenMeta(chainId, await c().readContract({ address: vault, abi: VAULT_ABI, functionName: "asset" })),
+    position: async (owner) => {
+      const sh = await shares(owner);
+      return sh > BigInt(0) ? c().readContract({ address: vault, abi: VAULT_ABI, functionName: "convertToAssets", args: [sh] }) : BigInt(0);
     },
-    previewDeposit: async (s, usdg) => {
-      const i = await info();
-      const net = parseUnits(usdg, USDG_DECIMALS) - (parseUnits(usdg, USDG_DECIMALS) * BigInt(feeBps)) / BigInt(10_000);
-      return toPreview(await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: i.asset, amount: net, user: s.address, recipient: s.address }), i.symbol);
+    spender: async () => vault,
+    deposit: async (owner, amount) => ({ to: vault, data: encodeFunctionData({ abi: VAULT_ABI, functionName: "deposit", args: [amount, owner] }) }),
+    withdraw: async (owner, amount) =>
+      amount === "max"
+        ? { to: vault, data: encodeFunctionData({ abi: VAULT_ABI, functionName: "redeem", args: [await shares(owner), owner, owner] }) }
+        : { to: vault, data: encodeFunctionData({ abi: VAULT_ABI, functionName: "withdraw", args: [amount, owner, owner] }) },
+  };
+}
+
+/* Yearn: v3 vaults are ERC-4626; older v2 vaults use token() / pricePerShare() and withdraw by shares. */
+const YEARN_V2_ABI = parseAbi([
+  "function token() view returns (address)",
+  "function pricePerShare() view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function balanceOf(address) view returns (uint256)",
+  "function deposit(uint256 amount, address recipient) returns (uint256)",
+  "function withdraw(uint256 maxShares, address recipient) returns (uint256)",
+]);
+
+function yearn(chainId: number, vault: Address): Proto {
+  const c = () => chainClient(chainId);
+  const v3 = erc4626(chainId, vault);
+  const isV3 = lazy(() => c().readContract({ address: vault, abi: VAULT_ABI, functionName: "asset" }).then(() => true, () => false));
+  const v2 = lazy(async () => {
+    const [token, decimals] = await Promise.all([
+      c().readContract({ address: vault, abi: YEARN_V2_ABI, functionName: "token" }),
+      c().readContract({ address: vault, abi: YEARN_V2_ABI, functionName: "decimals" }),
+    ]);
+    return { token, unit: BigInt(10) ** BigInt(decimals) };
+  });
+  const pps = () => c().readContract({ address: vault, abi: YEARN_V2_ABI, functionName: "pricePerShare" });
+  const shares = (owner: Address) => c().readContract({ address: vault, abi: YEARN_V2_ABI, functionName: "balanceOf", args: [owner] });
+  return {
+    asset: async () => ((await isV3()) ? v3.asset() : tokenMeta(chainId, (await v2()).token)),
+    position: async (owner) => {
+      if (await isV3()) return v3.position(owner);
+      const [sh, p, { unit }] = await Promise.all([shares(owner), pps(), v2()]);
+      return (sh * p) / unit;
     },
-    previewWithdraw: async (s, amount) => {
-      const i = await info();
-      return toPreview(await relayQuote({ from: BASE_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: i.asset, outToken: USDG, amount: parseUnits(amount, i.decimals), user: s.address, recipient: s.address }), "USDG");
+    spender: async () => vault,
+    deposit: async (owner, amount) =>
+      (await isV3()) ? v3.deposit(owner, amount) : { to: vault, data: encodeFunctionData({ abi: YEARN_V2_ABI, functionName: "deposit", args: [amount, owner] }) },
+    withdraw: async (owner, amount) => {
+      if (await isV3()) return v3.withdraw(owner, amount);
+      const [sh, p, { unit }] = await Promise.all([shares(owner), pps(), v2()]);
+      const want = amount === "max" ? sh : (amount * unit + p - BigInt(1)) / p; // shares for `amount`, rounded up
+      return { to: vault, data: encodeFunctionData({ abi: YEARN_V2_ABI, functionName: "withdraw", args: [want < sh ? want : sh, owner] }) };
     },
+  };
+}
+
+/* Aave v3 and forks (Spark, HyperLend): Pool.supply / Pool.withdraw; the position is the aToken balance. */
+const AAVE_POOL_ABI = parseAbi([
+  "function getReserveData(address asset) view returns ((uint256 configuration, uint128 liquidityIndex, uint128 currentLiquidityRate, uint128 variableBorrowIndex, uint128 currentVariableBorrowRate, uint128 currentStableBorrowRate, uint40 lastUpdateTimestamp, uint16 id, address aTokenAddress, address stableDebtTokenAddress, address variableDebtTokenAddress, address interestRateStrategyAddress, uint128 accruedToTreasury, uint128 unbacked, uint128 isolationModeTotalDebt))",
+  "function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)",
+  "function withdraw(address asset, uint256 amount, address to) returns (uint256)",
+]);
+const ATOKEN_ABI = parseAbi(["function POOL() view returns (address)", "function UNDERLYING_ASSET_ADDRESS() view returns (address)"]);
+
+function aaveStyle(chainId: number, pool: () => Promise<Address>, underlying: () => Promise<Address>): Proto {
+  const aToken = lazy(async () => (await chainClient(chainId).readContract({ address: await pool(), abi: AAVE_POOL_ABI, functionName: "getReserveData", args: [await underlying()] })).aTokenAddress);
+  return {
+    asset: async () => tokenMeta(chainId, await underlying()),
+    position: async (owner) => erc20Balance(chainId, await aToken(), owner),
+    spender: pool,
+    deposit: async (owner, amount) => ({ to: await pool(), data: encodeFunctionData({ abi: AAVE_POOL_ABI, functionName: "supply", args: [await underlying(), amount, owner, 0] }) }),
+    withdraw: async (owner, amount) => ({
+      to: await pool(),
+      data: encodeFunctionData({ abi: AAVE_POOL_ABI, functionName: "withdraw", args: [await underlying(), amount === "max" ? MAX_UINT : amount, owner] }),
+    }),
+  };
+}
+
+/* Compound v3 (Comet): supply / withdraw the base token; balanceOf is the underlying amount. */
+const COMET_ABI = parseAbi([
+  "function baseToken() view returns (address)",
+  "function balanceOf(address) view returns (uint256)",
+  "function supply(address asset, uint256 amount)",
+  "function withdraw(address asset, uint256 amount)",
+]);
+
+function comet(chainId: number, market: Address): Proto {
+  const base = lazy(() => chainClient(chainId).readContract({ address: market, abi: COMET_ABI, functionName: "baseToken" }));
+  return {
+    asset: async () => tokenMeta(chainId, await base()),
+    position: (owner) => chainClient(chainId).readContract({ address: market, abi: COMET_ABI, functionName: "balanceOf", args: [owner] }),
+    spender: async () => market,
+    deposit: async (_owner, amount) => ({ to: market, data: encodeFunctionData({ abi: COMET_ABI, functionName: "supply", args: [await base(), amount] }) }),
+    withdraw: async (_owner, amount) => ({ to: market, data: encodeFunctionData({ abi: COMET_ABI, functionName: "withdraw", args: [await base(), amount === "max" ? MAX_UINT : amount] }) }),
+  };
+}
+
+/* Compound v2 forks (Venus, Moonwell): mint / redeemUnderlying; value = cTokens × exchangeRate. */
+const CTOKEN_ABI = parseAbi([
+  "function underlying() view returns (address)",
+  "function balanceOf(address) view returns (uint256)",
+  "function exchangeRateStored() view returns (uint256)",
+  "function mint(uint256 mintAmount) returns (uint256)",
+  "function redeem(uint256 redeemTokens) returns (uint256)",
+  "function redeemUnderlying(uint256 redeemAmount) returns (uint256)",
+]);
+
+function compoundV2(chainId: number, cToken: Address): Proto {
+  const c = () => chainClient(chainId);
+  const bal = (owner: Address) => c().readContract({ address: cToken, abi: CTOKEN_ABI, functionName: "balanceOf", args: [owner] });
+  return {
+    asset: async () => tokenMeta(chainId, await c().readContract({ address: cToken, abi: CTOKEN_ABI, functionName: "underlying" })),
+    position: async (owner) => {
+      const [b, rate] = await Promise.all([bal(owner), c().readContract({ address: cToken, abi: CTOKEN_ABI, functionName: "exchangeRateStored" })]);
+      return (b * rate) / BigInt(10) ** BigInt(18);
+    },
+    spender: async () => cToken,
+    deposit: async (_owner, amount) => ({ to: cToken, data: encodeFunctionData({ abi: CTOKEN_ABI, functionName: "mint", args: [amount] }) }),
+    withdraw: async (owner, amount) =>
+      amount === "max"
+        ? { to: cToken, data: encodeFunctionData({ abi: CTOKEN_ABI, functionName: "redeem", args: [await bal(owner)] }) }
+        : { to: cToken, data: encodeFunctionData({ abi: CTOKEN_ABI, functionName: "redeemUnderlying", args: [amount] }) },
+  };
+}
+
+/* Morpho markets: supply directly to one isolated market on Morpho's core contract. */
+/** Morpho's core contract per chain (from Morpho's own API). */
+const MORPHO_BLUE: Record<number, Address> = {
+  1: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+  8453: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+  42161: "0x6c247b1F6182318877311737BaC0844bAa518F5e",
+  10: "0xce95AfbB8EA029495c66020883F87aaE8864AF92",
+  143: "0xD5D960E8C380B724a48AC59E2DfF1b2CB4a1eAee",
+  999: "0x68e37dE8d93d3496ae143F2E900490f6280C57cD",
+  4663: "0x9D53d5E3bd5E8d4Cbfa6DB1ca238AEA02E651010",
+  747474: "0xD50F2DffFd62f94Ee4AEd9ca05C61d0753268aBc",
+};
+const MORPHO_ABI = parseAbi([
+  "function idToMarketParams(bytes32 id) view returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv)",
+  "function position(bytes32 id, address user) view returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral)",
+  "function market(bytes32 id) view returns (uint128 totalSupplyAssets, uint128 totalSupplyShares, uint128 totalBorrowAssets, uint128 totalBorrowShares, uint128 lastUpdate, uint128 fee)",
+  "function supply((address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) returns (uint256, uint256)",
+  "function withdraw((address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) returns (uint256, uint256)",
+]);
+
+function morphoMarket(chainId: number, id: Hex): Proto {
+  const morpho = MORPHO_BLUE[chainId];
+  const c = () => chainClient(chainId);
+  const params = lazy(async () => {
+    const [loanToken, collateralToken, oracle, irm, lltv] = await c().readContract({ address: morpho, abi: MORPHO_ABI, functionName: "idToMarketParams", args: [id] });
+    return { loanToken, collateralToken, oracle, irm, lltv };
+  });
+  const shares = async (owner: Address) => (await c().readContract({ address: morpho, abi: MORPHO_ABI, functionName: "position", args: [id, owner] }))[0];
+  return {
+    asset: async () => tokenMeta(chainId, (await params()).loanToken),
+    position: async (owner) => {
+      const [sh, m] = await Promise.all([shares(owner), c().readContract({ address: morpho, abi: MORPHO_ABI, functionName: "market", args: [id] })]);
+      // Morpho's share math, with its virtual shares and assets.
+      return (sh * (m[0] + BigInt(1))) / (m[1] + BigInt(1_000_000));
+    },
+    spender: async () => morpho,
+    deposit: async (owner, amount) => ({ to: morpho, data: encodeFunctionData({ abi: MORPHO_ABI, functionName: "supply", args: [await params(), amount, BigInt(0), owner, "0x"] }) }),
+    withdraw: async (owner, amount) => ({
+      to: morpho,
+      data:
+        amount === "max"
+          ? encodeFunctionData({ abi: MORPHO_ABI, functionName: "withdraw", args: [await params(), BigInt(0), await shares(owner), owner, owner] })
+          : encodeFunctionData({ abi: MORPHO_ABI, functionName: "withdraw", args: [await params(), amount, BigInt(0), owner, owner] }),
+    }),
+  };
+}
+
+/* EVM tokens where holding the token IS the position (liquid staking, sUSDe): bought and sold through Relay. */
+function evmToken(chainId: number, token: Address, symbol: string): Adapter {
+  const meta = lazy(() => tokenMeta(chainId, token));
+  return {
+    positionSymbol: symbol,
+    depositSteps: [IN_STEPS[0], { id: "bridge", label: `Move funds and buy ${symbol}` }],
+    withdrawSteps: [{ id: "bridge", label: `Sell ${symbol} and move funds back` }, OUT_STEPS[2]],
+    position: async (s) => Number(formatUnits(await erc20Balance(chainId, token, s.address), (await meta()).decimals)),
+    previewDeposit: async (s, usdg) =>
+      toPreview(await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: netOfFee(usdg), user: s.address, recipient: s.address }), symbol),
+    previewWithdraw: async (s, amount) =>
+      toPreview(await relayQuote({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: token, outToken: USDG, amount: parseUnits(amount, (await meta()).decimals), user: s.address, recipient: s.address }), "USDG"),
     deposit: async (s, usdg, on) => {
-      const i = await info();
+      const m = await meta();
       const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
       on("bridge", "running");
-      const read = () => erc20Balance(BASE_CHAIN_ID, i.asset, s.address);
+      const read = () => erc20Balance(chainId, token, s.address);
       const before = await read();
-      await relay(s, { from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: i.asset, amount: net, user: s.address, recipient: s.address });
-      const received = await waitForArrival(read, before);
-      on("bridge", "done", `${formatUnits(received, i.decimals)} ${i.symbol}`);
-      on("deposit", "running");
-      const allowance = await chainClient(BASE_CHAIN_ID).readContract({ address: i.asset, abi: erc20Abi, functionName: "allowance", args: [s.address, vault] });
-      if (allowance < received) await sendEvm(s, BASE_CHAIN_ID, { to: i.asset, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [vault, received] }) });
-      await sendEvm(s, BASE_CHAIN_ID, { to: vault, data: encodeFunctionData({ abi: VAULT_ABI, functionName: "deposit", args: [received, s.address] }) });
-      on("deposit", "done");
-      return `${formatUnits(received, i.decimals)} ${i.symbol}`;
+      await relay(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: s.address, recipient: s.address });
+      const got = await waitForArrival(read, before, 10 * 60_000);
+      const shown = `${formatUnits(got, m.decimals)} ${symbol}`;
+      on("bridge", "done", shown);
+      return shown;
     },
     withdraw: async (s, amount, on) => {
-      const i = await info();
-      on("withdraw", "running");
-      const read = () => erc20Balance(BASE_CHAIN_ID, i.asset, s.address);
+      const m = await meta();
+      const bal = await erc20Balance(chainId, token, s.address);
+      const amt = amount === "max" ? bal : parseUnits(amount, m.decimals);
+      if (amt <= BigInt(0) || amt > bal) throw new ExecError(`You don't have that much ${symbol}.`);
+      return backToUsdg(s, { from: chainId, inToken: token, amount: amt, user: s.address }, on);
+    },
+  };
+}
+
+/* ---------------- Hyperliquid vaults ---------------- */
+
+const HL = "https://api.hyperliquid.xyz";
+export const HYPERLIQUID_CHAIN_ID = 1337; // Relay's id for Hyperliquid
+/** USDC in the user's Hyperliquid perps account, as Relay names it (8 decimals there). */
+const HL_USDC = "0x00000000000000000000000000000000";
+
+const hlInfo = async <T,>(body: object): Promise<T> => {
+  const res = await fetch(`${HL}/info`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) throw new ExecError(`Hyperliquid didn't answer (${res.status}).`);
+  return res.json() as Promise<T>;
+};
+
+/** USDC free to move in the user's perps account, in micro-USDC (6 decimals). */
+const hlWithdrawable = async (user: Address) => {
+  const st = await hlInfo<{ withdrawable?: string }>({ type: "clearinghouseState", user });
+  return BigInt(Math.floor(Number(st.withdrawable ?? "0") * 1e6));
+};
+
+type HlVault = { allowDeposits?: boolean; isClosed?: boolean; followerState?: { vaultEquity?: string; lockupUntil?: number } | null };
+const hlVault = (vault: Address, user: Address) => hlInfo<HlVault>({ type: "vaultDetails", vaultAddress: vault, user });
+
+const splitSig = (sig: Hex) => ({ r: `0x${sig.slice(2, 66)}`, s: `0x${sig.slice(66, 130)}`, v: parseInt(sig.slice(130, 132), 16) });
+
+async function signDigest(s: Signer, digest: Hex): Promise<Hex> {
+  const r = await s.signEvmDigest(digest);
+  if (!r.ok) throw new ExecError(r.error);
+  return r.signature;
+}
+
+async function hlExchange(body: object) {
+  const res = await fetch(`${HL}/exchange`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const j = (await res.json().catch(() => ({}))) as { status?: string; response?: unknown };
+  if (j.status !== "ok") throw new ExecError(`Hyperliquid refused it: ${typeof j.response === "string" ? j.response : JSON.stringify(j.response ?? j)}`.slice(0, 220));
+  const statuses = (j.response as { data?: { statuses?: unknown[] } } | undefined)?.data?.statuses;
+  const err = statuses?.find((x): x is { error: string } => typeof x === "object" && !!x && "error" in x);
+  if (err) throw new ExecError(`Hyperliquid refused it: ${err.error}`);
+}
+
+/**
+ * An "L1 action" (here vaultTransfer): msgpack(action) + nonce is hashed into a one-off "agent" that the user signs
+ * with EIP-712. This is how Hyperliquid's own SDKs sign; no gas is involved.
+ */
+async function hlL1Action(s: Signer, action: Record<string, unknown>) {
+  const nonce = Date.now();
+  const nonceBytes = new Uint8Array(8);
+  new DataView(nonceBytes.buffer).setBigUint64(0, BigInt(nonce));
+  const connectionId = keccak256(concat([msgpack(action), nonceBytes, new Uint8Array([0])]));
+  const digest = hashTypedData({
+    domain: { name: "Exchange", version: "1", chainId: 1337, verifyingContract: zeroAddress },
+    types: { Agent: [{ name: "source", type: "string" }, { name: "connectionId", type: "bytes32" }] },
+    primaryType: "Agent",
+    message: { source: "a", connectionId },
+  });
+  await hlExchange({ action, nonce, signature: splitSig(await signDigest(s, digest)), vaultAddress: null });
+}
+
+/** A "user-signed" action Relay hands back (sendAsset to Relay's solver), signed with EIP-712 and sent to Hyperliquid. */
+async function hlUserAction(s: Signer, d: { action: { type: string; parameters: Record<string, unknown> }; nonce: number; eip712Types: Record<string, { name: string; type: string }[]>; eip712PrimaryType: string }) {
+  const signatureChainId = "0x1";
+  const digest = hashTypedData({
+    domain: { name: "HyperliquidSignTransaction", version: "1", chainId: 1, verifyingContract: zeroAddress },
+    types: d.eip712Types,
+    primaryType: d.eip712PrimaryType,
+    message: d.action.parameters,
+  });
+  await hlExchange({ action: { type: d.action.type, signatureChainId, ...d.action.parameters }, nonce: d.nonce, signature: splitSig(await signDigest(s, digest)) });
+}
+
+function hyperliquidVault(vault: Address): Adapter {
+  const toRelayUnits = (micro: bigint) => micro * BigInt(100); // 6 → 8 decimals
+  return {
+    positionSymbol: "USDC",
+    depositSteps: [IN_STEPS[0], { id: "bridge", label: "Move funds" }, IN_STEPS[2]],
+    withdrawSteps: OUT_STEPS,
+
+    position: async (s) => {
+      const rows = await hlInfo<{ vaultAddress: string; equity: string }[]>({ type: "userVaultEquities", user: s.address });
+      return Number(rows.find((r) => r.vaultAddress.toLowerCase() === vault.toLowerCase())?.equity ?? 0);
+    },
+
+    previewDeposit: async (s, usdg) =>
+      toPreview(await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: HYPERLIQUID_CHAIN_ID, inToken: USDG, outToken: HL_USDC, amount: netOfFee(usdg), user: s.address, recipient: s.address }), "USDC"),
+
+    previewWithdraw: async (s, amount) =>
+      toPreview(
+        await relayQuote({ from: HYPERLIQUID_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: HL_USDC, outToken: USDG, amount: parseUnits(amount, 8), user: s.address, recipient: s.address }),
+        "USDG",
+      ),
+
+    deposit: async (s, usdg, on) => {
+      const v = await hlVault(vault, s.address);
+      if (v.isClosed || v.allowDeposits === false) throw new ExecError("This vault isn't taking deposits right now.");
+      const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
+      on("bridge", "running");
+      const read = () => hlWithdrawable(s.address);
       const before = await read();
-      if (amount === "max") {
-        const { shares } = await vaultShares(vault, s.address);
-        if (shares === BigInt(0)) throw new ExecError("You don't have a position in this vault.");
-        await sendEvm(s, BASE_CHAIN_ID, { to: vault, data: encodeFunctionData({ abi: VAULT_ABI, functionName: "redeem", args: [shares, s.address, s.address] }) });
-      } else {
-        await sendEvm(s, BASE_CHAIN_ID, { to: vault, data: encodeFunctionData({ abi: VAULT_ABI, functionName: "withdraw", args: [parseUnits(amount, i.decimals), s.address, s.address] }) });
-      }
-      const out = (await read()) - before;
-      if (out <= BigInt(0)) throw new ExecError("The vault didn't release any funds.");
-      on("withdraw", "done", `${formatUnits(out, i.decimals)} ${i.symbol}`);
-      return backToUsdg(s, { from: BASE_CHAIN_ID, inToken: i.asset, amount: out, user: s.address }, on);
+      await relay(s, { from: ROBINHOOD_CHAIN_ID, to: HYPERLIQUID_CHAIN_ID, inToken: USDG, outToken: HL_USDC, amount: net, user: s.address, recipient: s.address });
+      const got = await waitForArrival(read, before, 10 * 60_000);
+      on("bridge", "done", `${formatUnits(got, 6)} USDC`);
+      on("deposit", "running");
+      await hlL1Action(s, { type: "vaultTransfer", vaultAddress: vault.toLowerCase(), isDeposit: true, usd: Number(got) });
+      on("deposit", "done");
+      return `${formatUnits(got, 6)} USDC`;
+    },
+
+    withdraw: async (s, amount, on) => {
+      on("withdraw", "running");
+      const v = await hlVault(vault, s.address);
+      const equity = BigInt(Math.floor(Number(v.followerState?.vaultEquity ?? "0") * 1e6));
+      if (equity <= BigInt(0)) throw new ExecError("You don't have a position in this vault.");
+      const until = v.followerState?.lockupUntil ?? 0;
+      if (until > Date.now()) throw new ExecError(`This vault locks deposits for a while. You can withdraw after ${new Date(until).toLocaleString()}.`);
+      const want = amount === "max" ? equity : parseUnits(amount, 6);
+      const read = () => hlWithdrawable(s.address);
+      const before = await read();
+      await hlL1Action(s, { type: "vaultTransfer", vaultAddress: vault.toLowerCase(), isDeposit: false, usd: Number(want < equity ? want : equity) });
+      const out = await waitForArrival(read, before, 2 * 60_000);
+      on("withdraw", "done", `${formatUnits(out, 6)} USDC`);
+      return backToUsdg(s, { from: HYPERLIQUID_CHAIN_ID, inToken: HL_USDC, amount: toRelayUnits(out), user: s.address }, on);
     },
   };
 }
@@ -760,11 +1162,52 @@ function scallop(coinType: string, symbol: string): Adapter {
 
 /* ---------------- which vaults get one-click ---------------- */
 
-type Opp = { chain: string; protocol: string; asset: string; ticker?: string; address?: string; id: string; ref?: { source: string; id: string } };
+type Opp = { chain: string; protocol: string; asset: string; name?: string; kind?: string; ticker?: string; address?: string | null; id: string; ref?: { source: string; id: string } | null };
+
+/** Standard ERC-4626 vaults (deposit / withdraw / redeem). */
+const VAULT_PROTOCOLS = new Set(["Euler", "Fluid", "Gearbox", "Silo", "Sky"]);
+/** Tokens that are the position themselves; bought and sold through Relay. */
+const TOKEN_PROTOCOLS = new Set(["ether.fi", "Rocket Pool", "Kinetiq", "Ethena"]);
+const SPARK_POOL: Record<number, Address> = { 1: "0xC13e21B648A5Ee794902342038FF3aDAB66BE987" };
 
 /** The one-click adapter for a vault, or null when it isn't supported yet. */
 export function adapterFor(o: Opp): Adapter | null {
-  if (o.chain === "Base" && o.ref && /^morpho-v[12]$/.test(o.ref.source) && /^0x[0-9a-fA-F]{40}$/.test(o.ref.id)) return baseVault(o.ref.id as Address, o.asset);
+  const a = o.address ?? undefined;
+  const evm = chainIdByName(o.chain);
+  if (evm) {
+    if (o.protocol === "Morpho") {
+      if (o.id.includes(":market:")) return MORPHO_BLUE[evm] && /^0x[0-9a-fA-F]{64}$/.test(a ?? "") ? evmVault(evm, morphoMarket(evm, a as Hex), o.asset) : null;
+      return isAddr(a) ? evmVault(evm, erc4626(evm, a), o.asset) : null;
+    }
+    if (o.protocol === "Aave" && o.kind === "Lending" && o.ref?.source === "aave" && isAddr(o.ref.id) && isAddr(a)) {
+      const pool = o.ref.id;
+      return evmVault(evm, aaveStyle(evm, async () => pool, async () => a), o.asset);
+    }
+    if (o.protocol === "Spark" && o.kind === "Lending" && SPARK_POOL[evm] && isAddr(a)) return evmVault(evm, aaveStyle(evm, async () => SPARK_POOL[evm], async () => a), o.asset);
+    if (o.protocol === "HyperLend" && isAddr(a)) {
+      const underlying = o.id.split(":")[2];
+      if (!isAddr(underlying)) return null;
+      const pool = lazy(() => chainClient(evm).readContract({ address: a, abi: ATOKEN_ABI, functionName: "POOL" }));
+      return evmVault(evm, aaveStyle(evm, pool, async () => underlying), o.asset);
+    }
+    if (o.protocol === "Compound" && isAddr(a)) return evmVault(evm, comet(evm, a), o.asset);
+    // Native-coin markets (Venus vBNB) take BNB itself rather than a token, so they stay on the regular page.
+    if ((o.protocol === "Venus" || o.protocol === "Moonwell") && isAddr(a) && a.toLowerCase() !== "0xa07c5b74c9b40447a954e1466938b865b6bbea36") return evmVault(evm, compoundV2(evm, a), o.asset);
+    if ((TOKEN_PROTOCOLS.has(o.protocol) || (o.protocol === "Frax" && o.kind === "Liquid staking")) && isAddr(a)) {
+      const symbol = o.ticker ?? o.name?.match(/\(([^)]+)\)/)?.[1] ?? o.asset;
+      return evmToken(evm, a, symbol);
+    }
+    // Curve-LP vaults hold LP tokens Relay can't buy, so they stay on the regular deposit page.
+    if (o.protocol === "Yearn" && isAddr(a) && !/^(Curve|LP) /.test(o.name ?? "")) return evmVault(evm, yearn(evm, a), o.asset);
+    // Spark's savings vaults are ERC-4626 on Ethereum; elsewhere they're plain bridged tokens.
+    if (o.protocol === "Spark" && o.kind === "Vault") return evm === 1 && isAddr(a) ? evmVault(evm, erc4626(evm, a), o.asset) : null;
+    if ((VAULT_PROTOCOLS.has(o.protocol) || (["Frax", "Aave"].includes(o.protocol) && o.kind === "Vault")) && isAddr(a)) return evmVault(evm, erc4626(evm, a), o.asset);
+    return null;
+  }
+  if (o.chain === "Hyperliquid" && o.id.startsWith("hyperliquid:")) {
+    const vault = o.id.split(":")[1];
+    return isAddr(vault) ? hyperliquidVault(vault) : null;
+  }
   if (o.chain === "Solana") {
     const mint = o.address;
     if ((o.protocol === "Solana staking" || o.protocol === "Marinade" || o.id.startsWith("jupiter-jlp")) && mint) return solanaToken(mint, o.ticker ?? o.asset);
@@ -779,4 +1222,15 @@ export function adapterFor(o: Opp): Adapter | null {
   return null;
 }
 
-export const supportsOneClick = (o: Opp) => adapterFor(o) !== null;
+/** Adapters are built once per vault, since the panel and the page both ask. */
+const cache = new Map<string, Adapter | null>();
+export function oneClickFor(o: Opp): Adapter | null {
+  if (!cache.has(o.id)) cache.set(o.id, adapterFor(o));
+  return cache.get(o.id)!;
+}
+
+export const supportsOneClick = (o: Opp) => oneClickFor(o) !== null;
+
+/** The EVM protocol builders, exported for tests and scripts. */
+export const evmProtocols = { yearn, erc4626, aaveStyle, comet, compoundV2, morphoMarket, MORPHO_BLUE };
+export const hyperliquidSigning = { hlL1Action, hlUserAction };

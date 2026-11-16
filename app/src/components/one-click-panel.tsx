@@ -2,7 +2,7 @@
 
 import { Check, Loader2, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { adapterFor, feeBps, type Preview, type StepStatus } from "@/lib/execute";
+import { feeBps, oneClickFor, type Preview, type StepStatus } from "@/lib/execute";
 import type { Opportunity } from "@/lib/types";
 import { getBalances } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
@@ -16,8 +16,8 @@ type Run = { side: Side; steps: { id: string; label: string; status: StepStatus;
  * amount, the minimum after slippage, price impact, fees and time.
  */
 export function OneClickPanel({ o }: { o: Opportunity }) {
-  const { signedIn, live, evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, suiAddress, sendSuiTransaction, signAccountsRequest } = useAuth();
-  const adapter = useMemo(() => adapterFor(o)!, [o]);
+  const { signedIn, live, evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, signEvmDigest, suiAddress, sendSuiTransaction, signAccountsRequest } = useAuth();
+  const adapter = useMemo(() => oneClickFor(o)!, [o]);
   const [side, setSide] = useState<Side>("add");
   const [amount, setAmount] = useState("");
   const [usdg, setUsdg] = useState<number | null>(null);
@@ -62,7 +62,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
     setRun({ side, steps: template.map((s) => ({ ...s, status: "pending" })) });
     const on = (id: string, status: StepStatus, detail?: string) =>
       setRun((r) => (r ? { ...r, steps: r.steps.map((s) => (s.id === id ? { ...s, status, detail: detail ?? s.detail } : s)) } : r));
-    const signer = { address: evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, suiAddress, sendSuiTransaction, signAccountsRequest };
+    const signer = { address: evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, signEvmDigest, suiAddress, sendSuiTransaction, signAccountsRequest };
     try {
       const result =
         side === "add" ? await adapter.deposit(signer, amount, on) : await adapter.withdraw(signer, n >= (pos ?? 0) - 1e-9 ? "max" : amount, on);

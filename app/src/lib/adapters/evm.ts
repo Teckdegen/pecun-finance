@@ -177,6 +177,7 @@ type TA = { usd?: string } | null;
 type AaveData = {
   markets: {
     name: string;
+    address: string;
     chain: { chainId: number; name: string };
     reserves: {
       underlyingToken: { symbol: string; address: string };
@@ -210,7 +211,7 @@ export async function aave(): Promise<Opportunity[]> {
   const chains = await gql<{ chains: { chainId: number }[] }>(AAVE, "{ chains { chainId } }");
   const data = await gql<AaveData>(
     AAVE,
-    `query($ids:[ChainId!]!){ markets(request:{chainIds:$ids}){ name chain{chainId name} reserves{ underlyingToken{symbol address} isFrozen isPaused usdExchangeRate size{usd}
+    `query($ids:[ChainId!]!){ markets(request:{chainIds:$ids}){ name address chain{chainId name} reserves{ underlyingToken{symbol address} isFrozen isPaused usdExchangeRate size{usd}
       supplyInfo{ apy{value} maxLTV{value} liquidationThreshold{value} liquidationBonus{value} canBeCollateral supplyCap{usd} }
       borrowInfo{ apy{value} total{usd} borrowCap{usd} utilizationRate{value} availableLiquidity{usd} reserveFactor{value}
         baseVariableBorrowRate{value} variableRateSlope1{value} variableRateSlope2{value} optimalUsageRate{value} } } } }`,
@@ -247,6 +248,7 @@ export async function aave(): Promise<Opportunity[]> {
         stablecoin: isStable(asset),
         url: "https://app.aave.com/",
         address: r.underlyingToken.address,
+        ref: { source: "aave", id: m.address, chainId: m.chain.chainId }, // the market's Pool contract
         lending: {
           totalSuppliedUsd: supplied,
           totalBorrowedUsd: numOrNull(b?.total?.usd) ?? undefined,

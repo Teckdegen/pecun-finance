@@ -5,8 +5,9 @@ import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction as SuiTransaction } from "@mysten/sui/transactions";
 import bs58 from "bs58";
-import { createPublicClient, createWalletClient, formatEther, http, parseEther, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, fallback, formatEther, http, parseEther, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { EVM_CHAINS } from "./exec-chains";
 
 /**
  * Pecun's gas tank: wallets that pay users' network fees by topping them up with a little native gas just before a
@@ -26,11 +27,10 @@ const SOLANA_RPC = "https://solana-rpc.publicnode.com";
 export const SUI_CHAIN_ID = 9270000000000000; // LI.FI's id for Sui
 const SUI_GRPC = "https://fullnode.mainnet.sui.io:443";
 
-type EvmGas = { name: string; rpc: string; /** sent when short; covers a few transactions */ topUp: string; /** most one top-up can send */ maxTopUp: string };
-export const GAS_CHAINS: Record<number, EvmGas> = {
-  4663: { name: "Robinhood Chain", rpc: "https://rpc.mainnet.chain.robinhood.com", topUp: "0.00003", maxTopUp: "0.0001" },
-  8453: { name: "Base", rpc: "https://mainnet.base.org", topUp: "0.00003", maxTopUp: "0.0001" },
-};
+type EvmGas = { name: string; rpc: string; urls: string[]; /** sent when short; covers a few transactions */ topUp: string; /** most one top-up can send */ maxTopUp: string };
+export const GAS_CHAINS: Record<number, EvmGas> = Object.fromEntries(
+  EVM_CHAINS.map((c) => [c.id, { name: c.names[0], rpc: c.rpc, urls: [c.rpc, ...(c.backups ?? [])], topUp: c.topUp, maxTopUp: c.maxTopUp }]),
+);
 /** Solana: enough for fees plus rent for a couple of new token accounts. */
 const SOL_TOP_UP = 0.005;
 const SOL_MAX_TOP_UP = 0.012;
@@ -94,7 +94,8 @@ export async function ensureGas(chainId: number, to: string, need: bigint, user:
 async function ensureEvm(chainId: number, to: Address, needWei: bigint, user: string): Promise<TopUpResult> {
   const chain = GAS_CHAINS[chainId];
   if (!chain) throw new Error(`Pecun doesn't cover gas on chain ${chainId} yet.`);
-  const pub = createPublicClient({ transport: http(chain.rpc, { timeout: 20_000, retryCount: 2 }) });
+  const transport = () => fallback(chain.urls.map((u) => http(u, { timeout: 15_000, retryCount: 0 })), { retryCount: 2 });
+  const pub = createPublicClient({ transport: transport() });
   const balance = await pub.getBalance({ address: to });
   if (balance >= needWei) return { toppedUp: false, balance: formatEther(balance) };
 
@@ -106,7 +107,7 @@ async function ensureEvm(chainId: number, to: Address, needWei: bigint, user: st
   const account = evmAccount();
   const tank = await pub.getBalance({ address: account.address });
   if (tank < amount * BigInt(2)) throw new Error(`Pecun's gas tank is low on ${chain.name}. Please try again later.`);
-  const wallet = createWalletClient({ account, transport: http(chain.rpc, { timeout: 20_000, retryCount: 2 }) });
+  const wallet = createWalletClient({ account, transport: transport() });
   const hash = await wallet.sendTransaction({ to, value: amount, chain: null });
   await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
   done();
@@ -176,7 +177,7 @@ export async function gasTankStatus() {
     const balances = await Promise.all(
       Object.values(GAS_CHAINS).map(async (ch) => ({
         chain: ch.name,
-        balance: await createPublicClient({ transport: http(ch.rpc) }).getBalance({ address }).then(formatEther).catch(() => "unavailable"),
+        balance: await createPublicClient({ transport: fallback(ch.urls.map((u) => http(u, { timeout: 15_000, retryCount: 0 }))) }).getBalance({ address }).then(formatEther).catch(() => "unavailable"),
       })),
     );
     out.evm = { address, balances };
