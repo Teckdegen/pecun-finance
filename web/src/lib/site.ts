@@ -3,8 +3,7 @@
  * https://app.pecun.finance. Keyed on NODE_ENV (not a Vercel-only variable)
  * because client components read it too, and only NEXT_PUBLIC_ and NODE_ENV values reach the browser.
  */
-/** The yields app. Set PECUN_APP_URL to point the landing page at another deployment (e.g. a Vercel preview). */
-export const APP_URL = process.env.PECUN_APP_URL || (process.env.NODE_ENV === "production" ? "https://app.pecun.finance" : "http://localhost:3000");
+export const APP_URL = process.env.NODE_ENV === "production" ? "https://app.pecun.finance" : "http://localhost:3000";
 
 /**
  * Public address of this landing page: the base for the share image, canonical links, sitemap and robots.txt.
