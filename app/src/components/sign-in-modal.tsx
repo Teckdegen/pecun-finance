@@ -98,7 +98,11 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
     setStep("setup");
     setSetupError("");
     const r = await setupWallets();
-    if (!r.ok) return setSetupError(r.error);
+    if (!r.ok) {
+      // The detail (often a server or Turnkey message) goes to the browser console for debugging, not on screen.
+      console.error("[pecun] account setup failed:", r.error);
+      return setSetupError(r.error);
+    }
     setStep("done");
   };
 
@@ -229,51 +233,40 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
         )}
 
         {step === "setup" && (
-          <div className="pt-6" role="status" aria-live="polite">
-            <h2 id="signin-title" className="text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">
-              {setupError ? "Wallet setup didn't finish" : isNew ? "Creating your wallets" : "Signing you in"}
+          <div className="pb-2 pt-4 text-center" role="status" aria-live="polite">
+            {/* Lime dot field fading out from a centre badge with the Pecun leaf */}
+            <div className="relative mx-auto grid h-[220px] w-full max-w-[320px] place-items-center">
+              <div
+                aria-hidden
+                className={`absolute inset-0 ${setupError ? "" : "animate-pulse"}`}
+                style={{
+                  backgroundImage: "radial-gradient(rgba(184,255,157,0.55) 1.3px, transparent 1.6px)",
+                  backgroundSize: "11px 11px",
+                  WebkitMaskImage: "radial-gradient(circle at center, #000 18%, rgba(0,0,0,0.5) 42%, transparent 68%)",
+                  maskImage: "radial-gradient(circle at center, #000 18%, rgba(0,0,0,0.5) 42%, transparent 68%)",
+                }}
+              />
+              <span className="relative grid size-[88px] place-items-center rounded-full bg-[#1d2a1a] shadow-[0_0_0_8px_#121315,0_0_50px_rgba(184,255,157,0.25)]">
+                <svg aria-hidden width={38} height={38} viewBox="12 12 40 40">
+                  <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+                  <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+                </svg>
+              </span>
+            </div>
+            <h2 id="signin-title" className="mt-2 text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">
+              {setupError ? "Something went wrong" : isNew ? "Creating your wallet…" : "Signing you in…"}
             </h2>
             <p className="mt-1.5 font-sans text-[15px] text-white/55">
-              {setupError
-                ? "You're signed in, but your wallets aren't ready yet."
-                : isNew
-                  ? "Setting up your Pecun wallet and the Solana and Sui wallets behind it."
-                  : "Checking your Solana and Sui wallets are in place."}
+              {setupError ? "We couldn't finish setting up your account." : "This may take a moment."}
             </p>
-            <ul className="mt-6 space-y-2.5">
-              {[
-                { label: "Pecun wallet", sub: "EVM · yours to control", done: true },
-                { label: "Solana wallet", sub: "Pecun-held, for routing", done: false },
-                { label: "Sui wallet", sub: "Pecun-held, for routing", done: false },
-              ].map((w) => (
-                <li key={w.label} className="flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-medium">{w.label}</span>
-                    <span className="block font-sans text-xs text-white/45">{w.sub}</span>
-                  </span>
-                  {w.done ? (
-                    <span className="grid size-6 place-items-center rounded-full bg-accent text-on-accent"><Check className="size-4" strokeWidth={3} /></span>
-                  ) : setupError ? (
-                    <span className="grid size-6 place-items-center rounded-full bg-neg/20 text-neg"><X className="size-4" strokeWidth={3} /></span>
-                  ) : (
-                    <Loader2 className="size-5 animate-spin text-white/60" />
-                  )}
-                </li>
-              ))}
-            </ul>
             {setupError && (
-              <>
-                <p role="alert" className="mt-4 rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white/85">
-                  {setupError}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void runSetup()}
-                  className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] transition hover:bg-white"
-                >
-                  <RotateCw className="size-4" /> Try again
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => void runSetup()}
+                className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] transition hover:bg-white"
+              >
+                <RotateCw className="size-4" /> Try again
+              </button>
             )}
           </div>
         )}
@@ -284,12 +277,11 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
               <Check className="size-7" strokeWidth={2.5} />
             </span>
             <h2 id="signin-title" className="mt-5 text-[1.6rem] font-medium leading-tight tracking-[-0.03em]">
-              {isNew ? "Your wallets are ready" : "You're in"}
+              {isNew ? "Your wallet is ready" : "You're in"}
             </h2>
             <p className="mt-1.5 font-sans text-[15px] text-white/55">
               {via === "passkey" ? "Signed in with your passkey." : `Signed in as ${email.trim()}.`}
             </p>
-            <p className="mt-1 font-sans text-xs text-white/40">Solana and Sui wallets confirmed.</p>
           </div>
         )}
 
