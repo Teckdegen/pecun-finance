@@ -17,6 +17,10 @@ export type AuthActions = {
   signOut: () => Promise<void>;
   /** The user's EVM address (Robinhood Chain and every EVM chain). Solana and Sui addresses stay behind the scenes. */
   evmAddress?: `0x${string}`;
+  /** The user's Solana address (in their own wallet; used behind the scenes, never shown). */
+  solanaAddress?: string;
+  /** Signs an unsigned Solana transaction (hex) with the user's wallet and broadcasts it. Returns the signature. */
+  sendSolanaTransaction: (unsignedHex: string, rpcUrl: string) => Promise<{ ok: true; signature: string } | { ok: false; error: string }>;
   /** Signs an unsigned EVM transaction (hex, no 0x) with the user's wallet and broadcasts it. Returns the tx hash. */
   sendEvmTransaction: (unsigned: string, rpcUrl: string) => Promise<{ ok: true; hash: `0x${string}` } | { ok: false; error: string }>;
   /** Solana and Sui addresses Pecun holds for this user as server wallets. Used for routing, never shown. */
@@ -187,6 +191,18 @@ function LiveAuth({ children }: { children: ReactNode }) {
         await logout();
       },
       evmAddress: evmAccount?.address as `0x${string}` | undefined,
+      solanaAddress: solAccount?.address,
+      sendSolanaTransaction: async (unsignedHex, rpcUrl) => {
+        if (!solAccount) return { ok: false, error: "Your Solana account is still being set up. Try again in a moment." };
+        try {
+          const signature = await signAndSendTransaction({ walletAccount: solAccount, unsignedTransaction: unsignedHex, transactionType: "TRANSACTION_TYPE_SOLANA", rpcUrl });
+          return { ok: true, signature };
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "";
+          if (/insufficient|0x1\b/i.test(msg)) return { ok: false, error: "Not enough SOL for the network fee." };
+          return { ok: false, error: friendlyError(e, `The Solana transaction didn't go through: ${msg.slice(0, 160)}`) };
+        }
+      },
       routing,
       setupWallets,
       accountReady: !!evmAccount && !!routing?.solana && !!routing?.sui,
@@ -204,7 +220,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest, solAccount],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -240,6 +256,8 @@ function DemoAuth({ children }: { children: ReactNode }) {
       accountReady: !!account && demoReady,
       ensureAccount: async () => (await wait(2000), setDemoReady(true), { ok: true, created: true }),
       signAccountsRequest: async () => null,
+      solanaAddress: account ? "PecunDemo1111111111111111111111111111111111" : undefined,
+      sendSolanaTransaction: async () => (await wait(1200), { ok: true, signature: "demo" }),
       signOut,
       // A fixed demo address so the wallet screens can be tried; nothing is ever sent from it.
       evmAddress: account ? "0x000000000000000000000000000000000000de40" : undefined,

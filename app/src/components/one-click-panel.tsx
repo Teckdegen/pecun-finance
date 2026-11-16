@@ -1,10 +1,8 @@
 "use client";
 
 import { Check, Loader2, RotateCw, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import type { Address } from "viem";
-import { formatUnits } from "viem";
-import { DEPOSIT_STEPS, depositBaseVault, feeBps, vaultInfo, vaultPosition, WITHDRAW_STEPS, withdrawBaseVault, type StepStatus } from "@/lib/execute";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { adapterFor, feeBps, type Preview, type StepStatus } from "@/lib/execute";
 import type { Opportunity } from "@/lib/types";
 import { getBalances } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
@@ -13,47 +11,61 @@ type Side = "add" | "withdraw";
 type Run = { side: Side; steps: { id: string; label: string; status: StepStatus; detail?: string }[]; error?: string; result?: string };
 
 /**
- * One-click Add / Withdraw for a Base ERC-4626 vault. One press runs every step (fee, bridge + swap, gas, deposit or
- * withdrawal) in the background with the user's own session; there's nothing to approve along the way.
+ * One-click Add / Withdraw. One press runs every step (fee, bridge + swap, gas, deposit or withdrawal) in the background
+ * with the user's own session; there's nothing to approve along the way. Before pressing, the user sees the expected
+ * amount, the minimum after slippage, price impact, fees and time.
  */
 export function OneClickPanel({ o }: { o: Opportunity }) {
-  const { signedIn, live, evmAddress, sendEvmTransaction, signAccountsRequest } = useAuth();
-  const vault = o.ref!.id as Address;
+  const { signedIn, live, evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, signAccountsRequest } = useAuth();
+  const adapter = useMemo(() => adapterFor(o)!, [o]);
   const [side, setSide] = useState<Side>("add");
   const [amount, setAmount] = useState("");
   const [usdg, setUsdg] = useState<number | null>(null);
-  const [pos, setPos] = useState<{ assets: number; symbol: string; decimals: number } | null>(null);
+  const [pos, setPos] = useState<number | null>(null);
   const [run, setRun] = useState<Run | null>(null);
+  const [preview, setPreview] = useState<{ key: string; p?: Preview; error?: string } | null>(null);
   const busy = !!run && !run.error && !run.result;
+  const symbol = adapter.positionSymbol;
 
   const load = useCallback(async () => {
     if (!evmAddress) return;
-    const [b, info, p] = await Promise.all([
+    const [b, p] = await Promise.all([
       getBalances(evmAddress).catch(() => null),
-      vaultInfo(vault).catch(() => null),
-      vaultPosition(vault, evmAddress).catch(() => null),
+      adapter.position({ address: evmAddress, solanaAddress }).catch(() => null),
     ]);
     if (b) setUsdg(b.usdg);
-    if (info && p) setPos({ assets: Number(formatUnits(p.assets, info.decimals)), symbol: info.symbol, decimals: info.decimals });
-  }, [evmAddress, vault]);
+    if (p !== null) setPos(p);
+  }, [evmAddress, solanaAddress, adapter]);
   useEffect(() => void load(), [load]);
 
   const n = Number(amount) || 0;
-  const max = side === "add" ? usdg ?? 0 : pos?.assets ?? 0;
+  const max = side === "add" ? usdg ?? 0 : pos ?? 0;
   const ok = n > 0 && n <= max;
 
+  // Live quote, debounced while typing.
+  const key = `${side}:${amount}`;
+  useEffect(() => {
+    if (!evmAddress || !(n > 0) || run) return;
+    const t = setTimeout(() => {
+      const who = { address: evmAddress, solanaAddress };
+      (side === "add" ? adapter.previewDeposit(who, amount) : adapter.previewWithdraw(who, amount))
+        .then((p) => setPreview({ key, p }))
+        .catch((e) => setPreview({ key, error: e instanceof Error ? e.message : String(e) }));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [key, n, side, amount, evmAddress, solanaAddress, adapter, run]);
+  const shown = preview?.key === key ? preview : null;
+
   const go = async () => {
-    if (!evmAddress || (!ok && side === "add")) return;
-    const template = side === "add" ? DEPOSIT_STEPS : WITHDRAW_STEPS;
+    if (!evmAddress || !ok) return;
+    const template = side === "add" ? adapter.depositSteps : adapter.withdrawSteps;
     setRun({ side, steps: template.map((s) => ({ ...s, status: "pending" })) });
     const on = (id: string, status: StepStatus, detail?: string) =>
       setRun((r) => (r ? { ...r, steps: r.steps.map((s) => (s.id === id ? { ...s, status, detail: detail ?? s.detail } : s)) } : r));
-    const signer = { address: evmAddress, sendEvmTransaction, signAccountsRequest };
+    const signer = { address: evmAddress, solanaAddress, sendEvmTransaction, sendSolanaTransaction, signAccountsRequest };
     try {
       const result =
-        side === "add"
-          ? await depositBaseVault(signer, vault, amount, on)
-          : await withdrawBaseVault(signer, vault, n >= (pos?.assets ?? 0) - 1e-9 ? "max" : amount, on);
+        side === "add" ? await adapter.deposit(signer, amount, on) : await adapter.withdraw(signer, n >= (pos ?? 0) - 1e-9 ? "max" : amount, on);
       setRun((r) => (r ? { ...r, result } : r));
       setAmount("");
       void load();
@@ -100,7 +112,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
               <div className="flex items-center justify-between text-xs text-muted">
                 <span>{side === "add" ? "Add" : "Withdraw"}</span>
                 <button type="button" onClick={() => setAmount(String(max))} className="hover:text-ink">
-                  {side === "add" ? `Wallet: ${(usdg ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} USDG` : `In vault: ${(pos?.assets ?? 0).toLocaleString("en-US", { maximumFractionDigits: 4 })} ${pos?.symbol ?? o.asset}`}
+                  {side === "add" ? `Wallet: ${(usdg ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} USDG` : `In vault: ${(pos ?? 0).toLocaleString("en-US", { maximumFractionDigits: 4 })} ${symbol}`}
                 </button>
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
@@ -112,20 +124,21 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
                   onChange={(e) => setAmount(e.target.value.replace(",", ".").replace(/[^0-9.]/g, ""))}
                   className="w-1/2 bg-transparent text-3xl text-ink outline-none placeholder:text-faint"
                 />
-                <span className="text-base font-medium">{side === "add" ? "USDG" : pos?.symbol ?? o.asset}</span>
+                <span className="text-base font-medium">{side === "add" ? "USDG" : symbol}</span>
               </div>
             </div>
             {n > max && <p className="mt-2 text-xs text-red-300">That&apos;s more than you have.</p>}
+            {n > 0 && n <= max && <QuoteView q={shown} />}
             <button
               type="button"
               onClick={() => void go()}
               disabled={!ok}
               className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-accent text-[15px] font-medium text-on-accent transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-muted"
             >
-              {!n ? "Enter an amount" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDG` : `Withdraw ${n.toLocaleString("en-US")} ${pos?.symbol ?? ""}`}
+              {!n ? "Enter an amount" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDG` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
             </button>
             <p className="mt-3 text-xs leading-relaxed text-muted">
-              One click: {side === "add" ? "moves your USDG to Base and deposits it" : "withdraws and returns USDG to your wallet"}. Network fees are covered by Pecun
+              One click: {side === "add" ? "swaps your USDG and deposits it" : "withdraws and returns USDG to your wallet"}. Network fees are covered by Pecun
               {feeBps ? `; Pecun's fee is ${(feeBps / 100).toFixed(2)}%` : ""}.
               {!live && " Demo mode: connect Turnkey to run it for real."}
             </p>
@@ -133,6 +146,36 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
         )}
       </div>
     </aside>
+  );
+}
+
+function QuoteView({ q }: { q: { p?: Preview; error?: string } | null }) {
+  if (!q)
+    return (
+      <p className="mt-3 flex items-center gap-2 text-xs text-muted">
+        <Loader2 className="size-3.5 animate-spin" /> Getting the best route…
+      </p>
+    );
+  if (q.error || !q.p) return <p className="mt-3 break-words text-xs text-red-300">{q.error ?? "No route right now."}</p>;
+  const p = q.p;
+  const fmt = (v: string) => Number(v).toLocaleString("en-US", { maximumFractionDigits: Number(v) < 1 ? 6 : 4 });
+  const rows: [string, string][] = [
+    ["You get (expected)", `${fmt(p.out)} ${p.outSymbol}`],
+    ["Minimum after slippage", `${fmt(p.minOut)} ${p.outSymbol}`],
+    ["Max slippage", `${p.slippagePct.toFixed(2)}%`],
+    ["Price impact", `${p.impactPct.toFixed(2)}%`],
+    ["Route fees", `$${p.feesUsd.toFixed(2)}`],
+    ["Time", p.seconds ? `~${p.seconds < 60 ? `${p.seconds}s` : `${Math.round(p.seconds / 60)} min`}` : "Under a minute"],
+  ];
+  return (
+    <dl className="mt-3 space-y-1.5 rounded-xl border border-line px-3 py-2.5 text-xs">
+      {rows.map(([k, v]) => (
+        <div key={k} className="flex justify-between gap-3">
+          <dt className="text-muted">{k}</dt>
+          <dd className={k === "Price impact" && Math.abs(p.impactPct) > 1 ? "text-red-300" : "text-ink"}>{v}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
