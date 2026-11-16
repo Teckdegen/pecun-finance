@@ -1,7 +1,7 @@
 "use client";
 
 import { AuthState, OtpType, TurnkeyProvider, useTurnkey, type TurnkeyProviderConfig } from "@turnkey/react-wallet-kit";
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { authConfigured, friendlyError, PECUN_WALLET, TURNKEY_AUTH_PROXY_ID, TURNKEY_ORGANIZATION_ID, type AuthResult } from "@/lib/auth";
 
 /** What the sign-in modal and the header need, whether Turnkey is live or the demo is running. */
@@ -19,6 +19,8 @@ export type AuthActions = {
   evmAddress?: `0x${string}`;
   /** Signs an unsigned EVM transaction (hex, no 0x) with the user's wallet and broadcasts it. Returns the tx hash. */
   sendEvmTransaction: (unsigned: string, rpcUrl: string) => Promise<{ ok: true; hash: `0x${string}` } | { ok: false; error: string }>;
+  /** Solana and Sui addresses Pecun holds for this user as server wallets. Used for routing, never shown. */
+  routing?: { solana: string; sui: string };
 };
 
 const Ctx = createContext<AuthActions | null>(null);
@@ -53,7 +55,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 function LiveAuth({ children }: { children: ReactNode }) {
-  const { authState, user, wallets, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, signAndSendTransaction } = useTurnkey();
+  const { authState, user, wallets, session, httpClient, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, signAndSendTransaction } = useTurnkey();
+  const [routing, setRouting] = useState<{ solana: string; sui: string } | undefined>();
+
+  // Once signed in, make sure the user's server wallets (Solana, Sui) exist. The request is signed with the user's
+  // own session so the server can confirm with Turnkey who is asking. Safe to repeat: it returns existing addresses.
+  const orgId = authState === AuthState.Authenticated ? session?.organizationId : undefined;
+  useEffect(() => {
+    if (!orgId || !httpClient) return;
+    let alive = true;
+    (async () => {
+      try {
+        const signed = await httpClient.stampGetWhoami({ organizationId: orgId });
+        if (!signed) return;
+        const res = await fetch("/api/wallets", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ signed }) });
+        if (res.ok && alive) setRouting((await res.json()) as { solana: string; sui: string });
+      } catch {
+        // Not critical for the wallet screens; it is retried on the next sign-in or reload.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [orgId, httpClient]);
   const evmAccount = useMemo(
     () => wallets?.flatMap((w) => w.accounts ?? []).find((a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"),
     [wallets],
@@ -114,6 +138,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         await logout();
       },
       evmAddress: evmAccount?.address as `0x${string}` | undefined,
+      routing,
       sendEvmTransaction: async (unsigned, rpcUrl) => {
         if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
         try {
@@ -126,7 +151,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -21,15 +21,13 @@ export const RESEND_SECONDS = 30;
 export type AuthResult = { ok: true; otpId?: string } | { ok: false; error: string };
 
 /**
- * Every new account gets one wallet with an address on each kind of chain Pecun supports:
- * Ethereum (and every EVM chain), Solana and Sui.
+ * Every new account gets one wallet the user controls: an EVM address (Robinhood Chain and every EVM chain).
+ * Solana and Sui are handled by server wallets Pecun creates for the user (see lib/server-wallets.ts).
  */
 export const PECUN_WALLET = {
   walletName: "Pecun Wallet",
   walletAccounts: [
     { curve: "CURVE_SECP256K1" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/60'/0'/0/0", addressFormat: "ADDRESS_FORMAT_ETHEREUM" as const },
-    { curve: "CURVE_ED25519" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/501'/0'/0'", addressFormat: "ADDRESS_FORMAT_SOLANA" as const },
-    { curve: "CURVE_ED25519" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/784'/0'/0'/0'", addressFormat: "ADDRESS_FORMAT_SUI" as const },
   ],
 };
 
