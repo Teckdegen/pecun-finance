@@ -10,19 +10,25 @@ export const ROBINHOOD_RPC = "https://rpc.mainnet.chain.robinhood.com";
 export const ROBINHOOD_EXPLORER = "https://robinhoodchain.blockscout.com";
 export const USDG: Address = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
 export const USDG_DECIMALS = 6;
+export const ETH_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
 export const USDG_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xe343167631d89B6Ffc58B88d6b7fB0228795491D/logo.png";
 
 const client = createPublicClient({ transport: http(ROBINHOOD_RPC, { timeout: 20_000, retryCount: 2 }) });
 
-export type Balances = { usdg: number; eth: number; usdgRaw: bigint; ethRaw: bigint };
+export type Balances = { usdg: number; eth: number; usdgRaw: bigint; ethRaw: bigint; /** USD per ETH; 0 if the price couldn't be loaded */ ethPrice: number };
 
 /** USDG and ETH (for network fees) held by the address on Robinhood Chain. */
 export async function getBalances(address: Address): Promise<Balances> {
-  const [usdgRaw, ethRaw] = await Promise.all([
+  const [usdgRaw, ethRaw, ethPrice] = await Promise.all([
     client.readContract({ address: USDG, abi: erc20Abi, functionName: "balanceOf", args: [address] }),
     client.getBalance({ address }),
+    // LI.FI's open price for native ETH on Robinhood Chain.
+    fetch(`https://li.quest/v1/token?chain=${ROBINHOOD_CHAIN_ID}&token=0x0000000000000000000000000000000000000000`)
+      .then((r) => r.json() as Promise<{ priceUSD?: string }>)
+      .then((t) => Number(t.priceUSD) || 0)
+      .catch(() => 0),
   ]);
-  return { usdg: Number(formatUnits(usdgRaw, USDG_DECIMALS)), eth: Number(formatUnits(ethRaw, 18)), usdgRaw, ethRaw };
+  return { usdg: Number(formatUnits(usdgRaw, USDG_DECIMALS)), eth: Number(formatUnits(ethRaw, 18)), usdgRaw, ethRaw, ethPrice };
 }
 
 export const isAddress = (v: string): v is Address => /^0x[a-fA-F0-9]{40}$/.test(v.trim());

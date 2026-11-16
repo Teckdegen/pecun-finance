@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Check, Copy, ExternalLink, Loader2, Plus, Power, RefreshCw, Send, X } from "lucide-react";
-import Link from "next/link";
+import { ArrowDown, ArrowLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, Plus, Power, RefreshCw, Send, X } from "lucide-react";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -9,6 +8,7 @@ import {
   buildUsdgTransfer,
   getBalances,
   isAddress,
+  ETH_LOGO,
   ROBINHOOD_EXPLORER,
   ROBINHOOD_RPC,
   shortAddress,
@@ -123,7 +123,9 @@ function Home({ account, address, bal, balErr, loading, onRefresh, onClose, onSi
   onSignOut: () => void;
   go: (v: View) => void;
 }) {
-  const [whole, cents] = money(bal?.usdg ?? 0).split(".");
+  // Total = USDG (a dollar each) + ETH at its live price.
+  const total = (bal?.usdg ?? 0) + (bal?.eth ?? 0) * (bal?.ethPrice ?? 0);
+  const [whole, cents] = money(total).split(".");
   return (
     <>
       <div className="flex items-start justify-between">
@@ -154,11 +156,7 @@ function Home({ account, address, bal, balErr, loading, onRefresh, onClose, onSi
             <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
-        <p className="mt-2 flex items-center gap-1.5 font-sans text-sm text-white/55">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={USDG_LOGO} alt="" className="size-4 rounded-full" />
-          {balErr ? "Couldn't load your balance. Tap refresh." : `${(bal?.usdg ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} USDG on Robinhood Chain`}
-        </p>
+        <p className="mt-2 font-sans text-sm text-white/55">{balErr ? "Couldn't load your balance. Tap refresh." : "Total on Robinhood Chain"}</p>
       </div>
 
       <div className="mt-6 grid grid-cols-3 gap-2.5">
@@ -167,18 +165,36 @@ function Home({ account, address, bal, balErr, loading, onRefresh, onClose, onSi
         <Action icon={<ArrowDown className="size-5" />} label="Receive" onClick={() => go("receive")} />
       </div>
 
-      <Link
-        href="/portfolio"
-        onClick={onClose}
-        className="mt-3 flex h-12 items-center justify-center gap-2 rounded-full border border-white/15 text-[15px] font-medium text-white transition hover:border-white/30"
-      >
-        View portfolio <ArrowRight className="size-4" />
-      </Link>
-
-      <p className="mt-5 font-sans text-xs leading-relaxed text-white/40">
-        Network fees on Robinhood Chain are paid in ETH. You have {(bal?.eth ?? 0).toLocaleString("en-US", { maximumFractionDigits: 6 })} ETH there.
-      </p>
+      {/* Tokens held on Robinhood Chain, always listed, even at zero. */}
+      <div className="mt-6">
+        <p className="font-sans text-xs text-white/45">Balances</p>
+        <ul className="mt-2 divide-y divide-white/[0.06] rounded-2xl bg-white/[0.04]">
+          <TokenRow logo={USDG_LOGO} symbol="USDG" name="Global Dollar" amount={bal?.usdg ?? 0} usd={bal?.usdg ?? 0} digits={2} />
+          <TokenRow logo={ETH_LOGO} symbol="ETH" name="Network fees" amount={bal?.eth ?? 0} usd={(bal?.eth ?? 0) * (bal?.ethPrice ?? 0)} digits={6} />
+        </ul>
+      </div>
     </>
+  );
+}
+
+function TokenRow({ logo, symbol, name, amount, usd, digits }: { logo: string; symbol: string; name: string; amount: number; usd: number; digits: number }) {
+  return (
+    <li className="flex items-center gap-3 px-4 py-3">
+      <span className="relative shrink-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logo} alt="" className="size-9 rounded-full bg-white" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={ROBINHOOD_LOGO} alt="" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-white ring-2 ring-[#16171a]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-medium">{symbol}</span>
+        <span className="block truncate font-sans text-xs text-white/45">{name}</span>
+      </span>
+      <span className="text-right">
+        <span className="tabular block text-[15px] font-medium">{amount.toLocaleString("en-US", { maximumFractionDigits: digits })}</span>
+        <span className="tabular block font-sans text-xs text-white/45">${money(usd)}</span>
+      </span>
+    </li>
   );
 }
 
