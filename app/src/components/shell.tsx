@@ -16,6 +16,7 @@ import Link from "next/link";
 import { DOCS_URL } from "@/lib/site";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { useAuth } from "./auth-provider";
 import { SignInModal } from "./sign-in-modal";
 import { PlatformLogos } from "./ui";
 
@@ -188,6 +189,7 @@ function Sidebar() {
 
 function Header() {
   const { toggle, menuOpen, openSignIn } = useShell();
+  const { signedIn, account, signOut } = useAuth();
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
@@ -202,13 +204,26 @@ function Header() {
         <span className="hidden h-5 w-px shrink-0 bg-line lg:block" />
         <Crumb />
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={openSignIn}
-            className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent hover:bg-accent-deep"
-          >
-            Sign up / Sign in
-          </button>
+          {signedIn ? (
+            <>
+              <span className="hidden max-w-[220px] truncate font-sans text-sm text-muted sm:inline" title={account}>{account}</span>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-line px-4 text-sm font-medium text-ink hover:bg-card-2"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={openSignIn}
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent hover:bg-accent-deep"
+            >
+              Sign up / Sign in
+            </button>
+          )}
         </div>
       </div>
     </header>

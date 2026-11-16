@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { OG_IMAGE } from "@/lib/meta";
 import localFont from "next/font/local";
+import { AuthProvider } from "@/components/auth-provider";
 import { AppShell } from "@/components/shell";
 import { CookieBanner } from "@/components/cookie-banner";
 import { TermsGate } from "@/components/terms-gate";
@@ -51,7 +52,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${inter.variable} ${interTight.variable} ${robotoMono.variable}`}>
       <body className="antialiased">
-        <AppShell>{children}</AppShell>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
         <TermsGate />
         <CookieBanner />
       </body>

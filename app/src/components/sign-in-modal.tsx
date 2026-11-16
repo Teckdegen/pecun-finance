@@ -2,7 +2,8 @@
 
 import { ArrowLeft, Check, KeyRound, Loader2, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { demoMode, RESEND_SECONDS, sendEmailCode, signInWithPasskey, verifyEmailCode } from "@/lib/auth";
+import { RESEND_SECONDS } from "@/lib/auth";
+import { useAuth } from "./auth-provider";
 import { DOCS_URL } from "@/lib/site";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -16,10 +17,11 @@ type Step = "start" | "code" | "done";
  * whole flow runs without sending anything.
  */
 export function SignInModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { live, sendEmailCode, verifyEmailCode, signInWithPasskey, createPasskey } = useAuth();
   const [step, setStep] = useState<Step>("start");
   const [email, setEmail] = useState("");
   const [otpId, setOtpId] = useState("");
-  const [busy, setBusy] = useState<"email" | "passkey" | "code" | "resend" | null>(null);
+  const [busy, setBusy] = useState<"email" | "passkey" | "newPasskey" | "code" | "resend" | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [resendIn, setResendIn] = useState(0);
@@ -89,11 +91,11 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
     if (validEmail && !busy) void sendCode();
   };
 
-  const onPasskey = async () => {
+  const onPasskey = async (create = false) => {
     if (busy) return;
-    setBusy("passkey");
+    setBusy(create ? "newPasskey" : "passkey");
     setError("");
-    const r = await signInWithPasskey();
+    const r = await (create ? createPasskey() : signInWithPasskey());
     setBusy(null);
     if (!r.ok) return setError(r.error);
     setVia("passkey");
@@ -182,12 +184,21 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
 
             <button
               type="button"
-              onClick={onPasskey}
+              onClick={() => onPasskey()}
               disabled={!!busy}
               className="flex h-14 w-full items-center justify-center gap-2.5 rounded-full border border-white/15 text-[16px] font-medium text-white transition hover:border-white/30 hover:bg-white/[0.03] disabled:opacity-60"
             >
               {busy === "passkey" ? <Loader2 className="size-[18px] animate-spin" /> : <KeyRound className="size-[18px]" />}
               Continue with a passkey
+            </button>
+            <button
+              type="button"
+              onClick={() => onPasskey(true)}
+              disabled={!!busy}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 font-sans text-sm text-white/55 hover:text-white disabled:opacity-60"
+            >
+              {busy === "newPasskey" && <Loader2 className="size-3.5 animate-spin" />}
+              New to Pecun? Create a passkey
             </button>
           </>
         )}
@@ -226,7 +237,7 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
             {error}
           </p>
         )}
-        {demoMode && step !== "done" && (
+        {!live && step !== "done" && (
           <p className="mt-4 text-center font-sans text-xs text-white/40">
             Demo mode: no email is sent. Any 6-digit code works ({"000000"} shows a wrong code).
           </p>

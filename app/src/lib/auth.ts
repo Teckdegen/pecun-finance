@@ -1,52 +1,45 @@
 /**
- * Sign-in actions behind the Pecun sign-in modal: email one-time code and passkey, both run by Turnkey.
+ * Shared sign-in settings. The actions themselves live in `components/auth-provider.tsx`, which talks to Turnkey
+ * when it's configured and runs a demo flow when it isn't.
  *
- * Turnkey's React kit (`@turnkey/react-wallet-kit`) supplies these through `useTurnkey()`:
- *   - sendEmailCode → initOtp({ otpType: OtpType.Email, contact: email })
- *   - verifyEmailCode → completeOtp({ otpId, otpCode, contact, otpType })   (logs in, or signs up on first use)
- *   - passkey → loginWithPasskey(), falling back to signUpWithPasskey() for a new user
- * It needs NEXT_PUBLIC_TURNKEY_ORGANIZATION_ID and NEXT_PUBLIC_TURNKEY_AUTH_PROXY_ID from the Turnkey dashboard.
- *
- * Until those are set, the app runs in demo mode: no email is sent, any 6-digit code is accepted, and resend and
- * change-email behave as they will live, so the whole flow can be tried. Nobody is really signed in.
+ * Turnkey needs two public values from its dashboard (both safe in the browser):
+ *   NEXT_PUBLIC_TURNKEY_ORGANIZATION_ID   your Turnkey organization ID
+ *   NEXT_PUBLIC_TURNKEY_AUTH_PROXY_ID     Auth Proxy → Config ID
+ * Dashboard settings this flow expects: Auth Proxy on, Email OTP on with length 6 and type Numeric,
+ * Passkey on, OAuth and Wallet off, and Allowed origins set to the app's address.
  */
 
-export const authConfigured = Boolean(process.env.NEXT_PUBLIC_TURNKEY_ORGANIZATION_ID && process.env.NEXT_PUBLIC_TURNKEY_AUTH_PROXY_ID);
+export const TURNKEY_ORGANIZATION_ID = process.env.NEXT_PUBLIC_TURNKEY_ORGANIZATION_ID ?? "";
+export const TURNKEY_AUTH_PROXY_ID = process.env.NEXT_PUBLIC_TURNKEY_AUTH_PROXY_ID ?? "";
+
+export const authConfigured = Boolean(TURNKEY_ORGANIZATION_ID && TURNKEY_AUTH_PROXY_ID);
 export const demoMode = !authConfigured;
 
-/** How long before "Send a new code" can be used again, as Turnkey rate-limits OTP emails. */
+/** How long before "Resend code" can be used again, as Turnkey rate-limits OTP emails. */
 export const RESEND_SECONDS = 30;
 
 export type AuthResult = { ok: true; otpId?: string } | { ok: false; error: string };
 
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/**
+ * Every new account gets one wallet with an address on each kind of chain Pecun supports:
+ * Ethereum (and every EVM chain), Solana and Sui.
+ */
+export const PECUN_WALLET = {
+  walletName: "Pecun Wallet",
+  walletAccounts: [
+    { curve: "CURVE_SECP256K1" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/60'/0'/0/0", addressFormat: "ADDRESS_FORMAT_ETHEREUM" as const },
+    { curve: "CURVE_ED25519" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/501'/0'/0'", addressFormat: "ADDRESS_FORMAT_SOLANA" as const },
+    { curve: "CURVE_ED25519" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/784'/0'/0'/0'", addressFormat: "ADDRESS_FORMAT_SUI" as const },
+  ],
+};
 
-/** Sends a 6-digit code to the email. Returns the id Turnkey needs to verify it. */
-export async function sendEmailCode(email: string): Promise<AuthResult> {
-  if (demoMode) {
-    await wait(700);
-    return { ok: true, otpId: `demo-${email}` };
-  }
-  return { ok: false, error: "Couldn't send a code. Try again in a moment." };
-}
-
-/** Checks the code. On success the user is signed in (a new user gets their wallet created). */
-export async function verifyEmailCode(email: string, otpId: string, code: string): Promise<AuthResult> {
-  if (demoMode) {
-    await wait(800);
-    void email;
-    void otpId;
-    // Demo: any 6 digits work, except 000000, which shows what a wrong code looks like.
-    return code === "000000" ? { ok: false, error: "That code isn't right. Check the email and try again." } : { ok: true };
-  }
-  return { ok: false, error: "Couldn't verify the code. Try again in a moment." };
-}
-
-/** Signs in with a passkey saved on this device (Face ID, fingerprint, Windows Hello, or a security key). */
-export async function signInWithPasskey(): Promise<AuthResult> {
-  if (demoMode) {
-    await wait(900);
-    return { ok: true };
-  }
-  return { ok: false, error: "Couldn't use a passkey on this device. Try email instead." };
+/** Turns an SDK error into one plain sentence for the modal. */
+export function friendlyError(e: unknown, fallback: string): string {
+  const msg = e instanceof Error ? e.message : String(e ?? "");
+  if (/NotAllowedError|cancel|aborted|timed out/i.test(msg)) return "The passkey request was cancelled or timed out. Try again.";
+  if (/invalid.*(otp|code)|otp.*(invalid|incorrect)|incorrect/i.test(msg)) return "That code isn't right. Check the email and try again.";
+  if (/expired/i.test(msg)) return "That code has expired. Send a new one.";
+  if (/rate|too many/i.test(msg)) return "Too many tries. Wait a minute, then try again.";
+  if (/origin/i.test(msg)) return "This site isn't allowed to sign in yet. Add it to Allowed origins in the Turnkey dashboard.";
+  return fallback;
 }
