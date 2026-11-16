@@ -60,6 +60,28 @@ export async function buildUsdgTransfer(from: Address, to: Address, amount: stri
   return { unsigned: serialized.slice(2), feeEth: Number(formatUnits(gasLimit * fees.maxFeePerGas, 18)) };
 }
 
+/** Builds an unsigned EIP-1559 ETH transfer on Robinhood Chain. Same output as `buildUsdgTransfer`. */
+export async function buildEthTransfer(from: Address, to: Address, amount: string): Promise<{ unsigned: string; feeEth: number }> {
+  const value = parseUnits(amount, 18);
+  const [nonce, gas, fees] = await Promise.all([
+    client.getTransactionCount({ address: from, blockTag: "pending" }),
+    client.estimateGas({ account: from, to, value }),
+    client.estimateFeesPerGas(),
+  ]);
+  const gasLimit = (gas * BigInt(12)) / BigInt(10);
+  const serialized = serializeTransaction({
+    type: "eip1559",
+    chainId: ROBINHOOD_CHAIN_ID,
+    nonce,
+    to,
+    value,
+    gas: gasLimit,
+    maxFeePerGas: fees.maxFeePerGas,
+    maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+  });
+  return { unsigned: serialized.slice(2), feeEth: Number(formatUnits(gasLimit * fees.maxFeePerGas, 18)) };
+}
+
 /** Waits for the transaction to be mined; true when it succeeded. */
 export async function waitForTx(hash: Hex): Promise<boolean> {
   const r = await client.waitForTransactionReceipt({ hash, timeout: 90_000 });

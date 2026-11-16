@@ -1,14 +1,15 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, Plus, Power, RefreshCw, Send, X } from "lucide-react";
+import { ArrowDown, ArrowDownUp, ArrowLeft, ArrowUpRight, Check, ChevronDown, Copy, ExternalLink, Loader2, Power, Send, X } from "lucide-react";
 import QRCode from "qrcode";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
+  buildEthTransfer,
   buildUsdgTransfer,
+  ETH_LOGO,
   getBalances,
   isAddress,
-  ETH_LOGO,
   ROBINHOOD_EXPLORER,
   ROBINHOOD_RPC,
   shortAddress,
@@ -18,13 +19,13 @@ import {
 } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
 
-type View = "home" | "fund" | "receive" | "send";
+type View = "home" | "receive" | "send";
 
 const ROBINHOOD_LOGO = "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/robinhood.svg";
 const money = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * The signed-in user's wallet: their EVM address on Robinhood Chain, the USDG they hold, and Fund / Send / Receive.
+ * The signed-in user's wallet: their EVM address on Robinhood Chain, what they hold (USDG and ETH), Send and Receive.
  * Solana and Sui addresses exist on the account but are only used behind the scenes.
  */
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -32,31 +33,30 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   const [view, setView] = useState<View>("home");
   const [bal, setBal] = useState<Balances | null>(null);
   const [balErr, setBalErr] = useState(false);
-  const [loading, setLoading] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
     if (!evmAddress) return;
-    setLoading(true);
     setBalErr(false);
     try {
       setBal(await getBalances(evmAddress));
     } catch {
       setBalErr(true);
-    } finally {
-      setLoading(false);
     }
   }, [evmAddress]);
 
+  // Load on open, then keep the balance fresh every 20 seconds while the wallet is open.
   useEffect(() => {
     if (!open) return;
     setView("home");
     void refresh();
+    const t = setInterval(() => void refresh(), 20_000);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => {
+      clearInterval(t);
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
     };
@@ -75,7 +75,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
         role="dialog"
         aria-modal="true"
         aria-label="Your Pecun wallet"
-        className="relative max-h-[92dvh] w-full max-w-[420px] overflow-y-auto rounded-t-[28px] border border-white/10 bg-[#121315] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-6 shadow-[0_30px_90px_rgba(0,0,0,0.7)] sm:rounded-[28px] sm:pb-6"
+        className="relative max-h-[92dvh] w-full max-w-[440px] overflow-y-auto rounded-t-[28px] border border-white/10 bg-[#121315] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-6 shadow-[0_30px_90px_rgba(0,0,0,0.7)] sm:rounded-[28px] sm:pb-7"
       >
         {view === "home" && (
           <Home
@@ -83,8 +83,6 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             address={evmAddress}
             bal={bal}
             balErr={balErr}
-            loading={loading}
-            onRefresh={refresh}
             onClose={onClose}
             onSignOut={async () => {
               await signOut();
@@ -93,16 +91,9 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             go={setView}
           />
         )}
-        {view === "fund" && evmAddress && <Fund address={evmAddress} back={() => setView("home")} />}
-        {view === "receive" && evmAddress && <Receive address={evmAddress} back={() => setView("home")} />}
+        {view === "receive" && evmAddress && <Receive address={evmAddress} back={() => setView("home")} close={onClose} />}
         {view === "send" && evmAddress && (
-          <SendView
-            from={evmAddress}
-            bal={bal}
-            live={live}
-            back={() => setView("home")}
-            onSent={() => void refresh()}
-          />
+          <SendView from={evmAddress} bal={bal} live={live} close={onClose} back={() => setView("home")} onSent={() => void refresh()} />
         )}
       </div>
     </div>,
@@ -112,13 +103,11 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
 
 /* ---------- home ---------- */
 
-function Home({ account, address, bal, balErr, loading, onRefresh, onClose, onSignOut, go }: {
+function Home({ account, address, bal, balErr, onClose, onSignOut, go }: {
   account?: string;
   address?: `0x${string}`;
   bal: Balances | null;
   balErr: boolean;
-  loading: boolean;
-  onRefresh: () => void;
   onClose: () => void;
   onSignOut: () => void;
   go: (v: View) => void;
@@ -129,40 +118,25 @@ function Home({ account, address, bal, balErr, loading, onRefresh, onClose, onSi
   return (
     <>
       <div className="flex items-start justify-between">
-        <span className="relative">
-          <span className="grid size-14 place-items-center rounded-full bg-[#1d2a1a]">
-            <svg aria-hidden width={26} height={26} viewBox="12 12 40 40">
-              <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
-              <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
-            </svg>
-          </span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ROBINHOOD_LOGO} alt="Robinhood Chain" title="Robinhood Chain" className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-white ring-2 ring-[#121315]" />
-        </span>
+        <Avatar />
         <span className="flex items-center gap-1">
           <IconBtn label="Sign out" onClick={onSignOut}><Power className="size-[18px]" /></IconBtn>
           <IconBtn label="Close" onClick={onClose}><X className="size-5" /></IconBtn>
         </span>
       </div>
 
-      {address ? <CopyAddress address={address} /> : <p className="mt-3 font-sans text-sm text-white/55">Setting up your wallet…</p>}
+      {address ? <CopyShort address={address} /> : <p className="mt-3 font-sans text-sm text-white/55">Setting up your wallet…</p>}
       {account && <p className="mt-0.5 truncate font-sans text-xs text-white/40">{account}</p>}
 
-      <div className="mt-6">
-        <div className="flex items-baseline gap-0.5 font-medium tracking-[-0.04em]">
-          <span className="tabular text-[2.9rem] leading-none">${whole}</span>
-          <span className="tabular text-[2rem] leading-none text-white/45">.{cents}</span>
-          <button type="button" onClick={onRefresh} aria-label="Refresh balance" className="ml-2 self-center rounded-full p-1.5 text-white/40 hover:bg-white/5 hover:text-white">
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-        <p className="mt-2 font-sans text-sm text-white/55">{balErr ? "Couldn't load your balance. Tap refresh." : "Total on Robinhood Chain"}</p>
+      <div className="mt-6 flex items-baseline gap-0.5 font-medium tracking-[-0.04em]">
+        <span className="tabular text-[2.9rem] leading-none">${whole}</span>
+        <span className="tabular text-[2rem] leading-none text-white/45">.{cents}</span>
       </div>
+      {balErr && <p className="mt-2 font-sans text-sm text-white/55">Couldn&apos;t load your balance right now.</p>}
 
-      <div className="mt-6 grid grid-cols-3 gap-2.5">
-        <Action tone="lime" icon={<Plus className="size-5" />} label="Fund" onClick={() => go("fund")} />
-        <Action icon={<Send className="size-5" />} label="Send" onClick={() => go("send")} />
-        <Action icon={<ArrowDown className="size-5" />} label="Receive" onClick={() => go("receive")} />
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <Action icon={<Send className="size-6" />} label="Send" onClick={() => go("send")} />
+        <Action icon={<ArrowDown className="size-6" />} label="Receive" onClick={() => go("receive")} />
       </div>
 
       {/* Tokens held on Robinhood Chain, always listed, even at zero. */}
@@ -177,15 +151,25 @@ function Home({ account, address, bal, balErr, loading, onRefresh, onClose, onSi
   );
 }
 
+function Avatar() {
+  return (
+    <span className="relative">
+      <span className="grid size-14 place-items-center rounded-full bg-[#1d2a1a]">
+        <svg aria-hidden width={26} height={26} viewBox="12 12 40 40">
+          <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+          <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+        </svg>
+      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={ROBINHOOD_LOGO} alt="Robinhood Chain" title="Robinhood Chain" className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-white ring-2 ring-[#121315]" />
+    </span>
+  );
+}
+
 function TokenRow({ logo, symbol, name, amount, usd, digits }: { logo: string; symbol: string; name: string; amount: number; usd: number; digits: number }) {
   return (
     <li className="flex items-center gap-3 px-4 py-3">
-      <span className="relative shrink-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logo} alt="" className="size-9 rounded-full bg-white" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ROBINHOOD_LOGO} alt="" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-white ring-2 ring-[#16171a]" />
-      </span>
+      <TokenIcon logo={logo} />
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-medium">{symbol}</span>
         <span className="block truncate font-sans text-xs text-white/45">{name}</span>
@@ -198,14 +182,23 @@ function TokenRow({ logo, symbol, name, amount, usd, digits }: { logo: string; s
   );
 }
 
-function Action({ icon, label, onClick, tone }: { icon: ReactNode; label: string; onClick: () => void; tone?: "lime" }) {
+function TokenIcon({ logo, size = 36 }: { logo: string; size?: number }) {
+  return (
+    <span className="relative shrink-0">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={logo} alt="" className="rounded-full bg-white" style={{ width: size, height: size }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={ROBINHOOD_LOGO} alt="" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-white ring-2 ring-[#16171a]" />
+    </span>
+  );
+}
+
+function Action({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-[88px] flex-col items-start justify-between rounded-2xl p-3.5 text-left text-[15px] font-medium transition ${
-        tone === "lime" ? "bg-accent text-on-accent hover:bg-accent-deep" : "bg-white/[0.06] text-white hover:bg-white/[0.1]"
-      }`}
+      className="flex h-[104px] flex-col items-start justify-between rounded-[22px] bg-accent/[0.09] p-4 text-left text-[17px] font-medium text-accent transition hover:bg-accent/[0.15]"
     >
       {icon}
       {label}
@@ -221,130 +214,143 @@ function IconBtn({ label, onClick, children }: { label: string; onClick: () => v
   );
 }
 
-function CopyAddress({ address, full }: { address: string; full?: boolean }) {
+function useCopy() {
   const [copied, setCopied] = useState(false);
+  const copy = (text: string) =>
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  return { copied, copy };
+}
+
+function CopyShort({ address }: { address: string }) {
+  const { copied, copy } = useCopy();
   return (
-    <button
-      type="button"
-      onClick={() => {
-        void navigator.clipboard.writeText(address).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
-      }}
-      className={`mt-3 inline-flex max-w-full items-center gap-2 text-left text-white hover:text-white/80 ${full ? "font-mono text-[13px] break-all" : "text-xl font-medium tracking-[-0.02em]"}`}
-      aria-label="Copy address"
-    >
-      <span className={full ? "" : "tabular"}>{full ? address : shortAddress(address)}</span>
-      {copied ? <Check className="size-4 shrink-0 text-accent" /> : <Copy className="size-4 shrink-0 text-white/45" />}
+    <button type="button" onClick={() => copy(address)} aria-label="Copy address" className="mt-3 inline-flex items-center gap-2 text-xl font-medium tracking-[-0.02em] text-white hover:text-white/80">
+      <span className="tabular">{shortAddress(address)}</span>
+      {copied ? <Check className="size-4 text-accent" /> : <Copy className="size-4 text-white/45" />}
     </button>
   );
 }
 
-function Header({ title, back }: { title: string; back: () => void }) {
+/* ---------- receive ---------- */
+
+/** QR with round dots, rounded finder squares in lime, and the Pecun leaf in the middle. */
+function StyledQR({ value, size = 260 }: { value: string; size?: number }) {
+  const qr = useMemo(() => QRCode.create(value, { errorCorrectionLevel: "H" }), [value]);
+  const n = qr.modules.size;
+  const cell = size / n;
+  const finder = (r: number, c: number) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+  const logoCells = Math.ceil(n * 0.26);
+  const lo = Math.floor((n - logoCells) / 2), hi = lo + logoCells;
+  const dots: ReactNode[] = [];
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c < n; c++) {
+      if (!qr.modules.get(r, c) || finder(r, c) || (r >= lo && r < hi && c >= lo && c < hi)) continue;
+      dots.push(<circle key={`${r}-${c}`} cx={(c + 0.5) * cell} cy={(r + 0.5) * cell} r={cell * 0.42} />);
+    }
+  const Eye = ({ r, c }: { r: number; c: number }) => (
+    <g transform={`translate(${c * cell} ${r * cell})`}>
+      <rect x={cell * 0.5} y={cell * 0.5} width={cell * 6} height={cell * 6} rx={cell * 1.8} fill="none" stroke="currentColor" strokeWidth={cell} />
+      <rect x={cell * 2} y={cell * 2} width={cell * 3} height={cell * 3} rx={cell} />
+    </g>
+  );
+  const mid = size / 2, badge = logoCells * cell * 0.82;
   return (
-    <div className="flex items-center gap-2">
-      <IconBtn label="Back" onClick={back}><ArrowLeft className="size-5" /></IconBtn>
-      <h2 className="text-lg font-medium tracking-[-0.02em]">{title}</h2>
-    </div>
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} className="mx-auto block max-w-full text-accent" role="img" aria-label="Wallet address QR code" fill="currentColor">
+      {dots}
+      <Eye r={0} c={0} />
+      <Eye r={0} c={n - 7} />
+      <Eye r={n - 7} c={0} />
+      <circle cx={mid} cy={mid} r={badge / 2} fill="#1d2a1a" />
+      <svg x={mid - badge * 0.28} y={mid - badge * 0.28} width={badge * 0.56} height={badge * 0.56} viewBox="12 12 40 40">
+        <path d="M14 50C14 28 28 14 50 14Z" fill="#ffffff" />
+        <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+      </svg>
+    </svg>
   );
 }
 
-/* ---------- receive / fund ---------- */
-
-function QR({ value }: { value: string }) {
-  const [src, setSrc] = useState("");
-  useEffect(() => {
-    void QRCode.toDataURL(value, { margin: 1, width: 360, color: { dark: "#0a0b0d", light: "#ffffff" } }).then(setSrc);
-  }, [value]);
-  return (
-    <div className="mx-auto grid size-[188px] place-items-center rounded-2xl bg-white p-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      {src ? <img src={src} alt="Wallet address QR code" className="size-full" /> : <Loader2 className="size-6 animate-spin text-black/40" />}
-    </div>
-  );
-}
-
-function NetworkNote() {
-  return (
-    <p className="mt-4 flex items-start gap-2 rounded-2xl border border-amber/25 bg-amber/[0.07] px-4 py-3 font-sans text-[13px] leading-relaxed text-white/80">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ROBINHOOD_LOGO} alt="" className="mt-0.5 size-4 shrink-0 rounded-full bg-white" />
-      <span>
-        Only send <b className="font-medium text-white">USDG</b> (or ETH for fees) on <b className="font-medium text-white">Robinhood Chain</b>. Tokens sent on another
-        network may be lost.
-      </span>
-    </p>
-  );
-}
-
-function Receive({ address, back }: { address: string; back: () => void }) {
+function Receive({ address, back, close }: { address: string; back: () => void; close: () => void }) {
+  const { copied, copy } = useCopy();
   return (
     <>
-      <Header title="Receive" back={back} />
-      <div className="mt-5"><QR value={address} /></div>
-      <p className="mt-5 text-center font-sans text-xs text-white/45">Your address on Robinhood Chain</p>
-      <div className="mt-1 text-center"><CopyAddress address={address} full /></div>
-      <NetworkNote />
-    </>
-  );
-}
-
-function Fund({ address, back }: { address: string; back: () => void }) {
-  return (
-    <>
-      <Header title="Fund your wallet" back={back} />
-      <p className="mt-3 font-sans text-sm leading-relaxed text-white/60">Add USDG on Robinhood Chain. It lands in your Pecun wallet, ready to put to work.</p>
-      <ol className="mt-5 space-y-3">
-        {[
-          ["From the Robinhood app", "Withdraw USDG, choose Robinhood Chain as the network, and paste your address below."],
-          ["From another wallet or exchange", "Send USDG on Robinhood Chain to the same address. Other networks aren't supported here yet."],
-        ].map(([t, b], i) => (
-          <li key={t} className="flex gap-3 rounded-2xl bg-white/[0.05] p-4">
-            <span className="tabular grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-on-accent">{i + 1}</span>
-            <span>
-              <span className="block text-[15px] font-medium">{t}</span>
-              <span className="mt-0.5 block font-sans text-[13px] leading-relaxed text-white/55">{b}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-      <div className="mt-5 rounded-2xl border border-white/10 p-4">
-        <p className="font-sans text-xs text-white/45">Your address</p>
-        <CopyAddress address={address} full />
+      <div className="flex items-center justify-between">
+        <IconBtn label="Back" onClick={back}><ArrowLeft className="size-5" /></IconBtn>
+        <IconBtn label="Close" onClick={close}><X className="size-5" /></IconBtn>
       </div>
-      <NetworkNote />
+      <h2 className="mt-4 text-[1.9rem] font-medium leading-tight tracking-[-0.03em]">Robinhood Chain address</h2>
+
+      <div className="mt-6"><StyledQR value={address} /></div>
+
+      <fieldset className="mt-7 rounded-[22px] border border-white/15 px-5 pb-5 pt-3 text-center">
+        <legend className="mx-auto px-3">
+          <button type="button" onClick={() => copy(address)} className="inline-flex items-center gap-2 font-sans text-sm text-white/60 hover:text-white">
+            Robinhood Chain address {copied ? <Check className="size-4 text-accent" /> : <Copy className="size-4" />}
+          </button>
+        </legend>
+        <p className="tabular break-all text-[1.05rem] font-medium leading-snug text-white [font-feature-settings:'calt'_0]">{address}</p>
+      </fieldset>
+
+      <p className="mt-5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center font-sans text-[15px] text-white/80">
+        Use this address to receive USDG and ETH on
+        <span className="inline-flex items-center gap-1.5 font-medium text-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={ROBINHOOD_LOGO} alt="" className="size-5 rounded-full bg-white" /> Robinhood Chain
+        </span>
+      </p>
+      <p className="mt-2 text-center font-sans text-xs text-white/40">Tokens sent on any other network may be lost.</p>
     </>
   );
 }
 
 /* ---------- send ---------- */
 
-function SendView({ from, bal, live, back, onSent }: { from: `0x${string}`; bal: Balances | null; live: boolean; back: () => void; onSent: () => void }) {
+type Token = "USDG" | "ETH";
+
+function SendView({ from, bal, live, close, back, onSent }: {
+  from: `0x${string}`;
+  bal: Balances | null;
+  live: boolean;
+  close: () => void;
+  back: () => void;
+  onSent: () => void;
+}) {
   const { sendEvmTransaction } = useAuth();
+  const [token, setToken] = useState<Token>("USDG");
+  const [picker, setPicker] = useState(false);
+  const [inUsd, setInUsd] = useState(true);
+  const [input, setInput] = useState("");
   const [to, setTo] = useState("");
-  const [amount, setAmount] = useState("");
   const [stage, setStage] = useState<"form" | "review" | "sending" | "done">("form");
   const [fee, setFee] = useState<number | null>(null);
   const [unsigned, setUnsigned] = useState("");
   const [hash, setHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState("");
 
-  const usdg = bal?.usdg ?? 0;
-  const n = Number(amount);
-  const amountOk = amount !== "" && n > 0 && n <= usdg && /^\d*\.?\d{0,6}$/.test(amount);
+  const price = token === "USDG" ? 1 : bal?.ethPrice ?? 0;
+  const balance = token === "USDG" ? bal?.usdg ?? 0 : bal?.eth ?? 0;
+  const decimals = token === "USDG" ? 6 : 18;
+  const n = Number(input) || 0;
+  // The amount in tokens, whichever way it was typed.
+  const tokens = inUsd ? (price > 0 ? n / price : 0) : n;
+  const usd = inUsd ? n : n * price;
+  const tokenStr = tokens > 0 ? tokens.toFixed(Math.min(decimals, token === "USDG" ? 6 : 8)).replace(/\.?0+$/, "") : "0";
+  const amountOk = tokens > 0 && tokens <= balance && (!inUsd || price > 0);
   const toOk = isAddress(to) && to.toLowerCase() !== from.toLowerCase();
 
   const review = async () => {
     setError("");
     try {
-      const t = await buildUsdgTransfer(from, to.trim() as `0x${string}`, amount);
+      const build = token === "USDG" ? buildUsdgTransfer : buildEthTransfer;
+      const t = await build(from, to.trim() as `0x${string}`, tokenStr);
       setUnsigned(t.unsigned);
       setFee(t.feeEth);
       setStage("review");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
-      setError(/insufficient|exceeds balance/i.test(msg) ? "Not enough USDG, or not enough ETH for the network fee." : "Couldn't prepare the transfer. Check the details and try again.");
+      setError(/insufficient|exceeds balance/i.test(msg) ? "Not enough balance, or not enough ETH for the network fee." : "Couldn't prepare the transfer. Check the details and try again.");
     }
   };
 
@@ -360,7 +366,7 @@ function SendView({ from, bal, live, back, onSent }: { from: `0x${string}`; bal:
     setHash(r.hash);
     const ok = await waitForTx(r.hash).catch(() => true);
     if (!ok) {
-      setError("The transfer failed on-chain. Your USDG wasn't moved.");
+      setError("The transfer failed on-chain. Nothing was moved.");
       setStage("review");
       return;
     }
@@ -368,109 +374,184 @@ function SendView({ from, bal, live, back, onSent }: { from: `0x${string}`; bal:
     onSent();
   };
 
+  const title = (
+    <div className="relative flex h-9 items-center justify-center">
+      {stage === "review" && (
+        <span className="absolute left-0"><IconBtn label="Back" onClick={() => setStage("form")}><ArrowLeft className="size-5" /></IconBtn></span>
+      )}
+      {stage === "form" && (
+        <span className="absolute left-0"><IconBtn label="Back" onClick={back}><ArrowLeft className="size-5" /></IconBtn></span>
+      )}
+      <h2 className="text-lg font-medium tracking-[-0.02em]">Send crypto</h2>
+      <span className="absolute right-0"><IconBtn label="Close" onClick={close}><X className="size-5" /></IconBtn></span>
+    </div>
+  );
+
   if (stage === "done" && hash) {
     return (
-      <div className="py-4 text-center" role="status">
-        <span className="mx-auto grid size-14 place-items-center rounded-full bg-accent text-on-accent"><Check className="size-7" strokeWidth={2.5} /></span>
-        <h2 className="mt-5 text-[1.5rem] font-medium tracking-[-0.03em]">Sent</h2>
-        <p className="mt-1.5 font-sans text-sm text-white/55">{money(n)} USDG to {shortAddress(to)}</p>
-        <a href={`${ROBINHOOD_EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 font-sans text-sm text-accent hover:underline">
-          View on explorer <ExternalLink className="size-3.5" />
-        </a>
-        <button type="button" onClick={back} className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-[#f3f4f6] text-[15px] font-medium text-[#0a0b0d] hover:bg-white">
-          Done
+      <>
+        {title}
+        <div className="py-6 text-center" role="status">
+          <span className="mx-auto grid size-14 place-items-center rounded-full bg-accent text-on-accent"><Check className="size-7" strokeWidth={2.5} /></span>
+          <h3 className="mt-5 text-[1.5rem] font-medium tracking-[-0.03em]">Sent</h3>
+          <p className="mt-1.5 font-sans text-sm text-white/55">{tokenStr} {token} to {shortAddress(to)}</p>
+          <a href={`${ROBINHOOD_EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 font-sans text-sm text-accent hover:underline">
+            View on explorer <ExternalLink className="size-3.5" />
+          </a>
+          <button type="button" onClick={back} className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] hover:bg-white">
+            Done
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  if (stage === "review" || stage === "sending") {
+    return (
+      <>
+        {title}
+        <div className="mt-5 text-center">
+          <p className="font-sans text-sm text-white/55">You&apos;re sending</p>
+          <p className="tabular mt-2 text-[3rem] font-medium leading-none tracking-[-0.04em]">${money(usd)}</p>
+          <p className="tabular mt-2 font-sans text-white/55">{tokenStr} {token}</p>
+        </div>
+        <dl className="mt-6 divide-y divide-white/10 rounded-2xl border border-white/10 font-sans text-sm">
+          {[
+            ["To", shortAddress(to)],
+            ["Network", "Robinhood Chain"],
+            ["Network fee", fee != null ? `≈ ${fee.toLocaleString("en-US", { maximumFractionDigits: 8 })} ETH` : "—"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex items-center justify-between px-4 py-3">
+              <dt className="text-white/50">{k}</dt>
+              <dd className="tabular text-white">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        {bal && fee != null && bal.eth < fee + (token === "ETH" ? tokens : 0) && (
+          <p className="mt-3 font-sans text-xs text-amber">You need a little more ETH on Robinhood Chain for the network fee.</p>
+        )}
+        <button
+          type="button"
+          onClick={() => void send()}
+          disabled={stage === "sending"}
+          className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-accent text-[16px] font-medium text-on-accent transition hover:bg-accent-deep disabled:opacity-70"
+        >
+          {stage === "sending" ? <Loader2 className="size-4 animate-spin" /> : <ArrowUpRight className="size-4" />}
+          {stage === "sending" ? (hash ? "Confirming" : "Sending") : "Confirm and send"}
         </button>
-      </div>
+        {!live && <p className="mt-3 text-center font-sans text-xs text-white/40">Demo mode: nothing is sent.</p>}
+        {error && <ErrorNote>{error}</ErrorNote>}
+      </>
     );
   }
 
   return (
     <>
-      <Header title="Send USDG" back={stage === "review" ? () => setStage("form") : back} />
+      {title}
 
-      {stage === "form" ? (
-        <div className="mt-5 space-y-4">
-          <label className="block">
-            <span className="font-sans text-xs text-white/50">To</span>
+      {/* Amount card */}
+      <div className="mt-5 rounded-[22px] border border-white/10">
+        <div className="px-5 pb-6 pt-5">
+          <p className="font-sans text-[15px] text-white/80">You&apos;re sending</p>
+          <label className="mt-6 flex items-center justify-center">
+            {inUsd && <span className={`text-[3.4rem] font-medium leading-none tracking-[-0.04em] ${n ? "text-white" : "text-white/35"}`}>$</span>}
             <input
-              value={to}
-              onChange={(e) => setTo(e.target.value.trim())}
-              placeholder="0x… address on Robinhood Chain"
-              spellCheck={false}
-              autoComplete="off"
-              className="mt-1.5 h-13 w-full rounded-2xl border border-white/15 bg-transparent px-4 py-3.5 font-mono text-[14px] text-white outline-none placeholder:font-sans placeholder:text-white/30 focus:border-white/40"
+              value={input}
+              onChange={(e) => setInput(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
+              inputMode="decimal"
+              placeholder="0"
+              aria-label={inUsd ? "Amount in dollars" : `Amount in ${token}`}
+              style={{ width: `${Math.max(1, input.length || 1) + 0.3}ch` }}
+              className="tabular min-w-0 max-w-[80%] bg-transparent text-center text-[3.4rem] font-medium leading-none tracking-[-0.04em] text-white outline-none placeholder:text-white/35"
             />
-            {to && !isAddress(to) && <span className="mt-1 block font-sans text-xs text-neg">That isn&apos;t a valid address.</span>}
-            {isAddress(to) && to.toLowerCase() === from.toLowerCase() && <span className="mt-1 block font-sans text-xs text-neg">That&apos;s your own address.</span>}
+            {!inUsd && <span className="ml-2 text-xl font-medium text-white/50">{token}</span>}
           </label>
-          <label className="block">
-            <span className="flex items-center justify-between font-sans text-xs text-white/50">
-              Amount
-              <span>Available {usdg.toLocaleString("en-US", { maximumFractionDigits: 6 })} USDG</span>
-            </span>
-            <span className="mt-1.5 flex items-center rounded-2xl border border-white/15 px-4 focus-within:border-white/40">
-              <input
-                value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-                inputMode="decimal"
-                placeholder="0.00"
-                className="tabular h-14 min-w-0 flex-1 bg-transparent text-[1.4rem] font-medium text-white outline-none placeholder:text-white/25"
-              />
-              <button type="button" onClick={() => setAmount(String(usdg))} className="rounded-full bg-white/10 px-3 py-1 font-sans text-xs text-white hover:bg-white/15">
-                Max
-              </button>
-              <span className="ml-2 flex items-center gap-1.5 font-sans text-sm text-white/70">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={USDG_LOGO} alt="" className="size-5 rounded-full" /> USDG
+          <button
+            type="button"
+            onClick={() => {
+              // Keep the same value when flipping between dollars and tokens.
+              setInput(n ? (inUsd ? tokenStr : (n * price).toFixed(2)) : "");
+              setInUsd((v) => !v);
+            }}
+            className="tabular mx-auto mt-4 flex items-center gap-1.5 font-sans text-[15px] text-white/60 hover:text-white"
+          >
+            {inUsd ? `${tokenStr} ${token}` : `$${money(usd)}`} <ArrowDownUp className="size-4" />
+          </button>
+        </div>
+
+        {/* Token picker */}
+        <div className="relative border-t border-white/10">
+          <button type="button" onClick={() => setPicker((p) => !p)} className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-white/[0.03]">
+            <TokenIcon logo={token === "USDG" ? USDG_LOGO : ETH_LOGO} size={40} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[16px] font-medium">{token}</span>
+              <span className="tabular block font-sans text-[13px] text-white/50">
+                Balance: {balance.toLocaleString("en-US", { maximumFractionDigits: token === "USDG" ? 2 : 6 })} (${money(balance * price)})
               </span>
             </span>
-            {amount !== "" && n > usdg && <span className="mt-1 block font-sans text-xs text-neg">That&apos;s more than you have.</span>}
-          </label>
-          <button
-            type="button"
-            onClick={() => void review()}
-            disabled={!toOk || !amountOk}
-            className="flex h-14 w-full items-center justify-center rounded-full bg-[#f3f4f6] text-[16px] font-medium text-[#0a0b0d] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Review
+            <ChevronDown className={`size-5 text-white/60 transition ${picker ? "rotate-180" : ""}`} />
           </button>
-        </div>
-      ) : (
-        <div className="mt-5">
-          <dl className="divide-y divide-white/10 rounded-2xl border border-white/10 font-sans text-sm">
-            {[
-              ["Sending", `${money(n)} USDG`],
-              ["To", shortAddress(to)],
-              ["Network", "Robinhood Chain"],
-              ["Network fee", fee != null ? `≈ ${fee.toLocaleString("en-US", { maximumFractionDigits: 8 })} ETH` : "—"],
-            ].map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between px-4 py-3">
-                <dt className="text-white/50">{k}</dt>
-                <dd className="tabular text-white">{v}</dd>
-              </div>
-            ))}
-          </dl>
-          {bal && fee != null && bal.eth < fee && (
-            <p className="mt-3 font-sans text-xs text-amber">You need a little ETH on Robinhood Chain for the network fee.</p>
+          {picker && (
+            <ul className="absolute inset-x-3 top-full z-10 mt-1 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b1e] shadow-[0_18px_40px_rgba(0,0,0,0.5)]">
+              {(["USDG", "ETH"] as Token[]).map((t) => {
+                const b = t === "USDG" ? bal?.usdg ?? 0 : bal?.eth ?? 0;
+                return (
+                  <li key={t}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setToken(t);
+                        setPicker(false);
+                        setInput("");
+                      }}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.05] ${t === token ? "bg-white/[0.04]" : ""}`}
+                    >
+                      <TokenIcon logo={t === "USDG" ? USDG_LOGO : ETH_LOGO} size={32} />
+                      <span className="flex-1 text-[15px] font-medium">{t}</span>
+                      <span className="tabular font-sans text-sm text-white/55">{b.toLocaleString("en-US", { maximumFractionDigits: t === "USDG" ? 2 : 6 })}</span>
+                      {t === token && <Check className="size-4 text-accent" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          <button
-            type="button"
-            onClick={() => void send()}
-            disabled={stage === "sending"}
-            className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-accent text-[16px] font-medium text-on-accent transition hover:bg-accent-deep disabled:opacity-70"
-          >
-            {stage === "sending" ? <Loader2 className="size-4 animate-spin" /> : <ArrowUpRight className="size-4" />}
-            {stage === "sending" ? (hash ? "Confirming" : "Sending") : `Send ${money(n)} USDG`}
-          </button>
-          {!live && <p className="mt-3 text-center font-sans text-xs text-white/40">Demo mode: nothing is sent.</p>}
         </div>
-      )}
+      </div>
 
-      {error && (
-        <p role="alert" className="mt-4 rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white/85">
-          {error}
-        </p>
-      )}
+      {/* Recipient */}
+      <label className="mt-3 block rounded-[22px] bg-white/[0.06] px-5 py-4">
+        <span className="block font-sans text-[15px] text-white/80">To</span>
+        <input
+          value={to}
+          onChange={(e) => setTo(e.target.value.trim())}
+          placeholder="Wallet address on Robinhood Chain"
+          spellCheck={false}
+          autoComplete="off"
+          className="mt-1 w-full bg-transparent font-mono text-[14px] text-white outline-none placeholder:font-sans placeholder:text-[16px] placeholder:text-white/35"
+        />
+      </label>
+      {to && !isAddress(to) && <p className="mt-2 px-1 font-sans text-xs text-neg">That isn&apos;t a valid address.</p>}
+      {isAddress(to) && !toOk && <p className="mt-2 px-1 font-sans text-xs text-neg">That&apos;s your own address.</p>}
+      {tokens > balance && <p className="mt-2 px-1 font-sans text-xs text-neg">That&apos;s more {token} than you have.</p>}
+
+      <button
+        type="button"
+        onClick={() => void review()}
+        disabled={!amountOk || !toOk}
+        className="mt-3 flex h-14 w-full items-center justify-center rounded-[22px] bg-accent text-[17px] font-medium text-on-accent transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/45"
+      >
+        {!n ? "Enter an amount" : !to ? "Enter an address" : "Review"}
+      </button>
+      {error && <ErrorNote>{error}</ErrorNote>}
     </>
+  );
+}
+
+function ErrorNote({ children }: { children: ReactNode }) {
+  return (
+    <p role="alert" className="mt-4 rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white/85">
+      {children}
+    </p>
   );
 }
