@@ -1,8 +1,8 @@
 "use client";
 
 import { encode as msgpack } from "@msgpack/msgpack";
-import { concat, createPublicClient, encodeFunctionData, fallback, erc20Abi, formatUnits, hashTypedData, http, keccak256, parseAbi, parseUnits, serializeTransaction, zeroAddress, type Address, type Hex } from "viem";
-import { chainIdByName, EVM_CHAINS } from "./exec-chains";
+import { concat, createPublicClient, decodeFunctionData, encodeFunctionData, fallback, erc20Abi, formatUnits, hashTypedData, http, keccak256, pad, parseAbi, parseUnits, serializeTransaction, zeroAddress, type Address, type Hex } from "viem";
+import { chainIdByName, evmChain, EVM_CHAINS, viaRelay } from "./exec-chains";
 import { base64ToHex, confirmSolana, createTokenAccountTx, hasTokenAccount, lamports, SOLANA_CHAIN_ID, SOLANA_RPC, splBalance, splDecimals, txFromInstructions } from "./solana";
 import { coinWithBalance, Transaction as SuiTx } from "@mysten/sui/transactions";
 import { SUI_CHAIN_ID, SUI_TYPE, suiBalance } from "./sui";
@@ -99,17 +99,62 @@ export async function ensureGas(s: Signer, chainId: number, address: string, nee
   if (!res.ok) throw new ExecError(((await res.json().catch(() => ({}))) as { error?: string }).error ?? "Couldn't cover the network fee.");
 }
 
+/**
+ * Tempo has no native coin. Gas is priced in attodollars (1e-18 USD) per gas and charged in a USD TIP-20 token: the
+ * account's FeeManager preference if set, else (for a plain EIP-1559 transaction) pathUSD. Fee in token units =
+ * ceil(gas × price / 1e12). eth_getBalance there is a placeholder, so balances are read from the fee token.
+ */
+const TEMPO_FEE_MANAGER = "0xfeEC000000000000000000000000000000000000" as Address;
+const FEE_MANAGER_ABI = parseAbi(["function userTokens(address user) view returns (address)", "function setUserToken(address token)"]);
+const TRANSFER_ABI = parseAbi(["function transfer(address to, uint256 amount) returns (bool)"]);
+
+/** Fee-token gas (Tempo): returns the top-up `need` and the user's current balance, in the fee token's units. */
+async function feeTokenGas(s: Signer, chainId: number, feeToken: Address, tx: { to: Address; data?: Hex }, gasLimit: bigint, maxFeePerGas: bigint) {
+  const c = chainClient(chainId);
+  const fee = (gasLimit * maxFeePerGas + BigInt(10) ** BigInt(12) - BigInt(1)) / BigInt(10) ** BigInt(12);
+  // The fee is reserved before the call runs, so whatever the call itself moves out of the fee token has to be left
+  // over on top: a direct transfer of it, or what the target contract is allowed to pull.
+  let spend = BigInt(0);
+  if (tx.to.toLowerCase() === feeToken.toLowerCase()) {
+    try {
+      const d = decodeFunctionData({ abi: TRANSFER_ABI, data: tx.data ?? "0x" });
+      spend = d.args[1];
+    } catch {
+      /* approve or another call: moves nothing itself */
+    }
+  } else {
+    spend = await c.readContract({ address: feeToken, abi: erc20Abi, functionName: "allowance", args: [s.address, tx.to] });
+  }
+  const bal = await c.readContract({ address: feeToken, abi: erc20Abi, functionName: "balanceOf", args: [s.address] });
+  if (spend > bal) spend = bal;
+  return { need: fee + spend, bal };
+}
+
 /** Builds, gas-funds, signs (with the user's session) and sends one EVM transaction, then waits for it. */
 export async function sendEvm(s: Signer, chainId: number, tx: { to: Address; data?: Hex; value?: bigint }): Promise<Hex> {
   const c = chainClient(chainId);
   const value = tx.value ?? BigInt(0);
+  const feeToken = evmChain(chainId)?.feeToken?.address as Address | undefined;
+  if (feeToken) {
+    if (value > BigInt(0)) throw new ExecError("This network has no native coin to send.");
+    // Pin the account's fee token so every transaction pays gas the same way (only needed if it was set elsewhere).
+    const pref = await c.readContract({ address: TEMPO_FEE_MANAGER, abi: FEE_MANAGER_ABI, functionName: "userTokens", args: [s.address] });
+    if (pref !== zeroAddress && pref.toLowerCase() !== feeToken.toLowerCase() && tx.to.toLowerCase() !== TEMPO_FEE_MANAGER.toLowerCase()) {
+      await sendEvm(s, chainId, { to: TEMPO_FEE_MANAGER, data: encodeFunctionData({ abi: FEE_MANAGER_ABI, functionName: "setUserToken", args: [feeToken] }) });
+    }
+  }
   const [gas, fees, bal] = await Promise.all([
     c.estimateGas({ account: s.address, to: tx.to, data: tx.data, value }),
     c.estimateFeesPerGas(),
-    c.getBalance({ address: s.address }),
+    feeToken ? Promise.resolve(BigInt(0)) : c.getBalance({ address: s.address }),
   ]);
   const gasLimit = (gas * BigInt(13)) / BigInt(10);
-  await ensureGas(s, chainId, s.address, gasLimit * fees.maxFeePerGas + value, bal);
+  if (feeToken) {
+    const g = await feeTokenGas(s, chainId, feeToken, tx, gasLimit, fees.maxFeePerGas);
+    await ensureGas(s, chainId, s.address, g.need, g.bal);
+  } else {
+    await ensureGas(s, chainId, s.address, gasLimit * fees.maxFeePerGas + value, bal);
+  }
   const nonce = await c.getTransactionCount({ address: s.address, blockTag: "pending" });
   const unsigned = serializeTransaction({
     type: "eip1559",
@@ -131,6 +176,20 @@ export async function sendEvm(s: Signer, chainId: number, tx: { to: Address; dat
 
 export const erc20Balance = (chainId: number, token: Address, owner: Address) =>
   chainClient(chainId).readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [owner] });
+
+/** The native coin, as Relay and LI.FI name it on EVM chains. */
+export const NATIVE = zeroAddress;
+export const isNative = (token: string) => token.toLowerCase() === zeroAddress;
+/** Balance of an ERC-20, or of the native coin when `token` is the zero address. */
+export const tokenBalance = (chainId: number, token: Address, owner: Address) =>
+  isNative(token) ? chainClient(chainId).getBalance({ address: owner }) : erc20Balance(chainId, token, owner);
+
+/** Approves `spender` for `amount` of `token` unless it already has that much (no-op for the native coin). */
+export async function ensureAllowance(s: Signer, chainId: number, token: Address, spender: Address, amount: bigint) {
+  if (isNative(token)) return;
+  const allowance = await chainClient(chainId).readContract({ address: token, abi: erc20Abi, functionName: "allowance", args: [s.address, spender] });
+  if (allowance < amount) await sendEvm(s, chainId, { to: token, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, amount] }) });
+}
 
 /* ---------------- Solana ---------------- */
 
@@ -312,7 +371,12 @@ export const outOf = (q: RelayQuote) => {
   return { out, min: BigInt(q.details?.currencyOut?.minimumAmount ?? out.toString()), decimals: q.details?.currencyOut?.currency?.decimals ?? 6 };
 };
 
-type Plan = { hops: RelayLeg[]; preview: Preview; out: bigint };
+/**
+ * A leg Relay can't do, between USDC on a hub chain (Base or Arbitrum) and a chain Relay doesn't reach: LI.FI, or
+ * Circle's CCTP when both ends are native USDC. On a deposit it runs after the Relay hop; on a withdrawal, before it.
+ */
+export type FarLeg = { via: "lifi" | "cctp"; leg: LifiLeg; out: bigint; min: bigint; decimals: number; preview: Preview };
+type Plan = { hops: RelayLeg[]; preview: Preview; out: bigint; far?: FarLeg };
 
 /** Relay's direct route. */
 async function directPlan(leg: RelayLeg, outSymbol: string): Promise<Plan> {
@@ -343,6 +407,7 @@ async function viaUsdcPlan(leg: RelayLeg, outSymbol: string): Promise<Plan | nul
  * route through USDC on the vault's chain side by side, and picks whichever delivers more. `force` is for tests.
  */
 export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direct" | "via"): Promise<Plan> {
+  if (!viaRelay(leg.from) || !viaRelay(leg.to)) return hubRoute(leg, outSymbol);
   const [direct, via] = await Promise.allSettled([
     force === "via" ? Promise.reject(new ExecError("skipped")) : directPlan(leg, outSymbol),
     force === "direct" ? Promise.resolve(null) : viaUsdcPlan(leg, outSymbol),
@@ -354,7 +419,9 @@ export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direc
 
 /** Runs a planned route: one Relay transfer, or bridge to USDC, wait for it, then swap what arrived. */
 export async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
-  const { hops } = await planRoute(leg, "");
+  const plan = await planRoute(leg, "");
+  if (plan.far) return runHubRoute(s, plan as Plan & { far: FarLeg });
+  const { hops } = plan;
   if (hops.length === 1) return relay(s, leg);
   const [h1, h2] = hops;
   const read = () => erc20Balance(h1.to, h1.outToken as Address, h1.recipient as Address);
@@ -388,7 +455,9 @@ export const OUT_STEPS: Step[] = [
 
 /* ---------------- EVM vaults: one adapter, a small protocol object per family ---------------- */
 
-export type Call = { to: Address; data: Hex };
+/** `value` is native coin sent with the call (deposits into native-coin markets such as Venus vBNB). */
+export type Call = { to: Address; data: Hex; value?: bigint };
+/** `address` is the zero address (NATIVE) when the asset is the chain's native coin. */
 export type TokenMeta = { address: Address; decimals: number; symbol: string };
 /** What differs between EVM vault families. Amounts are in the underlying asset's smallest units. */
 export type Proto = {
@@ -397,6 +466,8 @@ export type Proto = {
   spender: () => Promise<Address>;
   deposit: (owner: Address, amount: bigint) => Promise<Call>;
   withdraw: (owner: Address, amount: bigint | "max") => Promise<Call>;
+  /** Optional: a token the withdraw call pulls from the user (e.g. sUSDS into Spark's PSM), approved first. */
+  withdrawSpend?: (owner: Address, amount: bigint | "max") => Promise<{ token: Address; spender: Address; amount: bigint } | null>;
 };
 
 export const MAX_UINT = BigInt(2) ** BigInt(256) - BigInt(1);
@@ -456,16 +527,15 @@ export function evmVault(chainId: number, proto: Proto, label: string): Adapter 
         on("bridge", "skipped");
       } else {
         on("bridge", "running");
-        const read = () => erc20Balance(chainId, a.address, s.address);
+        const read = () => tokenBalance(chainId, a.address, s.address);
         const before = await read();
         await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: a.address, amount: net, user: s.address, recipient: s.address });
         received = await waitForArrival(read, before, 10 * 60_000);
         on("bridge", "done", `${formatUnits(received, a.decimals)} ${a.symbol}`);
       }
       on("deposit", "running");
-      const spender = await proto.spender();
-      const allowance = await chainClient(chainId).readContract({ address: a.address, abi: erc20Abi, functionName: "allowance", args: [s.address, spender] });
-      if (allowance < received) await sendEvm(s, chainId, { to: a.address, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, received] }) });
+      // Native-coin markets take the coin as the call's value; no approval. (Gas on top comes from the gas tank.)
+      if (!isNative(a.address)) await ensureAllowance(s, chainId, a.address, await proto.spender(), received);
       const before = await proto.position(s.address);
       await sendEvm(s, chainId, await proto.deposit(s.address, received));
       // Some lenders (Compound-style) report errors without reverting, so confirm the position actually grew.
@@ -477,11 +547,18 @@ export function evmVault(chainId: number, proto: Proto, label: string): Adapter 
     withdraw: async (s, amount, on) => {
       const a = await asset();
       on("withdraw", "running");
-      if ((await proto.position(s.address)) === BigInt(0)) throw new ExecError("You don't have a position in this vault.");
-      const read = () => erc20Balance(chainId, a.address, s.address);
+      const held = await proto.position(s.address);
+      if (held === BigInt(0)) throw new ExecError("You don't have a position in this vault.");
+      const want = amount === "max" ? "max" : parseUnits(amount, a.decimals);
+      const spend = await proto.withdrawSpend?.(s.address, want);
+      if (spend) await ensureAllowance(s, chainId, spend.token, spend.spender, spend.amount);
+      const native = isNative(a.address);
+      const read = () => tokenBalance(chainId, a.address, s.address);
       const before = await read();
-      await sendEvm(s, chainId, await proto.withdraw(s.address, amount === "max" ? "max" : parseUnits(amount, a.decimals)));
-      const out = (await read()) - before;
+      await sendEvm(s, chainId, await proto.withdraw(s.address, want));
+      // A native coin's balance also moves by the gas paid (and any gas top-up), so count what left the position
+      // instead (slightly under, if interest accrued at redeem: safe to bridge).
+      const out = native ? held - (await proto.position(s.address)) : (await read()) - before;
       if (out <= BigInt(0)) throw new ExecError("The vault didn't release any funds. It may be short of liquidity right now.");
       on("withdraw", "done", `${formatUnits(out, a.decimals)} ${a.symbol}`);
       if (await home()) {
@@ -654,6 +731,76 @@ export function compoundV2(chainId: number, cToken: Address): Proto {
   };
 }
 
+/* Compound v2 native-coin markets (Venus vBNB, cETH-style): mint() is payable; redeeming pays out the coin itself. */
+const CETHER_ABI = parseAbi(["function mint() payable"]);
+
+export function compoundV2Native(chainId: number, cToken: Address, symbol: string, decimals = 18): Proto {
+  const base = compoundV2(chainId, cToken);
+  return {
+    ...base,
+    asset: async () => ({ address: NATIVE, decimals, symbol }),
+    deposit: async (_owner, amount) => ({ to: cToken, data: encodeFunctionData({ abi: CETHER_ABI, functionName: "mint" }), value: amount }),
+  };
+}
+
+/*
+ * Spark PSM3 (L2s): swaps USDC <-> sUSDS at Spark's oracle rate, no slippage. The "vault" is holding sUSDS; its
+ * value is shown in USDC, the asset the route delivers. Addresses checked on-chain (usdc() / susds() match).
+ */
+export const SPARK_PSM3: Record<number, Address> = {
+  42161: "0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266",
+  10: "0xe0F9978b907853F354d79188A3dEfbD41978af62",
+  130: "0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f",
+  8453: "0x1601843c5E9bC251A3272907010AFa41Fa18347E",
+};
+const PSM3_ABI = parseAbi([
+  "function usdc() view returns (address)",
+  "function susds() view returns (address)",
+  "function previewSwapExactIn(address assetIn, address assetOut, uint256 amountIn) view returns (uint256)",
+  "function previewSwapExactOut(address assetIn, address assetOut, uint256 amountOut) view returns (uint256)",
+  "function swapExactIn(address assetIn, address assetOut, uint256 amountIn, uint256 minAmountOut, address receiver, uint256 referralCode) returns (uint256)",
+  "function swapExactOut(address assetIn, address assetOut, uint256 amountOut, uint256 maxAmountIn, address receiver, uint256 referralCode) returns (uint256)",
+]);
+
+export function psm3(chainId: number, psm: Address, susds: Address): Proto {
+  const c = () => chainClient(chainId);
+  const usdc = lazy(() => c().readContract({ address: psm, abi: PSM3_ABI, functionName: "usdc" }));
+  const preview = (fn: "previewSwapExactIn" | "previewSwapExactOut", a: Address, b: Address, amt: bigint) => c().readContract({ address: psm, abi: PSM3_ABI, functionName: fn, args: [a, b, amt] });
+  // The rate only moves up, and slowly; 0.1% covers the seconds between quote and inclusion.
+  const less = (x: bigint) => (x * BigInt(9990)) / BigInt(10_000);
+  const more = (x: bigint) => (x * BigInt(10_010)) / BigInt(10_000) + BigInt(1);
+  /** sUSDS to sell for `amount` USDC (all of it for "max", or when that's within rounding of everything). */
+  const sell = async (owner: Address, amount: bigint | "max") => {
+    const bal = await erc20Balance(chainId, susds, owner);
+    if (amount === "max") return { all: true, shares: bal };
+    const need = more(await preview("previewSwapExactOut", susds, await usdc(), amount));
+    return need >= bal ? { all: true, shares: bal } : { all: false, shares: need };
+  };
+  return {
+    asset: async () => tokenMeta(chainId, await usdc()),
+    position: async (owner) => {
+      const bal = await erc20Balance(chainId, susds, owner);
+      return bal > BigInt(0) ? preview("previewSwapExactIn", susds, await usdc(), bal) : BigInt(0);
+    },
+    spender: async () => psm,
+    deposit: async (owner, amount) => {
+      const u = await usdc();
+      const min = less(await preview("previewSwapExactIn", u, susds, amount));
+      return { to: psm, data: encodeFunctionData({ abi: PSM3_ABI, functionName: "swapExactIn", args: [u, susds, amount, min, owner, BigInt(0)] }) };
+    },
+    withdraw: async (owner, amount) => {
+      const u = await usdc();
+      const { all, shares } = await sell(owner, amount);
+      if (all || amount === "max") {
+        const min = less(await preview("previewSwapExactIn", susds, u, shares));
+        return { to: psm, data: encodeFunctionData({ abi: PSM3_ABI, functionName: "swapExactIn", args: [susds, u, shares, min, owner, BigInt(0)] }) };
+      }
+      return { to: psm, data: encodeFunctionData({ abi: PSM3_ABI, functionName: "swapExactOut", args: [susds, u, amount, shares, owner, BigInt(0)] }) };
+    },
+    withdrawSpend: async (owner, amount) => ({ token: susds, spender: psm, amount: (await sell(owner, amount)).shares }),
+  };
+}
+
 /* Morpho markets: supply directly to one isolated market on Morpho's core contract. */
 /** Morpho's core contract per chain (from Morpho's own API). */
 export const MORPHO_BLUE: Record<number, Address> = {
@@ -670,6 +817,7 @@ export const MORPHO_BLUE: Record<number, Address> = {
   5042: "0x34CD04070dD72b14E241112F6d83812Df5Af7fCD",
   988: "0xa40103088A899514E3fe474cD3cc5bf811b1102e",
   196: "0xeb00C490E888286357dC5B0a35D37D9260D11Ab5",
+  4217: "0x10EE9AAC980A180dd4DcFc96C746d60B0EA88f97",
 };
 const MORPHO_ABI = parseAbi([
   "function idToMarketParams(bytes32 id) view returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv)",
@@ -995,7 +1143,8 @@ export const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address
 /** Gas a Sui transaction may use (MIST). The gas tank tops up when the user has less. */
 export const SUI_GAS = BigInt(20_000_000); // 0.02 SUI
 
-export type LifiLeg = { fromChain: number; toChain: number; fromToken: string; toToken: string; amount: bigint; from: string; to: string };
+/** `slippage` (optional) is a fraction, e.g. 0.005; LI.FI picks its own default when it's left out. */
+export type LifiLeg = { fromChain: number; toChain: number; fromToken: string; toToken: string; amount: bigint; from: string; to: string; slippage?: number };
 type LifiFee = { amountUSD?: string; included?: boolean };
 export type LifiRoute = {
   toAmount: string;
@@ -1019,7 +1168,7 @@ export async function lifiRoute(p: LifiLeg): Promise<LifiRoute> {
       fromAmount: p.amount.toString(),
       fromAddress: p.from,
       toAddress: p.to,
-      options: { order: "CHEAPEST" },
+      options: { order: "CHEAPEST", ...(p.slippage ? { slippage: p.slippage } : {}) },
     }),
   });
   const j = (await res.json().catch(() => ({}))) as { routes?: LifiRoute[]; message?: string };
@@ -1039,6 +1188,7 @@ export async function lifiQuote(p: LifiLeg): Promise<LifiQuote> {
     fromAmount: p.amount.toString(),
     fromAddress: p.from,
     toAddress: p.to,
+    ...(p.slippage ? { slippage: String(p.slippage) } : {}),
   });
   const res = await fetch(`${LIFI}/quote?${q}`);
   const j = (await res.json().catch(() => ({}))) as Partial<LifiQuote> & { message?: string };
@@ -1087,6 +1237,185 @@ export function lifiPreview(r: LifiRoute): Preview {
     feesUsd: r.steps.reduce((t, st) => t + usd(st.estimate.feeCosts) + usd(st.estimate.gasCosts), 0),
     seconds: r.steps.reduce((t, st) => t + (st.estimate.executionDuration ?? 0), 0),
   };
+}
+
+/* ---------------- Chains Relay can't reach: Relay to USDC on a hub, then LI.FI or Circle CCTP ---------------- */
+
+/** Hubs between Relay and the far leg; both have deep native USDC and are reached by Relay, LI.FI and CCTP. */
+export const HUB_CHAINS = [BASE_CHAIN_ID, 42161];
+/** LI.FI applies 0.1% on some stablecoin paths, which leaves bridges like Stargate unquotable. */
+const HUB_SLIPPAGE = 0.005;
+
+const IRIS = "https://iris-api.circle.com/v2";
+const TOKEN_MESSENGER_V2 = "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d" as Address;
+const MESSAGE_TRANSMITTER_V2 = "0x81D40F21F12A8F0E3252Bccb954D722d4c464B64" as Address;
+const CCTP_ABI = parseAbi([
+  "function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint32 minFinalityThreshold)",
+  "function receiveMessage(bytes message, bytes attestation) returns (bool)",
+]);
+/** CCTP V2 domains and native USDC, for the chains a hub leg can use it on (XDC's checked on-chain: localDomain 18). */
+export const CCTP: Record<number, { domain: number; usdc: Address }> = {
+  8453: { domain: 6, usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+  42161: { domain: 3, usdc: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" },
+  50: { domain: 18, usdc: "0xfA2958CB79b0491CC627c1557F441eF849Ca8eb1" },
+};
+const FAST_FINALITY = 1000; // CCTP "fast transfer": attested in seconds for a small fee
+
+const sameToken = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
+/** CCTP fast-transfer fee for `amount` (6 decimals), plus the cap we allow on-chain (50% headroom). */
+async function cctpFee(fromChain: number, toChain: number, amount: bigint) {
+  const rows = (await fetch(`${IRIS}/burn/USDC/fees/${CCTP[fromChain].domain}/${CCTP[toChain].domain}`).then((r) => r.json())) as { finalityThreshold: number; minimumFee: number }[];
+  const bps = rows.find((r) => r.finalityThreshold === FAST_FINALITY)?.minimumFee ?? 0;
+  const fee = (amount * BigInt(Math.ceil(bps * 100)) + BigInt(999_999)) / BigInt(1_000_000);
+  return { fee, maxFee: fee + fee / BigInt(2) + BigInt(1) };
+}
+
+const cctpFits = (l: LifiLeg) => !!CCTP[l.fromChain] && !!CCTP[l.toChain] && sameToken(l.fromToken, CCTP[l.fromChain].usdc) && sameToken(l.toToken, CCTP[l.toChain].usdc);
+
+async function cctpFar(leg: LifiLeg): Promise<FarLeg> {
+  const { fee, maxFee } = await cctpFee(leg.fromChain, leg.toChain, leg.amount);
+  const out = leg.amount - fee;
+  const min = leg.amount - maxFee;
+  return {
+    via: "cctp",
+    leg,
+    out,
+    min,
+    decimals: 6,
+    preview: { out: formatUnits(out, 6), outSymbol: "USDC", minOut: formatUnits(min, 6), slippagePct: 0, impactPct: 0, feesUsd: Number(fee) / 1e6, seconds: 30 },
+  };
+}
+
+async function lifiFar(leg: LifiLeg): Promise<FarLeg> {
+  const r = await lifiRoute({ ...leg, slippage: HUB_SLIPPAGE });
+  return { via: "lifi", leg: { ...leg, slippage: HUB_SLIPPAGE }, out: BigInt(r.toAmount), min: BigInt(r.toAmountMin), decimals: r.toToken.decimals, preview: lifiPreview(r) };
+}
+
+/** The far leg: LI.FI, or CCTP where both ends are native USDC; whichever delivers more. */
+export async function farQuote(leg: LifiLeg): Promise<FarLeg> {
+  const tries = await Promise.allSettled([lifiFar(leg), cctpFits(leg) ? cctpFar(leg) : Promise.reject(new ExecError("No CCTP route."))]);
+  const ok = tries.flatMap((t) => (t.status === "fulfilled" ? [t.value] : []));
+  if (!ok.length) throw (tries[0] as PromiseRejectedResult).reason;
+  return ok.reduce((best, o) => (o.out > best.out ? o : best));
+}
+
+async function hubPlan(leg: RelayLeg, outSymbol: string, hub: number): Promise<Plan> {
+  const usdc = USDC_ON[hub];
+  if (!viaRelay(leg.from)) {
+    // Leaving: far leg into the hub's USDC, then Relay onward.
+    const far = await farQuote({ fromChain: leg.from, toChain: hub, fromToken: leg.inToken, toToken: usdc, amount: leg.amount, from: leg.user, to: leg.user });
+    const hop: RelayLeg = { from: hub, to: leg.to, inToken: usdc, outToken: leg.outToken, amount: far.out, user: leg.user, recipient: leg.recipient };
+    const q = await relayQuote(hop);
+    const o = outOf(q);
+    return { hops: [hop], far, out: o.out, preview: chainPreview(far.preview, far.out, far.min, toPreview(q, outSymbol), o.out, o.min, o.decimals) };
+  }
+  // Arriving: Relay into the hub's USDC, then the far leg into the asset.
+  const hop: RelayLeg = { ...leg, to: hub, outToken: usdc };
+  const q = await relayQuote(hop);
+  const o = outOf(q);
+  const far = await farQuote({ fromChain: hub, toChain: leg.to, fromToken: usdc, toToken: leg.outToken, amount: o.out, from: leg.recipient, to: leg.recipient });
+  return { hops: [hop], far, out: far.out, preview: chainPreview(toPreview(q, "USDC"), o.out, o.min, far.preview, far.out, far.min, far.decimals) };
+}
+
+/** Routes to or from a chain Relay can't reach, through whichever hub delivers more. */
+async function hubRoute(leg: RelayLeg, outSymbol: string): Promise<Plan> {
+  const tries = await Promise.allSettled(HUB_CHAINS.map((h) => hubPlan(leg, outSymbol, h)));
+  const ok = tries.flatMap((t) => (t.status === "fulfilled" ? [t.value] : []));
+  if (!ok.length) throw (tries[0] as PromiseRejectedResult).reason;
+  return ok.reduce((best, o) => (o.out > best.out ? o : best));
+}
+
+/** CCTP V2: burn on the source chain, wait for Circle's attestation, mint on the destination (the user's own tx). */
+async function cctpTransfer(s: Signer, leg: LifiLeg, read: () => Promise<bigint>, before: bigint): Promise<bigint> {
+  const { maxFee } = await cctpFee(leg.fromChain, leg.toChain, leg.amount);
+  const token = CCTP[leg.fromChain].usdc;
+  await ensureAllowance(s, leg.fromChain, token, TOKEN_MESSENGER_V2, leg.amount);
+  const hash = await sendEvm(s, leg.fromChain, {
+    to: TOKEN_MESSENGER_V2,
+    data: encodeFunctionData({
+      abi: CCTP_ABI,
+      functionName: "depositForBurn",
+      args: [leg.amount, CCTP[leg.toChain].domain, pad(leg.to as Address, { size: 32 }), token, pad("0x", { size: 32 }), maxFee, FAST_FINALITY],
+    }),
+  });
+  let msg: { message: Hex; attestation: Hex } | null = null;
+  for (let i = 0; i < 400 && !msg; i++) {
+    const j = (await fetch(`${IRIS}/messages/${CCTP[leg.fromChain].domain}?transactionHash=${hash}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({}))) as { messages?: { status?: string; message?: Hex; attestation?: Hex | "PENDING" }[] };
+    const m = j.messages?.[0];
+    if (m?.status === "complete" && m.message && m.attestation && m.attestation !== "PENDING") msg = { message: m.message, attestation: m.attestation };
+    else await sleep(3000);
+  }
+  if (!msg) throw new ExecError(`Circle hasn't confirmed the transfer yet (source tx ${hash}). It can still be completed on the destination chain once it does.`);
+  if ((await read()) <= before) {
+    try {
+      await sendEvm(s, leg.toChain, { to: MESSAGE_TRANSMITTER_V2, data: encodeFunctionData({ abi: CCTP_ABI, functionName: "receiveMessage", args: [msg.message, msg.attestation] }) });
+    } catch (e) {
+      if ((await read()) <= before) throw e; // someone else may have delivered it first
+    }
+  }
+  return waitForArrival(read, before, 3 * 60_000);
+}
+
+/**
+ * Buys exactly `wei` of the native coin with `token` on one chain (LI.FI same-chain swap, exact output); returns
+ * how much of `token` it took.
+ */
+export async function buyNative(s: Signer, chainId: number, token: Address, wei: bigint): Promise<bigint> {
+  const q = new URLSearchParams({ fromChain: String(chainId), toChain: String(chainId), fromToken: token, toToken: NATIVE, toAmount: wei.toString(), fromAddress: s.address, toAddress: s.address, slippage: "0.01" });
+  const res = await fetch(`${LIFI}/quote/toAmount?${q}`);
+  const j = (await res.json().catch(() => ({}))) as Partial<LifiQuote> & { message?: string; action?: { fromAmount?: string } };
+  if (!j.transactionRequest?.data || !j.action?.fromAmount) throw new ExecError(`Couldn't buy the bridge's network fee${j.message ? `: ${j.message}` : ""}.`);
+  const spend = BigInt(j.action.fromAmount);
+  const tx = j.transactionRequest;
+  await ensureAllowance(s, chainId, token, j.estimate?.approvalAddress ?? tx.to!, spend);
+  const before = await tokenBalance(chainId, token, s.address);
+  await sendEvm(s, chainId, { to: tx.to!, data: tx.data as Hex, value: tx.value ? BigInt(tx.value) : undefined });
+  const after = await tokenBalance(chainId, token, s.address);
+  return before > after ? before - after : spend;
+}
+
+/** Runs one far leg for `amount`; returns how much arrived on the other side. */
+export async function runFar(s: Signer, far: FarLeg, amount: bigint): Promise<bigint> {
+  const leg = { ...far.leg, amount };
+  const read = () => tokenBalance(leg.toChain, leg.toToken as Address, leg.to as Address);
+  const before = await read();
+  if (far.via === "cctp") return cctpTransfer(s, leg, read, before);
+  let q = await lifiQuote(leg);
+  // Some bridges (Stargate) charge a native-coin messaging fee as the tx value. The gas tank only covers gas, so a
+  // larger fee is bought from the leg's own input token first, and the transfer re-quoted with what's left.
+  const fee = q.transactionRequest.value ? BigInt(q.transactionRequest.value) : BigInt(0);
+  const topUpCap = parseUnits(evmChain(leg.fromChain)?.topUp ?? "0", 18);
+  if (fee > topUpCap && !isNative(leg.fromToken)) {
+    const have = await chainClient(leg.fromChain).getBalance({ address: s.address });
+    const want = (fee * BigInt(11)) / BigInt(10); // headroom: the fee can move between quotes
+    if (have < want) {
+      const spent = await buyNative(s, leg.fromChain, leg.fromToken as Address, want - have);
+      leg.amount = amount - spent;
+      q = await lifiQuote(leg);
+    }
+  }
+  const tx = q.transactionRequest;
+  await ensureAllowance(s, leg.fromChain, leg.fromToken as Address, q.estimate.approvalAddress ?? tx.to!, leg.amount);
+  const hash = await sendEvm(s, leg.fromChain, { to: tx.to!, data: tx.data as Hex, value: tx.value ? BigInt(tx.value) : undefined });
+  return waitForArrival(read, before, 20 * 60_000, lifiFailed(hash, leg.fromChain, leg.toChain));
+}
+
+async function runHubRoute(s: Signer, plan: Plan & { far: FarLeg }): Promise<void> {
+  const [hop] = plan.hops;
+  if (plan.far.leg.fromChain === hop.to) {
+    // Arriving: Relay to the hub, then send on what actually arrived.
+    const read = () => erc20Balance(hop.to, hop.outToken as Address, hop.recipient as Address);
+    const before = await read();
+    await relay(s, hop);
+    await runFar(s, plan.far, await waitForArrival(read, before, 10 * 60_000));
+  } else {
+    // Leaving: far leg to the hub first, then Relay what arrived.
+    const got = await runFar(s, plan.far, plan.far.leg.amount);
+    await relay(s, { ...hop, amount: got });
+  }
 }
 
 export const needSui = (s: { suiAddress?: string }) => {
@@ -1395,8 +1724,9 @@ export function adapterFor(o: Opp): Adapter | null {
     }
     // Lido stETH: holding it is the position.
     if (o.id === "lido:1:steth") return evmToken(1, "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", "stETH");
-    // Native-coin markets (Venus vBNB) take BNB itself rather than a token, so they stay on the regular page.
-    if ((o.protocol === "Venus" || o.protocol === "Moonwell") && isAddr(a) && a.toLowerCase() !== "0xa07c5b74c9b40447a954e1466938b865b6bbea36") return evmVault(evm, compoundV2(evm, a), o.asset);
+    // Native-coin markets (Venus vBNB) take BNB itself: Relay delivers native BNB, mint() is payable.
+    if (o.protocol === "Venus" && evm === 56 && isAddr(a) && a.toLowerCase() === "0xa07c5b74c9b40447a954e1466938b865b6bbea36") return evmVault(56, compoundV2Native(56, a, "BNB"), o.asset);
+    if ((o.protocol === "Venus" || o.protocol === "Moonwell") && isAddr(a)) return evmVault(evm, compoundV2(evm, a), o.asset);
     if ((TOKEN_PROTOCOLS.has(o.protocol) || (o.protocol === "Frax" && o.kind === "Liquid staking")) && isAddr(a)) {
       const symbol = o.ticker ?? o.name?.match(/\(([^)]+)\)/)?.[1] ?? o.asset;
       return evmToken(evm, a, symbol);
@@ -1405,8 +1735,12 @@ export function adapterFor(o: Opp): Adapter | null {
     if (o.protocol === "Yearn" && isAddr(a) && !/^(Curve|LP) /.test(o.name ?? "")) return evmVault(evm, yearn(evm, a), o.asset);
     // Spark's savings vaults are ERC-4626 on Ethereum; elsewhere they're plain bridged tokens.
     // Spark savings: ERC-4626 on Ethereum; elsewhere it's a plain sUSDS token you hold.
-    // sUSDS only has swap liquidity on Base among the L2s; elsewhere it would need Spark's own PSM.
-    if (o.protocol === "Spark" && o.kind === "Vault" && isAddr(a)) return evm === 1 ? evmVault(evm, erc4626(evm, a), o.asset) : evm === 8453 ? evmToken(evm, a, o.ticker ?? "sUSDS") : null;
+    // sUSDS only has swap liquidity on Base among the L2s; on Arbitrum, Optimism and Unichain it goes through Spark's PSM3.
+    if (o.protocol === "Spark" && o.kind === "Vault" && isAddr(a)) {
+      if (evm === 1) return evmVault(evm, erc4626(evm, a), o.asset);
+      if (evm === 8453) return evmToken(evm, a, o.ticker ?? "sUSDS");
+      return SPARK_PSM3[evm] ? evmVault(evm, psm3(evm, SPARK_PSM3[evm], a), o.asset) : null;
+    }
     if ((VAULT_PROTOCOLS.has(o.protocol) || (["Frax", "Aave"].includes(o.protocol) && o.kind === "Vault")) && isAddr(a)) return evmVault(evm, erc4626(evm, a), o.asset);
     return null;
   }
@@ -1438,6 +1772,6 @@ export function oneClickFor(o: Opp): Adapter | null {
 export const supportsOneClick = (o: Opp) => oneClickFor(o) !== null;
 
 /** The EVM protocol builders, exported for tests and scripts. */
-export const evmProtocols = { aaveV4, yearn, erc4626, aaveStyle, comet, compoundV2, morphoMarket, MORPHO_BLUE };
+export const evmProtocols = { aaveV4, yearn, erc4626, aaveStyle, comet, compoundV2, compoundV2Native, psm3, morphoMarket, MORPHO_BLUE, SPARK_PSM3 };
 export const hyperliquidSigning = { hlL1Action, hlUserAction };
 export const routing = { planRoute };

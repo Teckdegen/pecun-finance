@@ -6,5 +6,15 @@
  */
 
 // Protocol modules (each registers itself on import):
+import "./pendle";
+import "./spectra";
+import "./sui-lending";
+import "./ember";
+import "./upshift";
+import "./avantis";
+import "./kamino";
+import "./meteora";
+import "./jupiter-sol";
+import "./gmx";
 
 export * from "../execute";

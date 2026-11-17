@@ -5,7 +5,7 @@ import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction as SuiTransaction } from "@mysten/sui/transactions";
 import bs58 from "bs58";
-import { createPublicClient, createWalletClient, fallback, formatEther, http, parseEther, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, encodeFunctionData, erc20Abi, fallback, formatUnits, http, parseUnits, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { EVM_CHAINS } from "./exec-chains";
 
@@ -27,10 +27,23 @@ const SOLANA_RPC = "https://solana-rpc.publicnode.com";
 export const SUI_CHAIN_ID = 9270000000000000; // LI.FI's id for Sui
 const SUI_GRPC = "https://fullnode.mainnet.sui.io:443";
 
-type EvmGas = { name: string; rpc: string; urls: string[]; /** sent when short; covers a few transactions */ topUp: string; /** most one top-up can send */ maxTopUp: string };
+type EvmGas = {
+  name: string;
+  rpc: string;
+  urls: string[];
+  /** sent when short; covers a few transactions */ topUp: string;
+  /** most one top-up can send */ maxTopUp: string;
+  /** Chains without a native gas coin (Tempo): gas is this stablecoin, and top-ups are transfers of it. */
+  feeToken?: { address: Address; decimals: number };
+};
 export const GAS_CHAINS: Record<number, EvmGas> = Object.fromEntries(
-  EVM_CHAINS.map((c) => [c.id, { name: c.names[0], rpc: c.rpc, urls: [c.rpc, ...(c.backups ?? [])], topUp: c.topUp, maxTopUp: c.maxTopUp }]),
+  EVM_CHAINS.map((c) => [c.id, { name: c.names[0], rpc: c.rpc, urls: [c.rpc, ...(c.backups ?? [])], topUp: c.topUp, maxTopUp: c.maxTopUp, feeToken: c.feeToken }]),
 );
+
+/** Gas balance on an EVM chain: native coin, or the fee token where there is no native coin (Tempo's eth_getBalance is a placeholder). */
+const gasBalance = (pub: ReturnType<typeof createPublicClient>, chain: EvmGas, address: Address) =>
+  chain.feeToken ? pub.readContract({ address: chain.feeToken.address, abi: erc20Abi, functionName: "balanceOf", args: [address] }) : pub.getBalance({ address });
+const gasDecimals = (chain: EvmGas) => chain.feeToken?.decimals ?? 18;
 /** Solana: enough for fees plus rent for a couple of new token accounts. */
 const SOL_TOP_UP = 0.005;
 const SOL_MAX_TOP_UP = 0.012;
@@ -84,7 +97,10 @@ export const gasTankConfigured = () =>
 
 export type TopUpResult = { toppedUp: false; balance: string } | { toppedUp: true; amount: string; hash: string };
 
-/** Makes sure `to` holds at least `need` (wei on EVM, lamports on Solana, MIST on Sui) of native gas; tops up from the tank if not. */
+/**
+ * Makes sure `to` holds at least `need` (wei on EVM, lamports on Solana, MIST on Sui; on Tempo, pathUSD's 6-decimal
+ * units) of gas; tops up from the tank if not.
+ */
 export async function ensureGas(chainId: number, to: string, need: bigint, user: string): Promise<TopUpResult> {
   if (chainId === SOLANA_CHAIN_ID) return ensureSol(to, need, user);
   if (chainId === SUI_CHAIN_ID) return ensureSui(to, need, user);
@@ -96,22 +112,27 @@ async function ensureEvm(chainId: number, to: Address, needWei: bigint, user: st
   if (!chain) throw new Error(`Pecun doesn't cover gas on chain ${chainId} yet.`);
   const transport = () => fallback(chain.urls.map((u) => http(u, { timeout: 15_000, retryCount: 0 })), { retryCount: 2 });
   const pub = createPublicClient({ transport: transport() });
-  const balance = await pub.getBalance({ address: to });
-  if (balance >= needWei) return { toppedUp: false, balance: formatEther(balance) };
+  const dec = gasDecimals(chain);
+  const balance = await gasBalance(pub, chain, to);
+  if (balance >= needWei) return { toppedUp: false, balance: formatUnits(balance, dec) };
 
   const done = countTopUp(user);
-  const standard = parseEther(chain.topUp);
+  const standard = parseUnits(chain.topUp, dec);
   const amount = needWei - balance > standard ? needWei - balance : standard;
-  if (amount > parseEther(chain.maxTopUp)) throw new Error("That transaction needs more network fee than Pecun covers.");
+  if (amount > parseUnits(chain.maxTopUp, dec)) throw new Error("That transaction needs more network fee than Pecun covers.");
 
   const account = evmAccount();
-  const tank = await pub.getBalance({ address: account.address });
+  const tank = await gasBalance(pub, chain, account.address);
   if (tank < amount * BigInt(2)) throw new Error(`Pecun's gas tank is low on ${chain.name}. Please try again later.`);
   const wallet = createWalletClient({ account, transport: transport() });
-  const hash = await wallet.sendTransaction({ to, value: amount, chain: null });
-  await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
+  // Fee-token chains: a plain TIP-20 transfer, whose own fee Tempo charges in that same token.
+  const hash = chain.feeToken
+    ? await wallet.sendTransaction({ to: chain.feeToken.address, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [to, amount] }), chain: null })
+    : await wallet.sendTransaction({ to, value: amount, chain: null });
+  const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
+  if (receipt.status !== "success") throw new Error(`Pecun's gas top-up failed on ${chain.name}.`);
   done();
-  return { toppedUp: true, amount: formatEther(amount), hash };
+  return { toppedUp: true, amount: formatUnits(amount, dec), hash };
 }
 
 async function ensureSol(to: string, needLamports: bigint, user: string): Promise<TopUpResult> {
@@ -177,7 +198,9 @@ export async function gasTankStatus() {
     const balances = await Promise.all(
       Object.values(GAS_CHAINS).map(async (ch) => ({
         chain: ch.name,
-        balance: await createPublicClient({ transport: fallback(ch.urls.map((u) => http(u, { timeout: 15_000, retryCount: 0 }))) }).getBalance({ address }).then(formatEther).catch(() => "unavailable"),
+        balance: await gasBalance(createPublicClient({ transport: fallback(ch.urls.map((u) => http(u, { timeout: 15_000, retryCount: 0 }))) }), ch, address)
+          .then((b) => formatUnits(b, gasDecimals(ch)))
+          .catch(() => "unavailable"),
       })),
     );
     out.evm = { address, balances };
