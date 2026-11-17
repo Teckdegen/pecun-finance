@@ -34,7 +34,7 @@ import {
 } from "../execute";
 import { sui, SUI_TYPE, suiBalance } from "../sui";
 import { ROBINHOOD_CHAIN_ID, USDG, USDG_DECIMALS } from "../wallet";
-import { arrivedFor, catalogWait, noteBroughtHome, noteRequested, queuedSteps, requestedMessage, wanted } from "./queued";
+import { arrivedFor, catalogWait, noteBroughtHome, noteRequested, queuedSteps, requestedAt, requestedMessage, wanted } from "./queued";
 
 /**
  * Ember (Bluefin's vaults). EVM vaults are ERC-4626-style for deposits (`deposit(assets, receiver)`, or the vault's
@@ -196,6 +196,26 @@ function emberEvm(chainId: number, vault: Address, symbol: string, wait: string)
       noteBroughtHome(vault, s.address, st.arrived);
       return requested > BigInt(0) ? `${result}. ${requestedMessage(requested, a.decimals, a.symbol, "Ember", wait, where)}` : result;
     },
+
+    queue: async (s) => {
+      const st = await state(s.address);
+      return {
+        symbol: st.a.symbol,
+        pending: Number(formatUnits(st.pending, st.a.decimals)),
+        arrived: Number(formatUnits(st.arrived, st.a.decimals)),
+        wait,
+        requestedAt: requestedAt(vault, s.address),
+      };
+    },
+
+    bringHome: async (s, on) => {
+      const st = await state(s.address);
+      if (st.arrived === BigInt(0)) return null;
+      on("withdraw", "skipped");
+      const result = await backToUsdg(s, { from: chainId, inToken: st.a.address, amount: st.arrived, user: s.address }, on);
+      noteBroughtHome(vault, s.address, st.arrived);
+      return result;
+    },
   };
 }
 
@@ -323,6 +343,28 @@ function emberSui(vaultId: string, symbol: string, decimals: number, coinType: s
       const result = await fromSui(s, coinType, st.arrived, on);
       noteBroughtHome(vaultId, me, st.arrived);
       return requested > BigInt(0) ? `${result}. ${requestedMessage(requested, decimals, symbol, "Ember", wait, "Sui")}` : result;
+    },
+
+    queue: async (s) => {
+      if (!s.suiAddress) return { symbol, pending: 0, arrived: 0, wait };
+      const st = await state(s.suiAddress);
+      return {
+        symbol,
+        pending: Number(formatUnits(st.pending, decimals)),
+        arrived: Number(formatUnits(st.arrived, decimals)),
+        wait,
+        requestedAt: requestedAt(vaultId, s.suiAddress),
+      };
+    },
+
+    bringHome: async (s, on) => {
+      const me = needSui(s);
+      const st = await state(me);
+      if (st.arrived === BigInt(0)) return null;
+      on("withdraw", "skipped");
+      const result = await fromSui(s, coinType, st.arrived, on);
+      noteBroughtHome(vaultId, me, st.arrived);
+      return result;
     },
   };
 }

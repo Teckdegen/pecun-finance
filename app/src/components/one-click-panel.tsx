@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, Loader2, RotateCw, X } from "lucide-react";
+import { Check, Clock, Loader2, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { feeBps, oneClickFor, type Preview, type StepStatus } from "@/lib/exec";
+import { feeBps, oneClickFor, type Preview, type QueueState, type StepStatus } from "@/lib/exec";
+import { rememberPending, runningVaults } from "@/lib/pending-withdrawals";
 import type { Opportunity } from "@/lib/types";
 import { getBalances } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
@@ -22,6 +23,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
   const [amount, setAmount] = useState("");
   const [usdg, setUsdg] = useState<number | null>(null);
   const [pos, setPos] = useState<number | null>(null);
+  const [queue, setQueue] = useState<QueueState | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [preview, setPreview] = useState<{ key: string; p?: Preview; error?: string } | null>(null);
   const busy = !!run && !run.error && !run.result;
@@ -29,14 +31,25 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
 
   const load = useCallback(async () => {
     if (!evmAddress) return;
-    const [b, p] = await Promise.all([
+    const who = { address: evmAddress, solanaAddress, suiAddress };
+    const [b, p, q] = await Promise.all([
       getBalances(evmAddress).catch(() => null),
-      adapter.position({ address: evmAddress, solanaAddress, suiAddress }).catch(() => null),
+      adapter.position(who).catch(() => null),
+      adapter.queue ? adapter.queue(who).catch(() => null) : Promise.resolve(null),
     ]);
     if (b) setUsdg(b.usdg);
     if (p !== null) setPos(p);
-  }, [evmAddress, solanaAddress, suiAddress, adapter]);
+    setQueue(q);
+    // A withdrawal still in the queue (or paid out) is remembered so Pecun finishes it in the background.
+    if (q && (q.pending > 0 || q.arrived > 0)) rememberPending(evmAddress, o);
+  }, [evmAddress, solanaAddress, suiAddress, adapter, o]);
   useEffect(() => void load(), [load]);
+  // The background check brings payouts home on its own; refresh when it does.
+  useEffect(() => {
+    const f = () => void load();
+    window.addEventListener("pecun:balances-changed", f);
+    return () => window.removeEventListener("pecun:balances-changed", f);
+  }, [load]);
 
   const n = Number(amount) || 0;
   const max = side === "add" ? usdg ?? 0 : pos ?? 0;
@@ -58,6 +71,11 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
 
   const go = async () => {
     if (!evmAddress || !ok) return;
+    if (runningVaults.has(o.id)) {
+      setRun({ side, steps: [], error: "Pecun is bringing this vault's payout back to your wallet right now. Try again in a minute." });
+      return;
+    }
+    runningVaults.add(o.id);
     const template = side === "add" ? adapter.depositSteps : adapter.withdrawSteps;
     setRun({ side, steps: template.map((s) => ({ ...s, status: "pending" })) });
     const on = (id: string, status: StepStatus, detail?: string) =>
@@ -68,12 +86,15 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
         side === "add" ? await adapter.deposit(signer, amount, on) : await adapter.withdraw(signer, n >= (pos ?? 0) - 1e-9 ? "max" : amount, on);
       setRun((r) => (r ? { ...r, result } : r));
       setAmount("");
+      if (side === "withdraw" && adapter.queue) rememberPending(evmAddress, o);
       void load();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[pecun] one-click failed:", msg);
       setRun((r) => (r ? { ...r, error: msg, steps: r.steps.map((s) => (s.status === "running" ? { ...s, status: "failed" } : s)) } : r));
       void load();
+    } finally {
+      runningVaults.delete(o.id);
     }
   };
 
@@ -108,6 +129,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
           <RunView run={run} onRetry={() => void go()} onDone={() => setRun(null)} />
         ) : (
           <>
+            {queue && (queue.pending > 0 || queue.arrived > 0) && <PendingBox q={queue} />}
             <div className="mt-3 rounded-2xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-muted">
                 <span>{side === "add" ? "Add" : "Withdraw"}</span>
@@ -206,6 +228,41 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** A withdrawal waiting in the protocol's queue, and what happens next (nothing for the user to do). */
+function PendingBox({ q }: { q: QueueState }) {
+  const fmt = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: v < 1 ? 6 : 4 });
+  const since = q.requestedAt ? new Date(q.requestedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
+  return (
+    <div className="mt-3 rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5 text-xs" role="status">
+      {q.pending > 0 && (
+        <div className="flex items-start gap-2">
+          <Clock className="mt-0.5 size-3.5 shrink-0 text-accent" />
+          <p className="leading-relaxed">
+            <span className="font-medium text-ink">
+              Withdrawal pending: {fmt(q.pending)} {q.symbol}
+            </span>
+            <span className="text-muted">
+              {since ? ` · requested ${since}` : ""}
+              {q.wait ? ` · pays out in ${q.wait}` : " · pays out once the queue clears"}. Pecun brings it back to your wallet as USDG automatically while the app is open.
+            </span>
+          </p>
+        </div>
+      )}
+      {q.arrived > 0 && (
+        <div className={`flex items-start gap-2 ${q.pending > 0 ? "mt-2" : ""}`}>
+          <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-accent" />
+          <p className="leading-relaxed">
+            <span className="font-medium text-ink">
+              Paid out: {fmt(q.arrived)} {q.symbol}
+            </span>
+            <span className="text-muted"> · bringing it back to your wallet as USDG.</span>
+          </p>
+        </div>
+      )}
     </div>
   );
 }

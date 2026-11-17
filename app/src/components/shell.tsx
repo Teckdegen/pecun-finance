@@ -17,6 +17,7 @@ import { DOCS_URL } from "@/lib/site";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "./auth-provider";
+import { AutoWithdraw } from "./auto-withdraw";
 import { ProfileModal } from "./profile-modal";
 import { SignInModal } from "./sign-in-modal";
 import { PlatformLogos } from "./ui";
@@ -120,6 +121,7 @@ function Frame({ children }: { children: ReactNode }) {
         </div>
       </div>
       <SignInModal open={signInOpen} onClose={closeSignIn} />
+      <AutoWithdraw />
     </div>
   );
 }

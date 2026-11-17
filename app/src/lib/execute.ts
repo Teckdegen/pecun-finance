@@ -65,6 +65,22 @@ export type Adapter = {
   previewWithdraw: (s: Who, amount: string) => Promise<Preview>;
   deposit: (s: Signer, usdg: string, on: Progress) => Promise<string>;
   withdraw: (s: Signer, amount: string | "max", on: Progress) => Promise<string>;
+  /** Queued-withdrawal vaults only: what's waiting in the protocol's queue and what's been paid out but not brought home. */
+  queue?: (s: Who) => Promise<QueueState>;
+  /** Queued-withdrawal vaults only: brings paid-out funds back to USDG without requesting anything new. Null if nothing arrived. */
+  bringHome?: (s: Signer, on: Progress) => Promise<string | null>;
+};
+
+export type QueueState = {
+  symbol: string;
+  /** Still in the protocol's queue (asset units). */
+  pending: number;
+  /** Paid out to the user's wallet, not yet brought back as USDG (asset units). */
+  arrived: number;
+  /** "about 3 days", "up to a week", or "" if unknown. */
+  wait: string;
+  /** When the withdrawal was requested from Pecun (ms), if known. */
+  requestedAt?: number;
 };
 
 export class ExecError extends Error {}

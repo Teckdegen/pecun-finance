@@ -22,7 +22,7 @@ import {
 } from "../execute";
 import { evmChain } from "../exec-chains";
 import { ROBINHOOD_CHAIN_ID, USDG, USDG_DECIMALS } from "../wallet";
-import { arrivedFor, noteBroughtHome, noteRequested, queuedSteps, requestedMessage, waitLabel, wanted } from "./queued";
+import { arrivedFor, noteBroughtHome, noteRequested, queuedSteps, requestedAt, requestedMessage, waitLabel, wanted } from "./queued";
 
 /**
  * Upshift (August Digital). Two contract families, told apart on-chain:
@@ -241,6 +241,43 @@ function upshiftVault(chainId: number, vault: Address, symbol: string): Adapter 
       const result = await backToUsdg(s, { from: chainId, inToken: a.address, amount: home, user: s.address }, on);
       noteBroughtHome(vault, s.address, home);
       return requested > BigInt(0) ? `${result}. ${requestedMessage(requested, a.decimals, a.symbol, "Upshift", w, where)}` : result;
+    },
+
+    queue: async (s) => {
+      const st = await state(s.address);
+      // Dates the operator hasn't paid yet but are already due count as arrived: bringHome claims them.
+      const due = st.q.filter((x) => x.due).reduce((t, x) => t + x.shares, BigInt(0));
+      const dueAssets = due > BigInt(0) ? await toAssets(due) : BigInt(0);
+      return {
+        symbol: st.a.symbol,
+        pending: Number(formatUnits(st.pending - dueAssets, st.a.decimals)),
+        arrived: Number(formatUnits(st.arrived + dueAssets, st.a.decimals)),
+        wait: await wait(),
+        requestedAt: requestedAt(vault, s.address),
+      };
+    },
+
+    bringHome: async (s, on) => {
+      const st = await state(s.address);
+      const { a } = st;
+      let claimed = BigInt(0);
+      for (const day of st.q.filter((x) => x.due)) {
+        const bal = await erc20Balance(chainId, a.address, s.address);
+        try {
+          await sendEvm(s, chainId, { to: vault, data: encodeFunctionData({ abi: V1_ABI, functionName: "claim", args: [BigInt(day.y), BigInt(day.m), BigInt(day.d), s.address] }) });
+          claimed += (await erc20Balance(chainId, a.address, s.address)) - bal;
+        } catch {
+          /* not claimable yet: the operator will pay it */
+        }
+      }
+      const pendingLeft = claimed > BigInt(0) ? await toAssets((await queued(s.address)).reduce((t, x) => t + x.shares, BigInt(0))) : st.pending;
+      const idle = await erc20Balance(chainId, a.address, s.address);
+      const home = claimed > BigInt(0) ? arrivedFor(vault, s.address, idle, pendingLeft) || (claimed < idle ? claimed : idle) : st.arrived;
+      if (home === BigInt(0)) return null;
+      on("withdraw", claimed > BigInt(0) ? "done" : "skipped", claimed > BigInt(0) ? `${formatUnits(claimed, a.decimals)} ${a.symbol} claimed` : undefined);
+      const result = await backToUsdg(s, { from: chainId, inToken: a.address, amount: home, user: s.address }, on);
+      noteBroughtHome(vault, s.address, home);
+      return result;
     },
   };
 

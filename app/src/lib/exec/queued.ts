@@ -28,6 +28,9 @@ function read(vault: string, owner: string): Note | null {
 /** How much (raw asset units) was requested from this vault and not yet brought home. */
 export const requestedNotHome = (vault: string, owner: string) => BigInt(read(vault, owner)?.requested ?? "0");
 
+/** When the open withdrawal was last requested (ms), if this device knows. */
+export const requestedAt = (vault: string, owner: string) => read(vault, owner)?.at;
+
 export function noteRequested(vault: string, owner: string, amount: bigint) {
   try {
     const total = requestedNotHome(vault, owner) + amount;
@@ -60,7 +63,7 @@ export function arrivedFor(vault: string, owner: string, idle: bigint, pendingVa
 
 export const queuedSteps = (protocol: string, wait: string): Step[] => [
   { id: "withdraw", label: `Request withdrawal (${protocol} pays out${wait ? ` in ${wait}` : " after its queue"})` },
-  { id: "bridge", label: "Bring paid-out funds back" },
+  { id: "bridge", label: "Bring paid-out funds back (automatic once paid)" },
   OUT_STEPS[2],
 ];
 
@@ -77,7 +80,7 @@ export function catalogWait(o: unknown): string {
 }
 
 export const requestedMessage = (amount: bigint, decimals: number, symbol: string, protocol: string, wait: string, where: string) =>
-  `Withdrawal of ${formatUnits(amount, decimals)} ${symbol} requested. ${protocol} pays it into your Pecun wallet on ${where}${wait ? ` in ${wait}` : " once its queue clears"}; press Withdraw again then to bring it back as USDG.`;
+  `Withdrawal of ${formatUnits(amount, decimals)} ${symbol} requested. ${protocol} pays it out${wait ? ` in ${wait}` : " once its queue clears"}, and Pecun brings it back to your wallet as USDG automatically whenever you have the app open.`;
 
 /** What the user asked for, in raw units ("max" = everything). */
 export const wanted = (amount: string | "max", decimals: number, everything: bigint) => (amount === "max" ? everything : parseUnits(amount, decimals));
