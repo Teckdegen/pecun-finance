@@ -8,7 +8,7 @@ import { LineChart } from "./line-chart";
 import { LendingLayout } from "./lending-layout";
 import { MorphoLayout } from "./morpho-layout";
 import { OneClickPanel } from "./one-click-panel";
-import { supportsOneClick } from "@/lib/execute";
+import { supportsOneClick } from "@/lib/exec";
 import { AddressPill, display, Logo, pct, PlatformLogos, short, usd, VaultMark } from "./ui";
 
 type Win = "7d" | "30d" | "60d" | "90d";

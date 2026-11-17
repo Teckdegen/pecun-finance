@@ -38,7 +38,7 @@ export type Signer = {
   sendSuiTransaction: (tx: SuiTx | string) => Promise<{ ok: true; digest: string } | { ok: false; error: string }>;
   signAccountsRequest: () => Promise<unknown | null>;
 };
-type Who = Pick<Signer, "address" | "solanaAddress" | "suiAddress">;
+export type Who = Pick<Signer, "address" | "solanaAddress" | "suiAddress">;
 
 export type StepStatus = "pending" | "running" | "done" | "skipped" | "failed";
 export type Progress = (id: string, status: StepStatus, detail?: string) => void;
@@ -67,8 +67,8 @@ export type Adapter = {
   withdraw: (s: Signer, amount: string | "max", on: Progress) => Promise<string>;
 };
 
-class ExecError extends Error {}
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export class ExecError extends Error {}
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- EVM ---------------- */
 
@@ -87,7 +87,7 @@ export function chainClient(chainId: number) {
 }
 
 /** Asks Pecun's gas tank to make sure the user has `need` of native gas (wei on EVM, lamports on Solana). */
-async function ensureGas(s: Signer, chainId: number, address: string, need: bigint, have: bigint) {
+export async function ensureGas(s: Signer, chainId: number, address: string, need: bigint, have: bigint) {
   if (have >= need) return;
   const signed = await s.signAccountsRequest();
   if (!signed) throw new ExecError("Your session has expired. Sign in again.");
@@ -100,7 +100,7 @@ async function ensureGas(s: Signer, chainId: number, address: string, need: bigi
 }
 
 /** Builds, gas-funds, signs (with the user's session) and sends one EVM transaction, then waits for it. */
-async function sendEvm(s: Signer, chainId: number, tx: { to: Address; data?: Hex; value?: bigint }): Promise<Hex> {
+export async function sendEvm(s: Signer, chainId: number, tx: { to: Address; data?: Hex; value?: bigint }): Promise<Hex> {
   const c = chainClient(chainId);
   const value = tx.value ?? BigInt(0);
   const [gas, fees, bal] = await Promise.all([
@@ -129,15 +129,15 @@ async function sendEvm(s: Signer, chainId: number, tx: { to: Address; data?: Hex
   return r.hash;
 }
 
-const erc20Balance = (chainId: number, token: Address, owner: Address) =>
+export const erc20Balance = (chainId: number, token: Address, owner: Address) =>
   chainClient(chainId).readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [owner] });
 
 /* ---------------- Solana ---------------- */
 
 /** Covers fees plus rent for a new token account. */
-const SOL_NEEDED = BigInt(4_000_000); // 0.004 SOL
+export const SOL_NEEDED = BigInt(4_000_000); // 0.004 SOL
 
-async function sendSol(s: Signer, unsignedHex: () => Promise<string>): Promise<string> {
+export async function sendSol(s: Signer, unsignedHex: () => Promise<string>): Promise<string> {
   if (!s.solanaAddress) throw new ExecError("Your Solana account is still being set up. Try again in a moment.");
   await ensureGas(s, SOLANA_CHAIN_ID, s.solanaAddress, SOL_NEEDED, await lamports(s.solanaAddress));
   // Built after the top-up so its blockhash is fresh.
@@ -168,7 +168,7 @@ type RelayItem = {
   };
   check?: { endpoint: string };
 };
-type RelayQuote = {
+export type RelayQuote = {
   message?: string;
   steps?: { kind: string; items: RelayItem[] }[];
   details?: {
@@ -179,9 +179,9 @@ type RelayQuote = {
   };
   fees?: Record<string, { amountUsd?: string } | null>;
 };
-type RelayLeg = { from: number; to: number; inToken: string; outToken: string; amount: bigint; user: string; recipient: string };
+export type RelayLeg = { from: number; to: number; inToken: string; outToken: string; amount: bigint; user: string; recipient: string };
 
-async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
+export async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
   const res = await fetch(`${RELAY}/quote`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -201,7 +201,7 @@ async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
   return q;
 }
 
-function toPreview(q: RelayQuote, fallbackSymbol: string): Preview {
+export function toPreview(q: RelayQuote, fallbackSymbol: string): Preview {
   const out = q.details?.currencyOut;
   const dec = out?.currency?.decimals ?? 6;
   const fees = Object.entries(q.fees ?? {})
@@ -219,7 +219,7 @@ function toPreview(q: RelayQuote, fallbackSymbol: string): Preview {
 }
 
 /** Quote + every transaction it asks for (EVM or Solana), then waits for Relay to report the transfer delivered. */
-async function relay(s: Signer, p: RelayLeg) {
+export async function relay(s: Signer, p: RelayLeg) {
   const q = await relayQuote(p);
   let check: string | undefined;
   for (const step of q.steps!) {
@@ -259,7 +259,7 @@ async function relay(s: Signer, p: RelayLeg) {
  * Waits until a balance rises above `before`; returns how much arrived. `failed` (optional) reports a bridge failure
  * early instead of waiting out the timeout.
  */
-async function waitForArrival(read: () => Promise<bigint>, before: bigint, timeoutMs = 120_000, failed?: () => Promise<string | null>): Promise<bigint> {
+export async function waitForArrival(read: () => Promise<bigint>, before: bigint, timeoutMs = 120_000, failed?: () => Promise<string | null>): Promise<bigint> {
   const end = Date.now() + timeoutMs;
   for (let i = 0; Date.now() < end; i++) {
     const now = await read().catch(() => before);
@@ -275,10 +275,10 @@ async function waitForArrival(read: () => Promise<bigint>, before: bigint, timeo
 
 /* ---------------- fee + USDG legs shared by every adapter ---------------- */
 
-const usdgOf = (s: { address: Address }) => () => erc20Balance(ROBINHOOD_CHAIN_ID, USDG, s.address);
+export const usdgOf = (s: { address: Address }) => () => erc20Balance(ROBINHOOD_CHAIN_ID, USDG, s.address);
 
 /** Takes Pecun's fee from a USDG amount on Robinhood Chain; returns what's left. */
-async function takeUsdgFee(s: Signer, total: bigint, on: Progress): Promise<bigint> {
+export async function takeUsdgFee(s: Signer, total: bigint, on: Progress): Promise<bigint> {
   const fee = (total * BigInt(feeBps)) / BigInt(10_000);
   on("fee", fee > BigInt(0) ? "running" : "skipped");
   if (fee > BigInt(0) && !TREASURY) {
@@ -295,7 +295,7 @@ async function takeUsdgFee(s: Signer, total: bigint, on: Progress): Promise<bigi
 /* ---------------- Routes: always end in the vault's own asset ---------------- */
 
 /** USDC on each chain: the stepping stone when Relay has no direct route to a vault asset. */
-const USDC_ON: Record<number, Address> = {
+export const USDC_ON: Record<number, Address> = {
   1: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   42161: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
   10: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
@@ -307,7 +307,7 @@ const USDC_ON: Record<number, Address> = {
   747474: "0x203A662b0BD271A6ed5a60EdFbd04bFce608FD36",
 };
 
-const outOf = (q: RelayQuote) => {
+export const outOf = (q: RelayQuote) => {
   const out = BigInt(q.details?.currencyOut?.amount ?? "0");
   return { out, min: BigInt(q.details?.currencyOut?.minimumAmount ?? out.toString()), decimals: q.details?.currencyOut?.currency?.decimals ?? 6 };
 };
@@ -342,7 +342,7 @@ async function viaUsdcPlan(leg: RelayLeg, outSymbol: string): Promise<Plan | nul
  * Plans USDG → vault asset (or back), always ending in the vault's own asset. Quotes Relay's direct route and the
  * route through USDC on the vault's chain side by side, and picks whichever delivers more. `force` is for tests.
  */
-async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direct" | "via"): Promise<Plan> {
+export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direct" | "via"): Promise<Plan> {
   const [direct, via] = await Promise.allSettled([
     force === "via" ? Promise.reject(new ExecError("skipped")) : directPlan(leg, outSymbol),
     force === "direct" ? Promise.resolve(null) : viaUsdcPlan(leg, outSymbol),
@@ -353,7 +353,7 @@ async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direct" | "v
 }
 
 /** Runs a planned route: one Relay transfer, or bridge to USDC, wait for it, then swap what arrived. */
-async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
+export async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
   const { hops } = await planRoute(leg, "");
   if (hops.length === 1) return relay(s, leg);
   const [h1, h2] = hops;
@@ -365,7 +365,7 @@ async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
 }
 
 /** Brings funds back to USDG on Robinhood Chain, then takes Pecun's fee from what arrived. */
-async function backToUsdg(s: Signer, leg: Omit<RelayLeg, "to" | "outToken" | "recipient">, on: Progress): Promise<string> {
+export async function backToUsdg(s: Signer, leg: Omit<RelayLeg, "to" | "outToken" | "recipient">, on: Progress): Promise<string> {
   on("bridge", "running");
   const before = await usdgOf(s)();
   await runRoute(s, { ...leg, to: ROBINHOOD_CHAIN_ID, outToken: USDG, recipient: s.address });
@@ -375,12 +375,12 @@ async function backToUsdg(s: Signer, leg: Omit<RelayLeg, "to" | "outToken" | "re
   return `${formatUnits(kept, USDG_DECIMALS)} USDG`;
 }
 
-const IN_STEPS: Step[] = [
+export const IN_STEPS: Step[] = [
   { id: "fee", label: "Pecun fee" },
   { id: "bridge", label: "Move and swap funds" },
   { id: "deposit", label: "Deposit" },
 ];
-const OUT_STEPS: Step[] = [
+export const OUT_STEPS: Step[] = [
   { id: "withdraw", label: "Withdraw" },
   { id: "bridge", label: "Move funds back to your wallet" },
   { id: "fee", label: "Pecun fee" },
@@ -388,10 +388,10 @@ const OUT_STEPS: Step[] = [
 
 /* ---------------- EVM vaults: one adapter, a small protocol object per family ---------------- */
 
-type Call = { to: Address; data: Hex };
-type TokenMeta = { address: Address; decimals: number; symbol: string };
+export type Call = { to: Address; data: Hex };
+export type TokenMeta = { address: Address; decimals: number; symbol: string };
 /** What differs between EVM vault families. Amounts are in the underlying asset's smallest units. */
-type Proto = {
+export type Proto = {
   asset: () => Promise<TokenMeta>;
   position: (owner: Address) => Promise<bigint>;
   spender: () => Promise<Address>;
@@ -399,12 +399,12 @@ type Proto = {
   withdraw: (owner: Address, amount: bigint | "max") => Promise<Call>;
 };
 
-const MAX_UINT = BigInt(2) ** BigInt(256) - BigInt(1);
-const isAddr = (a?: string | null): a is Address => !!a && /^0x[0-9a-fA-F]{40}$/.test(a);
+export const MAX_UINT = BigInt(2) ** BigInt(256) - BigInt(1);
+export const isAddr = (a?: string | null): a is Address => !!a && /^0x[0-9a-fA-F]{40}$/.test(a);
 /** Robinhood Chain USDG: already the user's wallet token, so there is nothing to bridge or swap. */
-const isHomeUsdg = (chainId: number, token: string) => chainId === ROBINHOOD_CHAIN_ID && token.toLowerCase() === USDG.toLowerCase();
+export const isHomeUsdg = (chainId: number, token: string) => chainId === ROBINHOOD_CHAIN_ID && token.toLowerCase() === USDG.toLowerCase();
 
-async function tokenMeta(chainId: number, token: Address): Promise<TokenMeta> {
+export async function tokenMeta(chainId: number, token: Address): Promise<TokenMeta> {
   const c = chainClient(chainId);
   const [decimals, symbol] = await Promise.all([
     c.readContract({ address: token, abi: erc20Abi, functionName: "decimals" }),
@@ -414,15 +414,15 @@ async function tokenMeta(chainId: number, token: Address): Promise<TokenMeta> {
 }
 
 /** Caches a lazy async value, retrying after a failure. */
-function lazy<T>(f: () => Promise<T>): () => Promise<T> {
+export function lazy<T>(f: () => Promise<T>): () => Promise<T> {
   let p: Promise<T> | undefined;
   return () => (p ??= f().catch((e) => ((p = undefined), Promise.reject(e))));
 }
 
 const sameAmountPreview = (amount: string, symbol: string): Preview => ({ out: amount, outSymbol: symbol, minOut: amount, slippagePct: 0, impactPct: 0, feesUsd: 0, seconds: 0 });
-const netOfFee = (usdg: string) => parseUnits(usdg, USDG_DECIMALS) - (parseUnits(usdg, USDG_DECIMALS) * BigInt(feeBps)) / BigInt(10_000);
+export const netOfFee = (usdg: string) => parseUnits(usdg, USDG_DECIMALS) - (parseUnits(usdg, USDG_DECIMALS) * BigInt(feeBps)) / BigInt(10_000);
 
-function evmVault(chainId: number, proto: Proto, label: string): Adapter {
+export function evmVault(chainId: number, proto: Proto, label: string): Adapter {
   const asset = lazy(proto.asset);
   const home = async () => isHomeUsdg(chainId, (await asset()).address);
   return {
@@ -504,7 +504,7 @@ const VAULT_ABI = parseAbi([
   "function withdraw(uint256 assets, address receiver, address owner) returns (uint256)",
 ]);
 
-function erc4626(chainId: number, vault: Address): Proto {
+export function erc4626(chainId: number, vault: Address): Proto {
   const c = () => chainClient(chainId);
   const shares = (owner: Address) => c().readContract({ address: vault, abi: VAULT_ABI, functionName: "balanceOf", args: [owner] });
   return {
@@ -532,7 +532,7 @@ const YEARN_V2_ABI = parseAbi([
   "function withdraw(uint256 maxShares, address recipient) returns (uint256)",
 ]);
 
-function yearn(chainId: number, vault: Address): Proto {
+export function yearn(chainId: number, vault: Address): Proto {
   const c = () => chainClient(chainId);
   const v3 = erc4626(chainId, vault);
   const isV3 = lazy(() => c().readContract({ address: vault, abi: VAULT_ABI, functionName: "asset" }).then(() => true, () => false));
@@ -572,7 +572,7 @@ const AAVE_POOL_ABI = parseAbi([
 ]);
 const ATOKEN_ABI = parseAbi(["function POOL() view returns (address)", "function UNDERLYING_ASSET_ADDRESS() view returns (address)"]);
 
-function aaveStyle(chainId: number, pool: () => Promise<Address>, underlying: () => Promise<Address>): Proto {
+export function aaveStyle(chainId: number, pool: () => Promise<Address>, underlying: () => Promise<Address>): Proto {
   const aToken = lazy(async () => (await chainClient(chainId).readContract({ address: await pool(), abi: AAVE_POOL_ABI, functionName: "getReserveData", args: [await underlying()] })).aTokenAddress);
   return {
     asset: async () => tokenMeta(chainId, await underlying()),
@@ -593,7 +593,7 @@ const AAVE_V4_ABI = parseAbi([
   "function withdraw(uint256 reserveId, uint256 amount, address onBehalfOf) returns (uint256, uint256)",
 ]);
 
-function aaveV4(chainId: number, spoke: Address, reserveId: bigint, underlying: Address): Proto {
+export function aaveV4(chainId: number, spoke: Address, reserveId: bigint, underlying: Address): Proto {
   const supplied = (owner: Address) => chainClient(chainId).readContract({ address: spoke, abi: AAVE_V4_ABI, functionName: "getUserSuppliedAssets", args: [reserveId, owner] });
   return {
     asset: () => tokenMeta(chainId, underlying),
@@ -615,7 +615,7 @@ const COMET_ABI = parseAbi([
   "function withdraw(address asset, uint256 amount)",
 ]);
 
-function comet(chainId: number, market: Address): Proto {
+export function comet(chainId: number, market: Address): Proto {
   const base = lazy(() => chainClient(chainId).readContract({ address: market, abi: COMET_ABI, functionName: "baseToken" }));
   return {
     asset: async () => tokenMeta(chainId, await base()),
@@ -636,7 +636,7 @@ const CTOKEN_ABI = parseAbi([
   "function redeemUnderlying(uint256 redeemAmount) returns (uint256)",
 ]);
 
-function compoundV2(chainId: number, cToken: Address): Proto {
+export function compoundV2(chainId: number, cToken: Address): Proto {
   const c = () => chainClient(chainId);
   const bal = (owner: Address) => c().readContract({ address: cToken, abi: CTOKEN_ABI, functionName: "balanceOf", args: [owner] });
   return {
@@ -656,7 +656,7 @@ function compoundV2(chainId: number, cToken: Address): Proto {
 
 /* Morpho markets: supply directly to one isolated market on Morpho's core contract. */
 /** Morpho's core contract per chain (from Morpho's own API). */
-const MORPHO_BLUE: Record<number, Address> = {
+export const MORPHO_BLUE: Record<number, Address> = {
   1: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
   8453: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
   42161: "0x6c247b1F6182318877311737BaC0844bAa518F5e",
@@ -679,7 +679,7 @@ const MORPHO_ABI = parseAbi([
   "function withdraw((address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) returns (uint256, uint256)",
 ]);
 
-function morphoMarket(chainId: number, id: Hex): Proto {
+export function morphoMarket(chainId: number, id: Hex): Proto {
   const morpho = MORPHO_BLUE[chainId];
   const c = () => chainClient(chainId);
   const params = lazy(async () => {
@@ -707,7 +707,7 @@ function morphoMarket(chainId: number, id: Hex): Proto {
 }
 
 /* EVM tokens where holding the token IS the position (liquid staking, sUSDe): bought and sold through Relay. */
-function evmToken(chainId: number, token: Address, symbol: string): Adapter {
+export function evmToken(chainId: number, token: Address, symbol: string): Adapter {
   const meta = lazy(() => tokenMeta(chainId, token));
   return {
     positionSymbol: symbol,
@@ -745,9 +745,9 @@ function evmToken(chainId: number, token: Address, symbol: string): Adapter {
 const HL = "https://api.hyperliquid.xyz";
 export const HYPERLIQUID_CHAIN_ID = 1337; // Relay's id for Hyperliquid
 /** USDC in the user's Hyperliquid perps account, as Relay names it (8 decimals there). */
-const HL_USDC = "0x00000000000000000000000000000000";
+export const HL_USDC = "0x00000000000000000000000000000000";
 
-const hlInfo = async <T,>(body: object): Promise<T> => {
+export const hlInfo = async <T,>(body: object): Promise<T> => {
   const res = await fetch(`${HL}/info`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   if (!res.ok) throw new ExecError(`Hyperliquid didn't answer (${res.status}).`);
   return res.json() as Promise<T>;
@@ -764,13 +764,13 @@ const hlVault = (vault: Address, user: Address) => hlInfo<HlVault>({ type: "vaul
 
 const splitSig = (sig: Hex) => ({ r: `0x${sig.slice(2, 66)}`, s: `0x${sig.slice(66, 130)}`, v: parseInt(sig.slice(130, 132), 16) });
 
-async function signDigest(s: Signer, digest: Hex): Promise<Hex> {
+export async function signDigest(s: Signer, digest: Hex): Promise<Hex> {
   const r = await s.signEvmDigest(digest);
   if (!r.ok) throw new ExecError(r.error);
   return r.signature;
 }
 
-async function hlExchange(body: object) {
+export async function hlExchange(body: object) {
   const res = await fetch(`${HL}/exchange`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const j = (await res.json().catch(() => ({}))) as { status?: string; response?: unknown };
   if (j.status !== "ok") throw new ExecError(`Hyperliquid refused it: ${typeof j.response === "string" ? j.response : JSON.stringify(j.response ?? j)}`.slice(0, 220));
@@ -991,13 +991,13 @@ function jupiterLend(jlToken: string, assetSymbol: string): Adapter {
 /* ---------------- Sui: LI.FI legs (Base USDC <-> Sui, via Mayan) ---------------- */
 
 const LIFI = "https://li.quest/v1";
-const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address;
+export const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address;
 /** Gas a Sui transaction may use (MIST). The gas tank tops up when the user has less. */
-const SUI_GAS = BigInt(20_000_000); // 0.02 SUI
+export const SUI_GAS = BigInt(20_000_000); // 0.02 SUI
 
-type LifiLeg = { fromChain: number; toChain: number; fromToken: string; toToken: string; amount: bigint; from: string; to: string };
+export type LifiLeg = { fromChain: number; toChain: number; fromToken: string; toToken: string; amount: bigint; from: string; to: string };
 type LifiFee = { amountUSD?: string; included?: boolean };
-type LifiRoute = {
+export type LifiRoute = {
   toAmount: string;
   toAmountMin: string;
   fromAmountUSD?: string;
@@ -1007,7 +1007,7 @@ type LifiRoute = {
 };
 
 /** Best route (price only; nothing is built), so previews work before the user has gas on the far side. */
-async function lifiRoute(p: LifiLeg): Promise<LifiRoute> {
+export async function lifiRoute(p: LifiLeg): Promise<LifiRoute> {
   const res = await fetch(`${LIFI}/advanced/routes`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -1027,10 +1027,10 @@ async function lifiRoute(p: LifiLeg): Promise<LifiRoute> {
   return j.routes[0];
 }
 
-type LifiQuote = { transactionRequest: { to?: Address; data: string; value?: string }; estimate: { approvalAddress?: Address; toAmount: string } };
+export type LifiQuote = { transactionRequest: { to?: Address; data: string; value?: string }; estimate: { approvalAddress?: Address; toAmount: string } };
 
 /** A ready-to-sign transaction for one leg (EVM call data, or base64 Sui transaction bytes). */
-async function lifiQuote(p: LifiLeg): Promise<LifiQuote> {
+export async function lifiQuote(p: LifiLeg): Promise<LifiQuote> {
   const q = new URLSearchParams({
     fromChain: String(p.fromChain),
     toChain: String(p.toChain),
@@ -1047,7 +1047,7 @@ async function lifiQuote(p: LifiLeg): Promise<LifiQuote> {
 }
 
 /** LI.FI's view of a transfer: a message if it failed or was refunded, else null. */
-const lifiFailed = (txHash: string, fromChain: number, toChain: number) => async () => {
+export const lifiFailed = (txHash: string, fromChain: number, toChain: number) => async () => {
   const st = (await fetch(`${LIFI}/status?${new URLSearchParams({ txHash, fromChain: String(fromChain), toChain: String(toChain) })}`).then((r) => r.json())) as {
     status?: string;
     substatus?: string;
@@ -1060,7 +1060,7 @@ const lifiFailed = (txHash: string, fromChain: number, toChain: number) => async
 const usd = (fees?: LifiFee[], onlyIncluded = false) => (fees ?? []).filter((f) => !onlyIncluded || f.included).reduce((t, f) => t + (Number(f.amountUSD) || 0), 0);
 
 /** Merges two back-to-back legs (Relay then LI.FI, or LI.FI then Relay) into one preview. */
-function chainPreview(first: Preview, firstOut: bigint, firstMin: bigint, second: Preview, secondOutRaw: bigint, secondMinRaw: bigint, decimals: number): Preview {
+export function chainPreview(first: Preview, firstOut: bigint, firstMin: bigint, second: Preview, secondOutRaw: bigint, secondMinRaw: bigint, decimals: number): Preview {
   // The second leg's minimum, scaled by how much the first leg could fall short.
   const min = firstOut > BigInt(0) ? (secondMinRaw * firstMin) / firstOut : secondMinRaw;
   return {
@@ -1074,7 +1074,7 @@ function chainPreview(first: Preview, firstOut: bigint, firstMin: bigint, second
   };
 }
 
-function lifiPreview(r: LifiRoute): Preview {
+export function lifiPreview(r: LifiRoute): Preview {
   const fromUsd = Number(r.fromAmountUSD) || 0;
   const toUsd = Number(r.toAmountUSD) || 0;
   const included = r.steps.reduce((t, st) => t + usd(st.estimate.feeCosts, true), 0);
@@ -1089,13 +1089,13 @@ function lifiPreview(r: LifiRoute): Preview {
   };
 }
 
-const needSui = (s: { suiAddress?: string }) => {
+export const needSui = (s: { suiAddress?: string }) => {
   if (!s.suiAddress) throw new ExecError("Your Sui account is still being set up. Try again in a moment.");
   return s.suiAddress;
 };
 
 /** Signs and runs a Sui transaction with the user's session, after the gas tank covers `spendSui` plus gas. */
-async function sendSui(s: Signer, tx: () => Promise<SuiTx | string> | SuiTx | string, spendSui = BigInt(0)): Promise<string> {
+export async function sendSui(s: Signer, tx: () => Promise<SuiTx | string> | SuiTx | string, spendSui = BigInt(0)): Promise<string> {
   const me = needSui(s);
   await ensureGas(s, SUI_CHAIN_ID, me, SUI_GAS + spendSui, await suiBalance(me));
   const r = await s.sendSuiTransaction(await tx());
@@ -1115,7 +1115,7 @@ const SCALLOP_FALLBACK = {
 };
 /** Scallop assets with no swap route from USDC on Sui right now. */
 const SUI_NO_ROUTE = new Set(["wAPT"]);
-const SUI_USDC = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
+export const SUI_USDC = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
 
 let scallopCore: Promise<typeof SCALLOP_FALLBACK> | null = null;
 const scallopObjects = () =>
@@ -1143,19 +1143,19 @@ async function scallopPool(coinType: string): Promise<ScallopPool> {
 
 /* Shared Sui route: USDG → USDC (Relay) → USDC on Sui (LI.FI/Mayan) → swap into the asset on Sui (LI.FI), and back. */
 
-const isSuiCoin = (t: string) => t === SUI_TYPE || t === "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
+export const isSuiCoin = (t: string) => t === SUI_TYPE || t === "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
 const lifiSuiType = (t: string) => (isSuiCoin(t) ? SUI_TYPE : t);
 /** Scales a later leg's minimum by how far the earlier legs could fall short. */
-const scaledMin = (min: bigint, prevOut: bigint, prevMin: bigint) => (prevOut > BigInt(0) ? (min * prevMin) / prevOut : min);
+export const scaledMin = (min: bigint, prevOut: bigint, prevMin: bigint) => (prevOut > BigInt(0) ? (min * prevMin) / prevOut : min);
 
-const suiInSteps = (coinType: string, symbol: string, depositLabel?: string): Step[] => [
+export const suiInSteps = (coinType: string, symbol: string, depositLabel?: string): Step[] => [
   IN_STEPS[0],
   { id: "bridge", label: "Move funds" },
   { id: "sui", label: "Move funds onward" },
   ...(coinType === SUI_USDC ? [] : [{ id: "swap", label: `Swap into ${symbol}` }]),
   ...(depositLabel ? [{ id: "deposit", label: depositLabel }] : []),
 ];
-const suiOutSteps = (coinType: string, symbol: string, withdrawLabel?: string): Step[] => [
+export const suiOutSteps = (coinType: string, symbol: string, withdrawLabel?: string): Step[] => [
   ...(withdrawLabel ? [{ id: "withdraw", label: withdrawLabel }] : []),
   ...(coinType === SUI_USDC ? [] : [{ id: "swap", label: `Swap ${symbol} to USDC` }]),
   { id: "sui", label: "Move funds onward" },
@@ -1163,7 +1163,7 @@ const suiOutSteps = (coinType: string, symbol: string, withdrawLabel?: string): 
   OUT_STEPS[2],
 ];
 
-async function previewToSui(s: Who, usdg: string, coinType: string): Promise<Preview> {
+export async function previewToSui(s: Who, usdg: string, coinType: string): Promise<Preview> {
   const sui = needSui(s);
   const rq = await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: netOfFee(usdg), user: s.address, recipient: s.address });
   const o1 = outOf(rq);
@@ -1175,7 +1175,7 @@ async function previewToSui(s: Who, usdg: string, coinType: string): Promise<Pre
   return chainPreview(p12, BigInt(r1.toAmount), min12, lifiPreview(r2), BigInt(r2.toAmount), BigInt(r2.toAmountMin), r2.toToken.decimals);
 }
 
-async function previewFromSui(s: Who, coinType: string, raw: bigint): Promise<Preview> {
+export async function previewFromSui(s: Who, coinType: string, raw: bigint): Promise<Preview> {
   const sui = needSui(s);
   let usdc = raw;
   let usdcMin = raw;
@@ -1195,7 +1195,7 @@ async function previewFromSui(s: Who, coinType: string, raw: bigint): Promise<Pr
 }
 
 /** Runs the fee + route into `coinType` on Sui; returns how much of it arrived. */
-async function toSui(s: Signer, usdg: string, coinType: string, decimals: number, symbol: string, on: Progress): Promise<bigint> {
+export async function toSui(s: Signer, usdg: string, coinType: string, decimals: number, symbol: string, on: Progress): Promise<bigint> {
   const sui = needSui(s);
   const usdcOnBase = () => erc20Balance(BASE_CHAIN_ID, BASE_USDC, s.address);
   const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
@@ -1229,7 +1229,7 @@ async function toSui(s: Signer, usdg: string, coinType: string, decimals: number
 }
 
 /** Runs the route from `raw` of `coinType` on Sui back to USDG, then takes the fee. */
-async function fromSui(s: Signer, coinType: string, raw: bigint, on: Progress): Promise<string> {
+export async function fromSui(s: Signer, coinType: string, raw: bigint, on: Progress): Promise<string> {
   const sui = needSui(s);
   const readUsdc = () => suiBalance(sui, SUI_USDC);
   let usdcSui = raw;
@@ -1345,7 +1345,7 @@ function scallop(coinType: string, symbol: string): Adapter {
 
 /* ---------------- which vaults get one-click ---------------- */
 
-type Opp = { chain: string; protocol: string; asset: string; name?: string; kind?: string; ticker?: string; address?: string | null; id: string; ref?: { source: string; id: string } | null };
+export type Opp = { chain: string; protocol: string; asset: string; name?: string; kind?: string; ticker?: string; address?: string | null; id: string; ref?: { source: string; id: string } | null };
 
 /** Standard ERC-4626 vaults (deposit / withdraw / redeem). */
 const VAULT_PROTOCOLS = new Set(["Euler", "Fluid", "Gearbox", "Silo", "Sky"]);
@@ -1353,8 +1353,22 @@ const VAULT_PROTOCOLS = new Set(["Euler", "Fluid", "Gearbox", "Silo", "Sky"]);
 const TOKEN_PROTOCOLS = new Set(["ether.fi", "Rocket Pool", "Kinetiq", "Ethena"]);
 const SPARK_POOL: Record<number, Address> = { 1: "0xC13e21B648A5Ee794902342038FF3aDAB66BE987" };
 
+/** Adapters are built once per vault, since the panel and the page both ask. */
+const cache = new Map<string, Adapter | null>();
+
+/** Adapter factories registered by protocol modules (src/lib/exec/*). Each returns null for vaults it doesn't own. */
+const factories: ((o: Opp) => Adapter | null)[] = [];
+export function registerAdapters(f: (o: Opp) => Adapter | null) {
+  factories.push(f);
+  cache.clear();
+}
+
 /** The one-click adapter for a vault, or null when it isn't supported yet. */
 export function adapterFor(o: Opp): Adapter | null {
+  for (const f of factories) {
+    const a = f(o);
+    if (a) return a;
+  }
   const a = o.address ?? undefined;
   const evm = chainIdByName(o.chain);
   if (evm) {
@@ -1416,8 +1430,6 @@ export function adapterFor(o: Opp): Adapter | null {
   return null;
 }
 
-/** Adapters are built once per vault, since the panel and the page both ask. */
-const cache = new Map<string, Adapter | null>();
 export function oneClickFor(o: Opp): Adapter | null {
   if (!cache.has(o.id)) cache.set(o.id, adapterFor(o));
   return cache.get(o.id)!;

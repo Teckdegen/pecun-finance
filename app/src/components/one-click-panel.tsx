@@ -2,7 +2,7 @@
 
 import { Check, Loader2, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { feeBps, oneClickFor, type Preview, type StepStatus } from "@/lib/execute";
+import { feeBps, oneClickFor, type Preview, type StepStatus } from "@/lib/exec";
 import type { Opportunity } from "@/lib/types";
 import { getBalances } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
