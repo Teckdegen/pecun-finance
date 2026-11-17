@@ -128,7 +128,6 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
               </div>
             </div>
             {n > max && <p className="mt-2 text-xs text-red-300">That&apos;s more than you have.</p>}
-            {n > 0 && n <= max && <QuoteView q={shown} />}
             <button
               type="button"
               onClick={() => void go()}
@@ -137,9 +136,9 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
             >
               {!n ? "Enter an amount" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDG` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
             </button>
+            {n > 0 && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDG" : symbol} />}
             <p className="mt-3 text-xs leading-relaxed text-muted">
-              One click: {side === "add" ? "swaps your USDG and deposits it" : "withdraws and returns USDG to your wallet"}. Network fees are covered by Pecun
-              {feeBps ? `; Pecun's fee is ${(feeBps / 100).toFixed(2)}%` : ""}.
+              One click: {side === "add" ? `swaps your USDG into ${symbol} and deposits it` : "withdraws and returns USDG to your wallet"}. Network fees are covered by Pecun.
               {!live && " Demo mode: connect Turnkey to run it for real."}
             </p>
           </>
@@ -149,33 +148,65 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
   );
 }
 
-function QuoteView({ q }: { q: { p?: Preview; error?: string } | null }) {
+/**
+ * What the user gets, before pressing anything: the platform fee (taken in USDG on Robinhood Chain and sent straight
+ * to Pecun's fee wallet), bridge and swap fees, price impact and slippage, then the amount received.
+ */
+function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: string } | null; side: "add" | "withdraw"; amount: number; inSymbol: string }) {
   if (!q)
     return (
       <p className="mt-3 flex items-center gap-2 text-xs text-muted">
-        <Loader2 className="size-3.5 animate-spin" /> Getting the best route…
+        <Loader2 className="size-3.5 animate-spin" /> Finding the best route…
       </p>
     );
   if (q.error || !q.p) return <p className="mt-3 break-words text-xs text-red-300">{q.error ?? "No route right now."}</p>;
   const p = q.p;
-  const fmt = (v: string) => Number(v).toLocaleString("en-US", { maximumFractionDigits: Number(v) < 1 ? 6 : 4 });
-  const rows: [string, string][] = [
-    ["You get (expected)", `${fmt(p.out)} ${p.outSymbol}`],
-    ["Minimum after slippage", `${fmt(p.minOut)} ${p.outSymbol}`],
-    ["Max slippage", `${p.slippagePct.toFixed(2)}%`],
+  const fmt = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: v !== 0 && Math.abs(v) < 1 ? 6 : 4 });
+  const pct = feeBps / 100;
+  const out = Number(p.out);
+  const min = Number(p.minOut);
+  // Deposit: the fee comes off the USDG before routing. Withdraw: it comes off the USDG that arrives back.
+  const fee = side === "add" ? (amount * feeBps) / 10_000 : (out * feeBps) / 10_000;
+  const receive = side === "add" ? out : out - fee;
+  const receiveMin = side === "add" ? min : min - (min * feeBps) / 10_000;
+  const feeRow: [string, string] = [`Platform fee (${pct}%)`, `−${fmt(fee)} USDG`];
+  const route: [string, string][] = [
+    ["Bridge & swap fees", `≈ $${p.feesUsd.toFixed(2)}`],
     ["Price impact", `${p.impactPct.toFixed(2)}%`],
-    ["Route fees", `$${p.feesUsd.toFixed(2)}`],
+    ["Max slippage", `${p.slippagePct.toFixed(2)}%`],
     ["Time", p.seconds ? `~${p.seconds < 60 ? `${p.seconds}s` : `${Math.round(p.seconds / 60)} min`}` : "Under a minute"],
   ];
+  const rows: [string, string][] = [
+    [side === "add" ? "You pay" : "You withdraw", `${fmt(amount)} ${inSymbol}`],
+    ...(side === "add" && feeBps ? [feeRow] : []),
+    ...route,
+    ...(side === "withdraw" && feeBps ? [feeRow] : []),
+  ];
   return (
-    <dl className="mt-3 space-y-1.5 rounded-xl border border-line px-3 py-2.5 text-xs">
-      {rows.map(([k, v]) => (
-        <div key={k} className="flex justify-between gap-3">
-          <dt className="text-muted">{k}</dt>
-          <dd className={k === "Price impact" && p.impactPct < -1 ? "text-red-300" : "text-ink"}>{v}</dd>
+    <div className="mt-3 rounded-xl border border-line px-3 py-2.5 text-xs">
+      <dl className="space-y-1.5">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-3">
+            <dt className="text-muted">{k}</dt>
+            <dd className={k === "Price impact" && p.impactPct < -1 ? "text-red-300" : "text-ink"}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="mt-2 space-y-1.5 border-t border-line pt-2">
+        <div className="flex justify-between gap-3 text-[13px]">
+          <span className="text-muted">You receive</span>
+          <span className="font-medium text-accent">
+            {fmt(receive)} {p.outSymbol}
+          </span>
         </div>
-      ))}
-    </dl>
+        <div className="flex justify-between gap-3">
+          <span className="text-muted">Minimum after slippage</span>
+          <span className="text-ink">
+            {fmt(receiveMin)} {p.outSymbol}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 
