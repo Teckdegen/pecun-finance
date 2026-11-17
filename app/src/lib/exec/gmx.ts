@@ -25,7 +25,11 @@ import {
   type Preview,
   type Progress,
   type Signer,
+  legSlippageBpsNow,
 } from "../execute";
+
+/** This run's per-leg slippage tolerance in bps (set from the 0.5% route budget). */
+const slipBps = () => BigInt(legSlippageBpsNow());
 
 /**
  * GMX v2 liquidity: GM pools and GLV vaults on Arbitrum and Avalanche.
@@ -89,7 +93,6 @@ const ZERO = BigInt(0);
 const ONE_E18 = BigInt(10) ** BigInt(18);
 const ONE_E30 = BigInt(10) ** BigInt(30);
 /** Minimum-out tolerance on the GMX leg (keeper executes at a later oracle price). */
-const GMX_SLIPPAGE_BPS = BigInt(100); // 1%
 /** Execution fee headroom over the current gas price; GMX refunds what the keeper doesn't use. */
 const FEE_BUFFER_PCT = BigInt(120);
 /** Payout legs worth less than this stay in the wallet: too small to bridge. */
@@ -656,7 +659,7 @@ async function withdrawalPlan(chainId: number, m: MarketProps, long: bigint, sho
       ],
       fee: await fee(0),
       swapped: false,
-      tx: build(minus(long, GMX_SLIPPAGE_BPS), minus(short, GMX_SLIPPAGE_BPS), false),
+      tx: build(minus(long, slipBps()), minus(short, slipBps()), false),
     };
   }
   const [pl, ps] = await Promise.all([priceOf(chainId, m.longToken), priceOf(chainId, m.shortToken)]);
@@ -666,7 +669,7 @@ async function withdrawalPlan(chainId: number, m: MarketProps, long: bigint, sho
     outs: [{ token: m.shortToken, amount: short + asShort }],
     fee: await fee(1),
     swapped: true,
-    tx: build(minus(asShort, GMX_SLIPPAGE_BPS), minus(short, GMX_SLIPPAGE_BPS), true),
+    tx: build(minus(asShort, slipBps()), minus(short, slipBps()), true),
   };
 }
 
@@ -773,8 +776,8 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       return {
         out: valueUsd.toFixed(2),
         outSymbol: positionSymbol,
-        minOut: ((valueUsd * ratio * Number(BigInt(10_000) - GMX_SLIPPAGE_BPS)) / 10_000).toFixed(2),
-        slippagePct: plan.preview.slippagePct + Number(GMX_SLIPPAGE_BPS) / 100,
+        minOut: ((valueUsd * ratio * Number(BigInt(10_000) - slipBps())) / 10_000).toFixed(2),
+        slippagePct: plan.preview.slippagePct + Number(slipBps()) / 100,
         impactPct: plan.preview.impactPct + (inUsd > 0 ? (valueUsd / inUsd - 1) * 100 : 0),
         feesUsd: plan.preview.feesUsd + (await nativeUsd(chainId, d.fee)),
         seconds: plan.preview.seconds + 30,
@@ -796,8 +799,8 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       const p: Preview = {
         out: formatUnits(out, USDG_DECIMALS),
         outSymbol: "USDG",
-        minOut: formatUnits(minus(min, GMX_SLIPPAGE_BPS), USDG_DECIMALS),
-        slippagePct: Math.max(...plans.map((x) => x.preview.slippagePct)) + Number(GMX_SLIPPAGE_BPS) / 100,
+        minOut: formatUnits(minus(min, slipBps()), USDG_DECIMALS),
+        slippagePct: Math.max(...plans.map((x) => x.preview.slippagePct)) + Number(slipBps()) / 100,
         impactPct: plans.reduce((t, x, i) => t + x.preview.impactPct * weight(i), 0) + (req > 0 ? (legsUsd / req - 1) * 100 : 0),
         feesUsd: plans.reduce((t, x) => t + x.preview.feesUsd, 0) + (await nativeUsd(chainId, w.fee)),
         seconds: Math.max(...plans.map((x) => x.preview.seconds)) + 30,
@@ -830,7 +833,7 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       await fundRequest(s, chainId, d.fee);
       if (allowance < received) await sendEvm(s, chainId, { to: token, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [n.router, received] }) });
       const [held, pending] = await Promise.all([balance(s.address), pendingCount(chainId, pool.lists.deposit, s.address)]);
-      await sendEvm(s, chainId, d.tx(s.address, minus(d.out, GMX_SLIPPAGE_BPS)));
+      await sendEvm(s, chainId, d.tx(s.address, minus(d.out, slipBps())));
       on("deposit", "done", `${formatUnits(received, t.decimals)} ${t.symbol}`);
 
       on("keeper", "running");

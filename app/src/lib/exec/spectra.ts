@@ -18,9 +18,13 @@ import {
   tokenMeta,
   type Adapter,
   type Who,
+  legSlippageBpsNow,
 } from "../execute";
 import { USDG_DECIMALS } from "../wallet";
 import { approveIfNeeded, fmt, previewIn, previewOut, runIn, runOut, stepPreview } from "./pt-route";
+
+/** This run's per-leg slippage tolerance in bps (set from the 0.5% route budget). */
+const slipBps = () => BigInt(legSlippageBpsNow());
 
 /**
  * Spectra fixed yield. Catalog id `spectra:<chainId>:<pool>`, `address` = the principal token (PT).
@@ -34,7 +38,6 @@ import { approveIfNeeded, fmt, previewIn, previewOut, runIn, runOut, stepPreview
  * route goes Relay -> USDC on Base -> LI.FI/Stargate -> FXRP / WFLR).
  */
 
-const SLIPPAGE_BPS = BigInt(50); // 0.5% on the pool swap
 const BPS = BigInt(10_000);
 const IBT_I = BigInt(0);
 const PT_I = BigInt(1);
@@ -76,7 +79,7 @@ function spectraPt(chainId: number, pool: Address, pt: Address, label: string): 
   const matured = async () => Date.now() / 1000 >= (await info()).maturity;
   const held = (owner: Address) => erc20Balance(chainId, pt, owner);
   const dy = (i: bigint, j: bigint, dx: bigint) => c().readContract({ address: pool, abi: POOL_ABI, functionName: "get_dy", args: [i, j, dx] });
-  const minOf = (v: bigint) => (v * (BPS - SLIPPAGE_BPS)) / BPS;
+  const minOf = (v: bigint) => (v * (BPS - slipBps())) / BPS;
   /** Price impact of a pool swap: the quote vs. the same trade at the rate of a 1/1000 slice. */
   const impact = async (i: bigint, j: bigint, dx: bigint, out: bigint) => {
     const slice = dx / BigInt(1000);
@@ -116,7 +119,7 @@ function spectraPt(chainId: number, pool: Address, pt: Address, label: string): 
       const m = await info();
       const r = await previewIn(s, chainId, m.und.address, m.und.decimals, m.und.symbol, netOfFee(usdg));
       const q = await quoteBuy(r.out);
-      const step = stepPreview(q.out, minOf(q.out), m.decimals, label, Number(SLIPPAGE_BPS) / 100, q.impactPct);
+      const step = stepPreview(q.out, minOf(q.out), m.decimals, label, Number(slipBps()) / 100, q.impactPct);
       return chainPreview(r.preview, r.out, r.min, step, q.out, minOf(q.out), m.decimals);
     },
 
@@ -125,7 +128,7 @@ function spectraPt(chainId: number, pool: Address, pt: Address, label: string): 
       const q = await quoteSell(parseUnits(amount, m.decimals));
       const min = q.slip ? minOf(q.out) : q.out;
       const r = await previewOut(s, chainId, m.und.address, q.out);
-      const step = stepPreview(q.out, min, m.und.decimals, m.und.symbol, q.slip ? Number(SLIPPAGE_BPS) / 100 : 0, q.impactPct);
+      const step = stepPreview(q.out, min, m.und.decimals, m.und.symbol, q.slip ? Number(slipBps()) / 100 : 0, q.impactPct);
       return chainPreview(step, q.out, min, r.preview, r.out, r.min, USDG_DECIMALS);
     },
 

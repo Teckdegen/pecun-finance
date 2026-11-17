@@ -28,6 +28,7 @@ import {
   type Progress,
   type Signer,
   type Who,
+  legSlippageBpsNow,
 } from "../execute";
 import { lamports, SOLANA_CHAIN_ID, solana, splBalance, splDecimals } from "../solana";
 import { ROBINHOOD_CHAIN_ID, USDG, USDG_DECIMALS } from "../wallet";
@@ -190,7 +191,7 @@ export async function spendableSol(owner: string, want: bigint, keep: bigint = S
 const JUP_SWAP = "https://lite-api.jup.ag/swap/v1";
 export type JupQuote = { inAmount: string; outAmount: string; otherAmountThreshold: string; priceImpactPct?: string; slippageBps?: number; swapMode?: string };
 
-export async function jupQuote(inMint: string, outMint: string, amount: bigint, exactOut = false, slippageBps = 50): Promise<JupQuote> {
+export async function jupQuote(inMint: string, outMint: string, amount: bigint, exactOut = false, slippageBps = legSlippageBpsNow()): Promise<JupQuote> {
   const q = new URLSearchParams({ inputMint: inMint, outputMint: outMint, amount: amount.toString(), slippageBps: String(slippageBps), restrictIntermediateTokens: "true" });
   if (exactOut) q.set("swapMode", "ExactOut");
   const res = await fetch(`${JUP_SWAP}/quote?${q}`);

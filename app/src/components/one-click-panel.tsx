@@ -2,7 +2,7 @@
 
 import { Check, Clock, Loader2, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { feeBps, oneClickFor, type Preview, type QueueState, type StepStatus } from "@/lib/exec";
+import { budgetLegs, feeBps, MAX_ROUTE_COST_PCT, oneClickFor, resetLegSlippage, routeCostPct, type Preview, type QueueState, type StepStatus } from "@/lib/exec";
 import { rememberPending, runningVaults } from "@/lib/pending-withdrawals";
 import type { Opportunity } from "@/lib/types";
 import { getBalances } from "@/lib/wallet";
@@ -53,7 +53,6 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
 
   const n = Number(amount) || 0;
   const max = side === "add" ? usdg ?? 0 : pos ?? 0;
-  const ok = n > 0 && n <= max;
 
   // Live quote, debounced while typing.
   const key = `${side}:${amount}`;
@@ -68,6 +67,10 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
     return () => clearTimeout(t);
   }, [key, n, side, amount, evmAddress, solanaAddress, suiAddress, adapter, run]);
   const shown = preview?.key === key ? preview : null;
+  // Only run on a fresh quote whose whole route costs at most MAX_ROUTE_COST_PCT.
+  const cost = shown?.p ? routeCostPct(shown.p) : null;
+  const tooCostly = cost !== null && cost > MAX_ROUTE_COST_PCT;
+  const ok = n > 0 && n <= max && !!shown?.p && !tooCostly;
 
   const go = async () => {
     if (!evmAddress || !ok) return;
@@ -76,6 +79,8 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
       return;
     }
     runningVaults.add(o.id);
+    // Size every leg's slippage so even the worst fill keeps the whole route within the limit.
+    budgetLegs(shown!.p!);
     const template = side === "add" ? adapter.depositSteps : adapter.withdrawSteps;
     setRun({ side, steps: template.map((s) => ({ ...s, status: "pending" })) });
     const on = (id: string, status: StepStatus, detail?: string) =>
@@ -95,6 +100,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
       void load();
     } finally {
       runningVaults.delete(o.id);
+      resetLegSlippage();
     }
   };
 
@@ -156,7 +162,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
               disabled={!ok}
               className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-accent text-[15px] font-medium text-on-accent transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-muted"
             >
-              {!n ? "Enter an amount" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDG` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
+              {!n ? "Enter an amount" : tooCostly ? "Route costs too much right now" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDG` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
             </button>
             {n > 0 && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDG" : symbol} />}
             <p className="mt-3 text-xs leading-relaxed text-muted">
@@ -183,6 +189,13 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
     );
   if (q.error || !q.p) return <p className="mt-3 break-words text-xs text-red-300">{q.error ?? "No route right now."}</p>;
   const p = q.p;
+  if (routeCostPct(p) > MAX_ROUTE_COST_PCT)
+    return (
+      <p className="mt-3 rounded-xl border border-red-400/40 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-white/85">
+        Moving this amount would cost {routeCostPct(p).toFixed(2)}% in bridge and swap fees and price impact, above Pecun&apos;s {MAX_ROUTE_COST_PCT}% limit, so it won&apos;t run. Fixed
+        fees weigh less on larger amounts: try a bigger amount, or try again later.
+      </p>
+    );
   const fmt = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: v !== 0 && Math.abs(v) < 1 ? 6 : 4 });
   const pct = feeBps / 100;
   const out = Number(p.out);
@@ -190,12 +203,16 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
   // Deposit: the fee comes off the USDG before routing. Withdraw: it comes off the USDG that arrives back.
   const fee = side === "add" ? (amount * feeBps) / 10_000 : (out * feeBps) / 10_000;
   const receive = side === "add" ? out : out - fee;
-  const receiveMin = side === "add" ? min : min - (min * feeBps) / 10_000;
+  // Worst case Pecun lets through: the whole route never costs more than MAX_ROUTE_COST_PCT (legs are sized to it).
+  const floor = out * (1 - Math.max(0, MAX_ROUTE_COST_PCT - routeCostPct(p)) / 100);
+  const worst = Math.max(Math.min(min, out), floor);
+  const receiveMin = side === "add" ? worst : worst - (worst * feeBps) / 10_000;
   const feeRow: [string, string] = [`Platform fee (${pct}%)`, `−${fmt(fee)} USDG`];
+  const cost = routeCostPct(p);
   const route: [string, string][] = [
     ["Bridge & swap fees", `≈ $${p.feesUsd.toFixed(2)}`],
     ["Price impact", `${p.impactPct.toFixed(2)}%`],
-    ["Max slippage", `${p.slippagePct.toFixed(2)}%`],
+    ["Total route cost", `${cost.toFixed(2)}% (limit ${MAX_ROUTE_COST_PCT}%)`],
     ["Time", p.seconds ? `~${p.seconds < 60 ? `${p.seconds}s` : `${Math.round(p.seconds / 60)} min`}` : "Under a minute"],
   ];
   const rows: [string, string][] = [
@@ -222,7 +239,7 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
           </span>
         </div>
         <div className="flex justify-between gap-3">
-          <span className="text-muted">Minimum after slippage</span>
+          <span className="text-muted">Minimum (worst case)</span>
           <span className="text-ink">
             {fmt(receiveMin)} {p.outSymbol}
           </span>

@@ -21,9 +21,13 @@ import {
   type Preview,
   type TokenMeta,
   type Who,
+  legSlippageBpsNow,
 } from "../execute";
 import { USDG_DECIMALS } from "../wallet";
 import { approveIfNeeded, fmt, previewIn, previewOut, runIn, runOut, stepPreview } from "./pt-route";
+
+/** This run's per-leg slippage tolerance, as a fraction (set from the 0.5% route budget). */
+const slip = () => legSlippageBpsNow() / 10_000;
 
 /**
  * Pendle fixed yield (PT) and liquidity (LP) markets. Catalog ids: `pendle:<chainId>:<market>` (PT) and
@@ -35,7 +39,7 @@ import { approveIfNeeded, fmt, previewIn, previewOut, runIn, runOut, stepPreview
  */
 
 const PENDLE = "https://api-v2.pendle.finance/core";
-const SLIPPAGE = 0.005; // 0.5%
+
 
 /** Stablecoins to enter and leave through, per chain, in order of preference (on top of USDC_ON). */
 const EXTRA_STABLES: Record<number, Address[]> = {
@@ -62,7 +66,7 @@ type ConvertRes = { action?: string; requiredApprovals?: { token: Address; amoun
 async function convert(chainId: number, receiver: Address, tokenIn: Address, amountIn: bigint, tokenOut: Address) {
   const q = new URLSearchParams({
     receiver,
-    slippage: String(SLIPPAGE),
+    slippage: String(slip()),
     enableAggregator: "true",
     tokensIn: tokenIn,
     amountsIn: amountIn.toString(),
@@ -81,7 +85,7 @@ async function convert(chainId: number, receiver: Address, tokenIn: Address, amo
     tx: best.tx,
     approvals: j.requiredApprovals ?? [],
     out,
-    min: (out * BigInt(Math.round((1 - SLIPPAGE) * 10_000))) / BigInt(10_000),
+    min: (out * BigInt(Math.round((1 - slip()) * 10_000))) / BigInt(10_000),
     impactPct: -(best.data?.priceImpact ?? 0) * 100,
     feesUsd: best.data?.fee?.usd ?? 0,
   };
@@ -120,7 +124,7 @@ function pendleMarket(chainId: number, market: Address, lp: boolean, asset: stri
   const held = async (owner: Address) => erc20Balance(chainId, (await info()).token, owner);
 
   const pendleStep = (q: Awaited<ReturnType<typeof convert>>, decimals: number, symbol: string): Preview =>
-    stepPreview(q.out, q.min, decimals, symbol, SLIPPAGE * 100, q.impactPct, q.feesUsd);
+    stepPreview(q.out, q.min, decimals, symbol, slip() * 100, q.impactPct, q.feesUsd);
 
   return {
     positionSymbol: label,

@@ -25,6 +25,27 @@ const TREASURY = (process.env.NEXT_PUBLIC_PECUN_TREASURY ?? "") as Address | "";
 const FEE_BPS = Number(process.env.NEXT_PUBLIC_PECUN_FEE_BPS ?? "50") || 0; // 50 bps = 0.5%
 export const feeBps = FEE_BPS;
 
+/**
+ * Route cost limit. Bridges, swaps and their fees together (not Pecun's platform fee, not gas, which Pecun pays) may
+ * cost at most this much of what's moved. Quotes above it are refused before anything is sent, and each leg's slippage
+ * tolerance is sized so that even the worst fill stays inside it.
+ */
+export const MAX_ROUTE_COST_PCT = 0.5;
+/** Per-leg slippage tolerance (bps) for quotes and the run in progress; set from the route's remaining budget. */
+let legSlippageBps = 25;
+export const legSlippageBpsNow = () => legSlippageBps;
+export function setLegSlippageBps(bps: number) {
+  legSlippageBps = Math.max(3, Math.min(25, Math.floor(bps)));
+}
+/** Sizes each leg's tolerance so expected cost + every leg's worst case stays within MAX_ROUTE_COST_PCT. */
+export function budgetLegs(p: Preview) {
+  const legs = Math.max(1, p.legs ?? 2);
+  setLegSlippageBps(((MAX_ROUTE_COST_PCT - routeCostPct(p)) * 100) / legs);
+}
+export const resetLegSlippage = () => setLegSlippageBps(25);
+/** A quote's total route cost in %: from its own measure when it has one, else from its price impact. */
+export const routeCostPct = (p: Preview) => Math.max(0, p.costPct ?? -p.impactPct);
+
 /* ---------------- types ---------------- */
 
 /** What the executor needs from the signed-in user. */
@@ -53,6 +74,10 @@ export type Preview = {
   impactPct: number; // price impact (negative = costs you)
   feesUsd: number; // route fees (bridge, swap, relayer)
   seconds: number; // estimated time
+  /** Everything the route costs (bridge/swap fees + price impact), as % of what goes in. */
+  costPct?: number;
+  /** How many bridge/swap legs the route has. */
+  legs?: number;
 };
 
 export type Adapter = {
@@ -269,6 +294,7 @@ export async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
       destinationCurrency: p.outToken,
       amount: p.amount.toString(),
       tradeType: "EXACT_INPUT",
+      slippageTolerance: String(legSlippageBps),
     }),
   });
   const q = (await res.json()) as RelayQuote;
@@ -290,6 +316,9 @@ export function toPreview(q: RelayQuote, fallbackSymbol: string): Preview {
     impactPct: Number(q.details?.totalImpact?.percent) || 0,
     feesUsd: fees,
     seconds: q.details?.timeEstimate ?? 0,
+    // Relay's total impact is measured in USD out vs USD in, so it already includes its fees.
+    costPct: Math.max(0, -(Number(q.details?.totalImpact?.percent) || 0)),
+    legs: 1,
   };
 }
 
@@ -1184,7 +1213,7 @@ export async function lifiRoute(p: LifiLeg): Promise<LifiRoute> {
       fromAmount: p.amount.toString(),
       fromAddress: p.from,
       toAddress: p.to,
-      options: { order: "CHEAPEST", ...(p.slippage ? { slippage: p.slippage } : {}) },
+      options: { order: "CHEAPEST", slippage: p.slippage ?? legSlippageBps / 10_000 },
     }),
   });
   const j = (await res.json().catch(() => ({}))) as { routes?: LifiRoute[]; message?: string };
@@ -1204,7 +1233,7 @@ export async function lifiQuote(p: LifiLeg): Promise<LifiQuote> {
     fromAmount: p.amount.toString(),
     fromAddress: p.from,
     toAddress: p.to,
-    ...(p.slippage ? { slippage: String(p.slippage) } : {}),
+    slippage: String(p.slippage ?? legSlippageBps / 10_000),
   });
   const res = await fetch(`${LIFI}/quote?${q}`);
   const j = (await res.json().catch(() => ({}))) as Partial<LifiQuote> & { message?: string };
@@ -1237,6 +1266,8 @@ export function chainPreview(first: Preview, firstOut: bigint, firstMin: bigint,
     impactPct: first.impactPct + second.impactPct,
     feesUsd: first.feesUsd + second.feesUsd,
     seconds: first.seconds + second.seconds,
+    costPct: routeCostPct(first) + routeCostPct(second),
+    legs: (first.legs ?? 1) + (second.legs ?? 1),
   };
 }
 
@@ -1252,6 +1283,9 @@ export function lifiPreview(r: LifiRoute): Preview {
     impactPct: fromUsd ? ((toUsd + included) / fromUsd - 1) * 100 : 0,
     feesUsd: r.steps.reduce((t, st) => t + usd(st.estimate.feeCosts) + usd(st.estimate.gasCosts), 0),
     seconds: r.steps.reduce((t, st) => t + (st.estimate.executionDuration ?? 0), 0),
+    // USD out vs USD in: fees taken from the amount are already in it; gas is paid by Pecun's gas tank.
+    costPct: fromUsd ? Math.max(0, ((fromUsd - toUsd) / fromUsd) * 100) : undefined,
+    legs: 1,
   };
 }
 
@@ -1260,7 +1294,6 @@ export function lifiPreview(r: LifiRoute): Preview {
 /** Hubs between Relay and the far leg; both have deep native USDC and are reached by Relay, LI.FI and CCTP. */
 export const HUB_CHAINS = [BASE_CHAIN_ID, 42161];
 /** LI.FI applies 0.1% on some stablecoin paths, which leaves bridges like Stargate unquotable. */
-const HUB_SLIPPAGE = 0.005;
 
 const IRIS = "https://iris-api.circle.com/v2";
 const TOKEN_MESSENGER_V2 = "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d" as Address;
@@ -1304,8 +1337,8 @@ async function cctpFar(leg: LifiLeg): Promise<FarLeg> {
 }
 
 async function lifiFar(leg: LifiLeg): Promise<FarLeg> {
-  const r = await lifiRoute({ ...leg, slippage: HUB_SLIPPAGE });
-  return { via: "lifi", leg: { ...leg, slippage: HUB_SLIPPAGE }, out: BigInt(r.toAmount), min: BigInt(r.toAmountMin), decimals: r.toToken.decimals, preview: lifiPreview(r) };
+  const r = await lifiRoute(leg);
+  return { via: "lifi", leg, out: BigInt(r.toAmount), min: BigInt(r.toAmountMin), decimals: r.toToken.decimals, preview: lifiPreview(r) };
 }
 
 /** The far leg: LI.FI, or CCTP where both ends are native USDC; whichever delivers more. */
