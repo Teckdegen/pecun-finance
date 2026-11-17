@@ -5,7 +5,15 @@ import { avantis, etherfi, frax, gmx, hyperlend, jupiterJlp, kinetiq, resolv, ro
 import { gearbox, moonwell, suilend } from "./adapters/sdk.ts";
 import { delistedVaults, reconcile } from "./listing-state.ts";
 import { getLogoIndex, withLogos } from "./logos.ts";
+import routeCheck from "./route-check.json";
 import type { Catalog, Opportunity, SourceStatus } from "./types.ts";
+
+/**
+ * Vaults that passed the route check (scripts/check-routes.ts): one-click works and moving $100 in and back out costs
+ * at most Pecun's route-cost limit. Only these are listed. While the check hasn't produced results yet, nothing is
+ * filtered.
+ */
+const LISTABLE = new Set<string>(routeCheck.passed);
 
 const SOURCES: [string, () => Promise<Opportunity[]>][] = [
   ["Ember", ember],
@@ -156,10 +164,14 @@ export async function buildCatalog(): Promise<Catalog> {
   for (const d of delisted) if (!seen.has(d.id)) closed.push(d);
   opportunities.sort((a, b) => b.tvlUsd - a.tvlUsd);
   closed.sort((a, b) => b.tvlUsd - a.tvlUsd);
-  // Open vaults get slugs first, so closed ones never take an open vault's URL.
+  // Open vaults get slugs first (all of them, listed or not, so a vault's URL doesn't change when it's re-checked),
+  // and closed ones never take an open vault's URL.
   const slugged = assignSlugs([...withLogos(opportunities, logos), ...withLogos(closed, logos)]);
+  const open = slugged.slice(0, opportunities.length);
+  const listed = LISTABLE.size ? open.filter((o) => LISTABLE.has(o.id)) : open;
   return {
-    opportunities: slugged.slice(0, opportunities.length),
+    opportunities: listed,
+    unlisted: LISTABLE.size ? open.filter((o) => !LISTABLE.has(o.id)) : [],
     closed: slugged.slice(opportunities.length),
     sources,
     updatedAt: new Date().toISOString(),
@@ -185,6 +197,6 @@ function assignSlugs(list: Opportunity[]): Opportunity[] {
 /** Look up one opportunity by slug (uses the same in-memory catalog). */
 export async function findBySlug(slug: string): Promise<{ item: Opportunity | undefined; catalog: Catalog }> {
   const catalog = await buildCatalog();
-  const item = catalog.opportunities.find((o) => o.slug === slug) ?? catalog.closed.find((o) => o.slug === slug);
+  const item = catalog.opportunities.find((o) => o.slug === slug) ?? catalog.unlisted.find((o) => o.slug === slug) ?? catalog.closed.find((o) => o.slug === slug);
   return { item, catalog };
 }

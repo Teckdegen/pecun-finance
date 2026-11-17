@@ -101,6 +101,11 @@ export interface Catalog {
   opportunities: Opportunity[];
   /** Withdraw-only, paused or delisted vaults: hidden from Explore, but their pages and withdrawals keep working. */
   closed: Opportunity[];
+  /**
+   * Open vaults that didn't pass the route check (no one-click yet, or moving in/out costs more than Pecun's limit):
+   * not listed in Explore, but their pages keep working so anyone already in them can withdraw.
+   */
+  unlisted: Opportunity[];
   sources: SourceStatus[];
   updatedAt: string;
 }
