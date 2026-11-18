@@ -3,12 +3,12 @@
 From the route check on 2026-11-18 (scripts/check-routes.ts, $100 in and out, limit 0.5%).
 These vaults keep their pages so holders can still withdraw; they just aren't listed. To revisit later.
 
-- Listed in Explore: 1623 vaults
-- Too costly at $100: 432
+- Listed in Explore: 1626 vaults
+- Too costly at $100: 431
 - No route / error: 44
-- Not checked yet (LI.FI quota or no one-click): 56
+- Not checked yet (LI.FI quota or no one-click): 54
 
-Total not listed: 532
+Total not listed: 529
 
 ## Arbitrum
 
@@ -74,7 +74,6 @@ Total not listed: 532
 |---|---|---|---|---|
 | Spark | USDC | 1 | $12.1M | Too costly at $100 (0% in / 0.52% out) |
 | Morpho | msETH | 2 | $5.6M | Too costly at $100 (0.57% in / 0% out) |
-| Compound | WETH | 1 | $3.1M | Too costly at $100 (0.18% in / 0.15% out) |
 | Moonwell | wstETH | 1 | $1.4M | Too costly at $100 (0.54% in / 0% out) |
 | Spectra | jEURx | 1 | $397K | Too costly at $100 (0.06% in / 0.943% out) |
 | Beefy | JitoSOL-SOL | 1 | $262K | Too costly at $100 (0% in / 0.994% out) |
@@ -130,7 +129,6 @@ Total not listed: 532
 | Venus | ADA | 1 | $627K | Too costly at $100 (0.97% in / 0.29% out) |
 | Venus | AAVE | 1 | $440K | Too costly at $100 (0.63% in / 0.53% out) |
 | Venus | BCH | 1 | $366K | Too costly at $100 (0.88% in / 0.69% out) |
-| Euler | USDT | 1 | $99K | Not checked yet |
 | Beefy | CAKE-WBNB | 1 | $78K | Too costly at $100 (0.683% in / 0.533% out) |
 | Beefy | CAKE-USDT | 1 | $68K | Too costly at $100 (0.596% in / 0.55% out) |
 | Beefy | ETH-USDT | 1 | $42K | Too costly at $100 (0.559% in / 0.234% out) |
@@ -307,11 +305,10 @@ Total not listed: 532
 | Hyperliquid | USDC | 36 | $167.0M | Too costly at $100 (1.26% in / 0.07% out) |
 | Hyperliquid | USDC | 12 | $103.4M | Too costly at $100 (1.26% in / 0.08% out) |
 | Hyperliquid | USDC | 3 | $30.7M | Too costly at $100 (1.28% in / 0.06% out) |
-| Hyperliquid | USDC | 47 | $7.3M | Too costly at $100 (1.27% in / 0.07% out) |
+| Hyperliquid | USDC | 48 | $7.3M | Too costly at $100 (1.27% in / 0.07% out) |
 | Hyperliquid | USDC | 34 | $5.5M | Too costly at $100 (1.27% in / 0.06% out) |
 | Hyperliquid | USDC | 1 | $1.3M | Too costly at $100 (1.25% in / 0.07% out) |
 | Hyperliquid | USDC | 1 | $255K | Too costly at $100 (1.27% in / 0.08% out) |
-| Hyperliquid | USDC | 1 | $1K | Not checked yet |
 
 ## Katana
 
@@ -413,7 +410,6 @@ Total not listed: 532
 | Meteora | JupSOL-INF | 1 | $204K | Too costly at $100 (0.911% in / 0.07% out) |
 | Kamino | WBTC | 1 | $162K | No route: This Kamino reserve isn't taking deposits right now. |
 | Meteora | PRISMA-prSOL | 1 | $107K | Too costly at $100 (1.411% in / 0% out) |
-| Meteora | SPCX-USDC | 1 | $104K | Too costly at $100 (0.08% in / 0.07% out) |
 | Kamino | FDUSD | 2 | $57K | No route: This Kamino reserve isn't taking deposits right now. |
 | Kamino | bbSOL | 1 | $6K | No route: This Kamino reserve isn't taking deposits right now. |
 | Kamino | tBTC | 1 | $5K | No route: This Kamino reserve isn't taking deposits right now. |

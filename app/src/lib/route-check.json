@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-18T12:49:49.497Z",
+ "generatedAt": "2026-11-18T12:51:52.843Z",
  "amountUsd": 100,
  "limitPct": 0.5,
  "passed": [
@@ -286,6 +286,7 @@
   "compound:42161:0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
   "compound:42161:0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07",
   "compound:8453:0x2c776041CCFe903071AF44aa147368a9c8EEA518",
+  "compound:8453:0x46e6b214b524310239732D51387075E0e70970bf",
   "compound:8453:0x784efeB622244d2348d4F2522f8860B96fbEcE89",
   "compound:8453:0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
   "compound:8453:0xb125E6687d4313864e53df431d5425969c15Eb2F",
@@ -326,6 +327,7 @@
   "euler:42161:0x78E3E051D32157AACD550fBB78458762d8f7edFF",
   "euler:56:0x1eC4eDF4fB939131Dc1628aD61F24c2d3c60132B",
   "euler:56:0x95C5Fd8618C68D6156A739C1EAb5aA7c807ff148",
+  "euler:56:0xdb6BA965C3281BDC4a97c7699A161d0301BF3A0D",
   "euler:56:0xf4940CdE23c164f8CA8D536f3567337349b3208F",
   "euler:59144:0xF4712fC5E6483DE9e1Ff661D95DD686664327086",
   "euler:59144:0xa8A02E6a894a490D04B6cd480857A19477854968",
@@ -663,6 +665,7 @@
   "meteora:solana:FrrzSeT56FHgMruMaEWsC5qL1wFZecMFs2stUypAyJvw",
   "meteora:solana:FtMJoFr6ShjnkSGGZYXxJg21q46ztQBgoPmuvoRW2rnN",
   "meteora:solana:Gis8fU4MutdDa6tHCouMV5Xfgo7hER2fKQWG3v9aQ16U",
+  "meteora:solana:HPQxZ91SJ62AJ7WBSqop2Ttkz1j6cwGNFtxvFdysyjb7",
   "meteora:solana:HWzE4bSqxXR3L2pCrdaCEFNJCQXQN4gjPWEikwTDjwq7",
   "meteora:solana:HgHXbwA6yeVzP69VQZFSjYNgKnUFPPwi8Ns3PSpu162p",
   "meteora:solana:HuPRxaBcjQYrHj6scpQxUa6QqJsS2iA1TXMEEuVWPhog",
@@ -8785,12 +8788,12 @@
   "euler:56:0x95C5Fd8618C68D6156A739C1EAb5aA7c807ff148": {
    "dep": 0.27,
    "wd": 0.46,
-   "at": 1795003996636
+   "at": 1795006306677
   },
   "euler:56:0x1eC4eDF4fB939131Dc1628aD61F24c2d3c60132B": {
    "dep": 0.27,
    "wd": 0.46,
-   "at": 1795003996636
+   "at": 1795006306677
   },
   "gmx:43114:0x94cE6F65188a92F297C7f0A5A7B3cAd9013450F8": {
    "dep": 0.146,
@@ -11258,7 +11261,7 @@
   "euler:56:0xf4940CdE23c164f8CA8D536f3567337349b3208F": {
    "dep": 0.27,
    "wd": 0.46,
-   "at": 1795003996636
+   "at": 1795006306677
   },
   "beefy:base:curve-base-4pool": {
    "dep": 0.097,
@@ -12143,6 +12146,16 @@
    "dep": 0.497,
    "wd": 0.199,
    "at": 1795006188491
+  },
+  "euler:56:0xdb6BA965C3281BDC4a97c7699A161d0301BF3A0D": {
+   "dep": 0.27,
+   "wd": 0.46,
+   "at": 1795006306677
+  },
+  "hyperliquid:0xfd7c556e671054891be52b5c50f9449bb05fc5b6": {
+   "dep": 1.27,
+   "wd": 0.07,
+   "at": 1795006311838
   }
  }
 }

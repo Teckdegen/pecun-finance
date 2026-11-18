@@ -173,7 +173,7 @@ function Faq() {
     [
       "What is $PEN?",
       <>
-        Pecun&apos;s token. Every $PEN trade pays a 3% tax: 70% goes into the Pecun Fund, which holders own a share of, and 30% pays for running
+        Pecun&apos;s token, launching on Robinhood Chain. Every $PEN trade pays a 3% tax: 70% goes into the Pecun Fund, which holders own a share of, and 30% pays for running
         Pecun. The supply is 1,000,000,000, and it&apos;s a fair launch with no presale. {docs("/token", "Read about $PEN")}.
       </>,
     ],

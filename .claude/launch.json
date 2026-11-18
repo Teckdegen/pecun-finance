@@ -33,6 +33,20 @@
         "dev"
       ],
       "port": 3002
+    },
+    {
+      "name": "pecun-app-3010",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "app",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3010"
+      ],
+      "port": 3010
     }
   ]
 }
