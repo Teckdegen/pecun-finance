@@ -16,5 +16,6 @@ import "./kamino";
 import "./meteora";
 import "./jupiter-sol";
 import "./gmx";
+import "./beefy";
 
 export * from "../execute";

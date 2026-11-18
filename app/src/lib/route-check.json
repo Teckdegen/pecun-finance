@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-18T00:01:26.902Z",
+ "generatedAt": "2026-11-18T12:49:49.497Z",
  "amountUsd": 100,
  "limitPct": 0.5,
  "passed": [
@@ -111,6 +111,169 @@
   "aavev4:5042:0xB843bdC3a87A05E77E07Df9FE48928b3A34b134d:3",
   "aavev4:8453:0x17905Db0e4A3514467539956c084180616AE7B8D:7",
   "avantis:8453:junior",
+  "beefy:arbitrum:curve-arb-crvusd-usdc",
+  "beefy:arbitrum:curve-arb-crvusd-usdc.e",
+  "beefy:arbitrum:curve-arb-crvusd-usdt",
+  "beefy:arbitrum:morpho-arb-gauntlet-core-usdc",
+  "beefy:arbitrum:morpho-arb-gauntlet-prime-usdc",
+  "beefy:arbitrum:morpho-arb-hyperithm-usdc",
+  "beefy:arbitrum:morpho-arb-steakhouse-usdc",
+  "beefy:arbitrum:morpho-arb-steakhouse-usdt",
+  "beefy:arbitrum:morpho-arb-steakhouse-v2-usdc",
+  "beefy:arbitrum:morpho-v2-arbitrum-gauntlet-premium-usdg",
+  "beefy:arbitrum:pancake-cow-arb-arb-usdc-vault",
+  "beefy:arbitrum:pancake-cow-arb-usdc-usdt-vault",
+  "beefy:arbitrum:pancake-cow-arb-wbtc-usdc-vault",
+  "beefy:arbitrum:pancake-cow-arb-wbtc-weth-vault",
+  "beefy:arbitrum:pancake-cow-arb-weth-usdc-500-vault",
+  "beefy:arbitrum:pancake-cow-arb-weth-usdt-500-vault",
+  "beefy:arbitrum:sushi-cow-arb-usdc-usdt-vault",
+  "beefy:arbitrum:sushi-cow-arb-wbtc-usdc-vault",
+  "beefy:arbitrum:sushi-cow-arb-weth-usdc-vault",
+  "beefy:arbitrum:uniswap-cow-arb-link-eth-vault",
+  "beefy:arbitrum:uniswap-cow-arb-link-usdt-vault",
+  "beefy:arbitrum:uniswap-cow-arb-usdc-uni-vault",
+  "beefy:arbitrum:uniswap-cow-arb-usdc-usdt-vault",
+  "beefy:arbitrum:uniswap-cow-arb-wbtc-link-vault",
+  "beefy:arbitrum:uniswap-cow-arb-wbtc-tbtc-vault",
+  "beefy:arbitrum:uniswap-cow-arb-weth-dai-vault",
+  "beefy:arbitrum:uniswap-cow-arb-wsteth-weth-vault",
+  "beefy:avax:aavev4-avax-usdc",
+  "beefy:avax:aavev4-avax-usdt",
+  "beefy:avax:black-usdc-eurc",
+  "beefy:avax:black-weth-wavax",
+  "beefy:base:aavev3-base-cbeth",
+  "beefy:base:aero-cow-base-aero-usdc-vault",
+  "beefy:base:aero-cow-base-aero-weth-vault",
+  "beefy:base:aero-cow-base-amznc-usdc-vault",
+  "beefy:base:aero-cow-base-cbbtc-cbdoge-vault",
+  "beefy:base:aero-cow-base-cbbtc-usdc-vault",
+  "beefy:base:aero-cow-base-cbxrp-cbbtc-vault",
+  "beefy:base:aero-cow-base-eurc-cbbtc-vault",
+  "beefy:base:aero-cow-base-eurc-usdc-vault",
+  "beefy:base:aero-cow-base-eurc-weth-vault",
+  "beefy:base:aero-cow-base-msftc-usdc-vault",
+  "beefy:base:aero-cow-base-mstrc-usdc-vault",
+  "beefy:base:aero-cow-base-paxg-usdc-vault",
+  "beefy:base:aero-cow-base-sndkc-usdc-vault",
+  "beefy:base:aero-cow-base-tbtc-cbbtc-vault",
+  "beefy:base:aero-cow-base-tslac-usdc-vault",
+  "beefy:base:aero-cow-base-usdc-aaplc-vault",
+  "beefy:base:aero-cow-base-usdc-googlc-vault",
+  "beefy:base:aero-cow-base-usdc-himsc-vault",
+  "beefy:base:aero-cow-base-usdc-intcc-vault",
+  "beefy:base:aero-cow-base-usdc-metac-vault",
+  "beefy:base:aero-cow-base-usdc-nvdac-vault",
+  "beefy:base:aero-cow-base-usdc-orclc-vault",
+  "beefy:base:aero-cow-base-usdc-spcxc-vault",
+  "beefy:base:aero-cow-base-usdc-weth-vault",
+  "beefy:base:aero-cow-base-virtual-weth-vault",
+  "beefy:base:aero-cow-base-weth-cbbtc-v2-vault",
+  "beefy:base:aero-cow-base-weth-usdt-vault",
+  "beefy:base:aero-cow-base-weth-zro-vault",
+  "beefy:base:aero-v2-base-aero-usdc",
+  "beefy:base:aero-v2-base-jeur-eurc",
+  "beefy:base:aero-v2-base-msusd-usdc",
+  "beefy:base:aero-v2-base-usdc-alusdb",
+  "beefy:base:aero-v2-base-virtual-cbbtc",
+  "beefy:base:aero-v2-base-weth-mseth",
+  "beefy:base:curve-base-4pool",
+  "beefy:base:morpho-base-gauntlet-frontier-usdc",
+  "beefy:base:morpho-base-gauntlet-prime-usdc",
+  "beefy:base:morpho-base-steakhouse-high-yield-usdc",
+  "beefy:base:morpho-base-steakhouse-prime-eurc",
+  "beefy:base:morpho-v2-base-gauntlet-balanced-weth",
+  "beefy:base:pancake-cow-base-cake-usdc-vault",
+  "beefy:base:pancake-cow-base-usdc-cbbtc-vault",
+  "beefy:base:pancake-cow-base-weth-eurc-vault",
+  "beefy:base:pancake-cow-base-weth-usdc-vault",
+  "beefy:base:stakedao-base-superoethb",
+  "beefy:bsc:pancake-cow-bsc-usdc-wbnb-vault",
+  "beefy:bsc:pancake-cow-bsc-usdt-usdc-vault",
+  "beefy:bsc:pancake-cow-bsc-usdt-wbnb-vault",
+  "beefy:ethereum:convex-cvxcrv",
+  "beefy:ethereum:convex-fraxusdc",
+  "beefy:ethereum:convex-gho-crvusd",
+  "beefy:ethereum:convex-tricrv",
+  "beefy:ethereum:convex-tricrypto-llama",
+  "beefy:ethereum:convex-tricrypto-usdc",
+  "beefy:ethereum:curve-bold-lusd",
+  "beefy:ethereum:curve-bold-usdc-new",
+  "beefy:ethereum:curve-crvusd-susde",
+  "beefy:ethereum:curve-eth+-weth",
+  "beefy:ethereum:curve-frxusd-msusd",
+  "beefy:ethereum:curve-link-stlink-ng",
+  "beefy:ethereum:curve-mseth-weth",
+  "beefy:ethereum:curve-msusd-fraxbp",
+  "beefy:ethereum:curve-paypool",
+  "beefy:ethereum:curve-pyusd-crvusd",
+  "beefy:ethereum:curve-reusd-scrvusd",
+  "beefy:ethereum:curve-reusd-sfrxusd",
+  "beefy:ethereum:curve-usdc-rlusd",
+  "beefy:ethereum:curve-usdc-usdf",
+  "beefy:ethereum:curve-usds-stusds",
+  "beefy:ethereum:fx-reusd-fxusd",
+  "beefy:ethereum:fx-usdc-fxusd",
+  "beefy:ethereum:morpho-eth-gauntlet-frontier-usdc",
+  "beefy:ethereum:morpho-eth-gauntlet-prime-usdc",
+  "beefy:ethereum:morpho-smokehouse-usdc",
+  "beefy:ethereum:morpho-steakhouse-usdc",
+  "beefy:ethereum:morpho-steakhouse-weth",
+  "beefy:ethereum:morpho-v2-ethereum-armitage-pendle-ecosystem-high-yield-usdc",
+  "beefy:ethereum:morpho-v2-ethereum-armitage-pendle-ecosystem-usdc",
+  "beefy:ethereum:morpho-v2-ethereum-clearstar-3jane-ecosystem-vault-usdc",
+  "beefy:ethereum:morpho-v2-ethereum-steakhouse-high-yield-usdc",
+  "beefy:ethereum:morpho-v2-ethereum-steakhouse-high-yield-usdt",
+  "beefy:ethereum:morpho-v2-ethereum-steakhouse-reservoir-usdc",
+  "beefy:ethereum:sky-staking",
+  "beefy:ethereum:stakedao-crvusd-usdc",
+  "beefy:ethereum:stakedao-crvusd-usdt",
+  "beefy:ethereum:stakedao-evausdt-evausdc",
+  "beefy:ethereum:stakedao-frxusd-msusd",
+  "beefy:ethereum:stakedao-frxusd-sgho",
+  "beefy:ethereum:stakedao-frxusd-usd3",
+  "beefy:ethereum:stakedao-frxusd-usg",
+  "beefy:ethereum:stakedao-musd-2pool",
+  "beefy:ethereum:stakedao-pmusd-crvusd",
+  "beefy:ethereum:stakedao-pmusd-frxusd",
+  "beefy:ethereum:stakedao-scrvusd-susde",
+  "beefy:ethereum:stakedao-usdc-usg",
+  "beefy:ethereum:stakedao-usg-sdola",
+  "beefy:ethereum:stakedao-wbtc-cbbtc-hemibtc",
+  "beefy:monad:aavev3-monad-ausd",
+  "beefy:monad:aavev3-monad-gho",
+  "beefy:monad:aavev3-monad-musd",
+  "beefy:monad:aavev3-monad-usdc",
+  "beefy:monad:aavev3-monad-usdt0",
+  "beefy:monad:aavev3-monad-weth",
+  "beefy:monad:curvance-monad-ausd-earnausd-ausd",
+  "beefy:monad:curvance-monad-usdc-wmon-usdc",
+  "beefy:monad:curve-monad-cbbtc",
+  "beefy:monad:gearbox-monad-edge-usdc",
+  "beefy:monad:morpho-monad-steakhouse-ausd",
+  "beefy:monad:morpho-monad-steakhouse-prime-weth",
+  "beefy:monad:morpho-monad-steakhouse-usdc",
+  "beefy:monad:morpho-v2-monad-august-usdc-v2",
+  "beefy:monad:morpho-v2-monad-hyperithm-apex-cbbtc",
+  "beefy:monad:neverland-monad-ausd",
+  "beefy:monad:neverland-monad-usdc",
+  "beefy:monad:neverland-monad-wbtc",
+  "beefy:monad:neverland-monad-weth",
+  "beefy:optimism:aero-cow-optimism-usdc-wbtc-vault",
+  "beefy:optimism:aero-cow-optimism-usdc-weth-vault",
+  "beefy:optimism:aero-cow-optimism-usdc-wsteth-vault",
+  "beefy:optimism:aero-cow-optimism-weth-wbtc-vault",
+  "beefy:optimism:aero-v2-optimism-mseth-weth",
+  "beefy:optimism:aero-v2-optimism-usdc-alusd",
+  "beefy:optimism:aero-v2-optimism-usdc-msusd",
+  "beefy:optimism:curve-op-crvusd-usdc",
+  "beefy:optimism:curve-op-crvusd-usdc.e",
+  "beefy:optimism:curve-op-crvusd-usdt",
+  "beefy:optimism:curve-op-tbtc",
+  "beefy:optimism:curve-op-tricrv",
+  "beefy:optimism:morpho-op-gauntlet-prime-usdc",
+  "beefy:plasma:lithos-wxpl-usdt0",
+  "beefy:robinhood:alandale-cow-robinhood-weth-usdg-vault",
   "compound:10:0x2e44e174f7D53F0212823acC11C01A11d58c5bCB",
   "compound:10:0x995E394b8B2437aC8Ce61Ee0bC610D617962B214",
   "compound:10:0xE36A30D249f7761327fd973001A32010b521b6Fd",
@@ -123,7 +286,6 @@
   "compound:42161:0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
   "compound:42161:0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07",
   "compound:8453:0x2c776041CCFe903071AF44aa147368a9c8EEA518",
-  "compound:8453:0x46e6b214b524310239732D51387075E0e70970bf",
   "compound:8453:0x784efeB622244d2348d4F2522f8860B96fbEcE89",
   "compound:8453:0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
   "compound:8453:0xb125E6687d4313864e53df431d5425969c15Eb2F",
@@ -138,7 +300,6 @@
   "ethena:1:0x9D39A5DE30e57443BfF2A8307A4256c8797A3497",
   "etherfi:1:0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
   "euler:130:0x6eAe95ee783e4D862867C4e0E4c3f4B95AA682Ba",
-  "euler:1:0x018b86A893F57a632F90c4A8308353Ac938adc01",
   "euler:1:0x056f3a2E41d2778D3a0c0714439c53af2987718E",
   "euler:1:0x2daCa71Cb58285212Dc05D65Cfd4f59A82BC4cF6",
   "euler:1:0x313603FA690301b0CaeEf8069c065862f9162162",
@@ -165,6 +326,7 @@
   "euler:42161:0x78E3E051D32157AACD550fBB78458762d8f7edFF",
   "euler:56:0x1eC4eDF4fB939131Dc1628aD61F24c2d3c60132B",
   "euler:56:0x95C5Fd8618C68D6156A739C1EAb5aA7c807ff148",
+  "euler:56:0xf4940CdE23c164f8CA8D536f3567337349b3208F",
   "euler:59144:0xF4712fC5E6483DE9e1Ff661D95DD686664327086",
   "euler:59144:0xa8A02E6a894a490D04B6cd480857A19477854968",
   "euler:59144:0xb135dcF653DAFB5ddAa93F926D7000Aa3222EFEE",
@@ -468,17 +630,19 @@
   "meteora:solana:13MEx6gjRadJNUdmToaGSzgeWHLH7FzScUQS9Mc5nYF5",
   "meteora:solana:2Nc4mjWo9efcXUTDMgozsYW8tBpdpTC7osZpcQofwtyz",
   "meteora:solana:2QE3DepmF4kye9Y9Yh6AXEYUarRsoUFGzdoJhAa9BBQ6",
+  "meteora:solana:2QrWsSWrGvoAqkDC5XSGqjS752RWLaopqAaGrbugSxBL",
   "meteora:solana:2ZWxT3niYjyudmDMDVar9ajNE42RkwYdzZBh6TiMuKQY",
   "meteora:solana:2gdjgchz31VdaAxmERiAbTAJbzAtGBei7LAwAMV45P1M",
   "meteora:solana:4knbBqT1zxUZZ3ZUrHWsbHMgugP39Pn1SX9d4WA3JdKo",
-  "meteora:solana:4mPKhtkMtRXyQcgSjzog14nnonHowvLhB4fyVkMfSECA",
   "meteora:solana:54Vp27uLaw4wNLo5n7r4fcC6zLamoQc28xBARjss4EUJ",
   "meteora:solana:5BoHD7DAHsGCA9D8eUkkZTgWTrnpad6G18MnTq3cUS86",
+  "meteora:solana:5cvcHrD2uh2CXhmZnMHsTVWJW1qtyikVaN3MCJNaCKMh",
   "meteora:solana:6WTbcDmtqDNwxxLe9YzHzpSSBKQ7AduZG7SmYWpRwjZZ",
   "meteora:solana:6rUBto3j8LLhdnauwzmgRETavD16CNrYAjPZxREsVojm",
   "meteora:solana:7UY72S3jWQin6rV982BCL3hRD69qDzue8Q7VBZi4DMdR",
   "meteora:solana:8iibPkw7zbNHMPcihHeBgcL7rDnHteZb2NfvTy8bNm7d",
   "meteora:solana:8obGpjiUu7QTJHK58YHCoz5HxobmrVP2x5zpMZu3c4BT",
+  "meteora:solana:8qs7oJiYXzNWEN4KxS1HfthVA1SkyfWzk1WTxb8Qv2Y6",
   "meteora:solana:9DiruRpjnAnzhn6ts5HGLouHtJrT1JGsPbXNYCrFz2ad",
   "meteora:solana:9JbJHAxgfJ7iedEde1pD2haqMJZ4Z4n3FcbroB2nZJT3",
   "meteora:solana:9oCwYQJYCWHeXnodFCxdqY1kV4uBPo5P7yWGkNJ2Wjj3",
@@ -494,11 +658,11 @@
   "meteora:solana:DYmirDZoK5WW63HGLWLRyKfkGMKknGhzqts98gPVQ1BX",
   "meteora:solana:DZ2vZJMLKt1cExzyFeyoGV3panTJufRFMiLXJKSa2mPP",
   "meteora:solana:DdMA1cHcHEqYfttc1z1sJEY978CcU1pyjNuTWTNmdvzU",
+  "meteora:solana:EAFXa2hgKu4J7pqYLB2oUozgyd8qKHzWPMFoEE9zEi3R",
   "meteora:solana:EKXpG1yxtGExcn27dr5WqQKvuCdEzbgKs4k1DSvmS8qn",
   "meteora:solana:FrrzSeT56FHgMruMaEWsC5qL1wFZecMFs2stUypAyJvw",
   "meteora:solana:FtMJoFr6ShjnkSGGZYXxJg21q46ztQBgoPmuvoRW2rnN",
   "meteora:solana:Gis8fU4MutdDa6tHCouMV5Xfgo7hER2fKQWG3v9aQ16U",
-  "meteora:solana:HPQxZ91SJ62AJ7WBSqop2Ttkz1j6cwGNFtxvFdysyjb7",
   "meteora:solana:HWzE4bSqxXR3L2pCrdaCEFNJCQXQN4gjPWEikwTDjwq7",
   "meteora:solana:HgHXbwA6yeVzP69VQZFSjYNgKnUFPPwi8Ns3PSpu162p",
   "meteora:solana:HuPRxaBcjQYrHj6scpQxUa6QqJsS2iA1TXMEEuVWPhog",
@@ -555,6 +719,7 @@
   "morpho:143:0xdE16452C1f8CC209D8E9b104b7F240D9A251768B",
   "morpho:143:0xe09A93786275546690247d70f1767cF0b69e8Ea0",
   "morpho:143:0xf57E9898575fab80b0f2aCDe5443276BeC8C542D",
+  "morpho:143:market:0x03902779aaeaf5702ebf96828e549c6c3086d1e05448b6f3f2b9c65d6026acb1",
   "morpho:143:market:0x093bd94086b08a013c96dc0776ebf663e9300e742a2c14479211cc35da6c3439",
   "morpho:143:market:0x0ce0a3398925f5112360db21750912f2a834c5cb90ecf03f461b2e2561320955",
   "morpho:143:market:0x0e747c3de720c1825bcc69d4c1ae4831ab9dcf16ec1c3ceb9cbbc2d13bed7b54",
@@ -586,6 +751,10 @@
   "morpho:143:market:0xeea9a8f0dcd518b90f8cba74b62f62cc9b005541ff8a10a86bba45eebe4e2098",
   "morpho:143:market:0xfa0b720389b546fcf8562c18cda8c00460072b63776add7fbfe8cd4f06d7c3ba",
   "morpho:196:0x4802f950Ec247bcc9126ADF8e10ea025dEC3BB92",
+  "morpho:196:market:0x0c19a193032b01e2ecee6a0a35e9be9a905a78c52f24a56c6a2f64bd2e0b5601",
+  "morpho:196:market:0x0c852bb690ec939c27ca6771de584d47e97b47a4a988526a739821fc529da9c2",
+  "morpho:196:market:0x22cc0f265a4a093b5c128dce91f5e339f4492740fde9ba8883998a6307b729ac",
+  "morpho:196:market:0xdfd1a7454eb7ae5dbbd4399f35e0207255ab479b3ceaf42cd6ec5cf2cbb8ddcc",
   "morpho:1:0x04422053aDDbc9bB2759b248B574e3FCA76Bc145",
   "morpho:1:0x069662D2588fcaC24B5c209456Db965D151556f0",
   "morpho:1:0x093272C07700d3cA5301C3Bf9B3A392624179E2F",
@@ -757,6 +926,7 @@
   "morpho:1:market:0x32e253d33f1594a67fc6ef51bf7a39cc4bf2d14904998dee769706fcde489ed9",
   "morpho:1:market:0x34377fc4f617c51818e92c79df31ff270c6a91bc94ad32e367fdf59b9f4ac5dd",
   "morpho:1:market:0x36da61bf253b8a7e07888cb96dbcde65001508159928801aeca932a5b5548119",
+  "morpho:1:market:0x3702495737953ce1c053b4c402912501eaae458f19a5c97ef0e8eb83d625334e",
   "morpho:1:market:0x3758a9e2abbd67b5621f23ec482608f2f98b3c792874661ce49df7843aadcfd2",
   "morpho:1:market:0x37a584c981f6f59f7532ae5565732ee54647773d425978eb94d4cd29c21ff53b",
   "morpho:1:market:0x37e7484d642d90f14451f1910ba4b7b8e4c3ccdd0ec28f8b2bdb35479e472ba7",
@@ -805,7 +975,6 @@
   "morpho:1:market:0x74078d0416c5876d8c5a7a7425fc322377b4c7f80dc4d66e492dd7012b1d60b7",
   "morpho:1:market:0x7421c2741e064e8c53fcb5de9faf7f0025dce75bc1caf26774dd878291c81dac",
   "morpho:1:market:0x755f954513d31d5f24aaf3d0cdc5e913a28383f8ea8ff85be9ffffa7371fb64d",
-  "morpho:1:market:0x760b14c9003f08ac4bf0cfb02596ee4d6f0548a4fde5826bfd56befb9ed62ae9",
   "morpho:1:market:0x7730ef5352412a37d441ab960f5c8f33ea8d1c9f01c34fc2340f65fa1c59ce69",
   "morpho:1:market:0x77e624dd9dd980810c2b804249e88f3598d9c7ec91f16aa5fbf6e3fdf6087f82",
   "morpho:1:market:0x7a25fb17b8bd83a934ad87d9d1725188fc129992ca816f3145b4ab7f673c98c3",
@@ -1119,6 +1288,7 @@
   "morpho:8453:market:0x73527ddd796e6d4f48387adaae36f6f3d49d606d7f2a15eb0c931416a58875d8",
   "morpho:8453:market:0x76629002c9fdb20fb2092053a4f22c5c65e04a81887218b9546f2a2d82b4c0a8",
   "morpho:8453:market:0x78d11c03944e0dc298398f0545dc8195ad201a18b0388cb8058b1bcb89440971",
+  "morpho:8453:market:0x7d3f751bf7006ac705a32784935410ccd661f1c92a96b67df51107fc4ca56755",
   "morpho:8453:market:0x7dc02ff6c536b1d49d7fba770438d79f5bd1f1c78884629b7d1aaee19675782b",
   "morpho:8453:market:0x7fc498ddcb7707d6f85f6dc81f61edb6dc8d7f1b47a83b55808904790564929a",
   "morpho:8453:market:0x84662b4f95b85d6b082b68d32cf71bb565b3f22f216a65509cc2ede7dccdfe8c",
@@ -1318,11 +1488,15 @@
   "silo-vault:1:0x5362d5086fdef73450145492a66f8ebf210c5b9c",
   "silo-vault:43114:0x1f0570a081fee0e4df6eac470f9d2d53cdeda1c5",
   "silo-vault:43114:0xf8c100ab4b2d416609b0ef18105ebf601b2ec84a",
+  "silo-vault:50:0x06083db34f1e915fa5cd4e2a198f3680e3ce9c60",
   "silo:1:0x90957ad08d1ec15d4ccf5461444ffb0dc499eb2d",
   "silo:43114:0x5bb5e52a4b58b19a7ee690058c49f9d28aa6941c",
   "silo:43114:0x606fe9a70338e798a292ca22c1f28c829f24048e",
   "silo:43114:0xcde5f8d4b1fa41d9dee31d5a1044d2f3c9f5ac32",
   "silo:43114:0xd8a26dfeba3e9b558bd79d10722636dfb4dc2bf4",
+  "silo:50:0xd1ed56ed95c02634d9e2385a04cd5b97078dd932",
+  "silo:50:0xdbb74aff8d8713f5b8d8edce5a9896f5ebc8dafb",
+  "silo:50:0xf3d1fcb16374fa8f4a5135706c7a5ef4483c1e95",
   "sky:1:0x83F20F44975D03b1b09e64809B757c47f942BEeA",
   "sky:1:0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD",
   "solstake:solana:5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm",
@@ -1430,6 +1604,7 @@
   "yearn:1:0x7Da96a3891Add058AdA2E826306D812C638D87a7",
   "yearn:1:0x863687e4E9751b57F38b4B0ebA04744C72d0f7B8",
   "yearn:1:0xA696a63cc78DfFa1a63E9E50587C197387FF6C7E",
+  "yearn:1:0xAD2f9A55518Dba12E8AB069502820923351667C5",
   "yearn:1:0xAaaFEa48472f77563961Cdb53291DEDfB46F9040",
   "yearn:1:0xAc37729B76db6438CE62042AE1270ee574CA7571",
   "yearn:1:0xBF319dDC2Edc1Eb6FDf9910E39b37Be221C8805F",
@@ -1437,6 +1612,7 @@
   "yearn:1:0xa258C4606Ca8206D8aA700cE2143D7db854D168c",
   "yearn:1:0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE",
   "yearn:1:0xa9fE4601811213c340e850ea305481afF02f5b28",
+  "yearn:1:0xaA379c2aA72529d5ec0da8A41e2F41ED7Fe4b48C",
   "yearn:1:0xc56413869c6CDf96496f2b1eF801fEDBdFA7dDB0",
   "yearn:1:0xc9f01b5c6048B064E6d925d1c2d7206d4fEeF8a3",
   "yearn:1:0xdA816459F1AB5631232FE5e97a05BBBb94970c95",
@@ -1535,377 +1711,377 @@
   "morpho:8453:market:0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xbeef0786756810478b88982DE00F3CD7fdB8e7c7": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xbeeff2490FEffa212faC2f6553682C219E6a8845": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x54cf9be57fdfa6457a660991907434ff9d295c465a603a50126ff647d50b7354": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x050cE30b927Da55177A4914EC73480238BAD56f0": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xe0cda5bceeae3b1848cabfadba74ef8bf446e80874068eecbf0687d39b0021d9": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xd4a903dc6d949519060c7707f9604fdc9772c046e05c2e3a8fce0bd7196e4109": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x91C056B6d4311a743614FBc03ac32d4E6A2d3a3c": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xBeEfF0be997Cca5B1c13A7433c2004637975739e": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xbeeff7aE5E00Aae3Db302e4B0d8C883810a58100": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x0ca10126f6c94cbd9cf0a48cc9516ae5e3dec5aa68303e6d988ee37c5149bf0d": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x1401d1271C47648AC70cBcdfA3776D4A87CE006B": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x7dc02ff6c536b1d49d7fba770438d79f5bd1f1c78884629b7d1aaee19675782b": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x29ae7ac08be3a58e11151fed74701fb8e6ffd8e76b1870cf17ad70f332752d0b": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x392B3CCf36C8adB8094F45573346B457414cD752": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x1deEfABEe758AAbdC29a542B24ca3b75aFD56765": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x2e26ecfe44dd56f2e6b0257e421e69474e838397b7194e2c934195c6d975af62": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x8B12106a70FE2F8bB255F691f1CF9a9ccfB278AF": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x09276541cfecb6920a80679a1deced4dde3ae64bf5fc2c9c1f9c21e0c152e1a5": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xe458a501c1103ca3b256f2bcb45d223263fb34b6349d82675494ce3a94ce1327": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x4217fed63c853537fb818f4ba4416bc708c3d7534913532feb34c3511ce2aba6": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xb88A0269C0b7E665F15DE46F634e02cE81E361c9": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x13c42741a359ac4a8aa8287d2be109dcf28344484f91185f9a79bd5a805a55ae": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x39E18c066187c83e860801Befe45aE8ecd021575": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x73527ddd796e6d4f48387adaae36f6f3d49d606d7f2a15eb0c931416a58875d8": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xd7520ad198b497b6eb75bc690268f4597630dbc12e305e9d4105843bab36e41d": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xef417a2512C5a41f69AE4e021648b69a7CdE5D03": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x1e9e47583f15D45a10Df48c0b1846E0492c795D7": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x0548A36028FFdc7D5aaA7A182f0d1FE0264F5A5C": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xfdfecf85a4dd90a7637ae2aaf28b35061166f0e62bfc714c565eed9f7e959783": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xc0c5689e6f4D256E861F65465b691aeEcC0dEb12": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x8effa741061aaA2d8A5012a9B09A2d31d8B628d7": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x618495ccC4e751178C4914b1E939C0fe0FB07b9b": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x22f61f5cb76190408905b03f82ac00af69900e90f7b6883613fa1b48debd0d44": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x1c21c59df9db44bf6f645d854ee710a8ca17b479451447e9f56758aee10a2fad": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xBEEFA7B88064FeEF0cEe02AAeBBd95D30df3878F": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xf2a59ad1aec67664c564cb33c33538ab41372363204ce2bdcf00900b7d28c6ab": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xdba352d93a64b17c71104cbddc6aef85cd432322a1446b5b65163cbbc615cd0c": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x9125d0fa03c3137166df68bcc72283477830de2a4a5536512374c573ad4583c3": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x76629002c9fdb20fb2092053a4f22c5c65e04a81887218b9546f2a2d82b4c0a8": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x9f52c2f3980901e7bf59502ea6de3315ab6ed8425bb6fb7c0da852f39d3aa04f": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xAE4181CFB5aaA08bbE77d269c6B595672b9F9Edc": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x5435BC53f2C61298167cdB11Cdf0Db2BFa259ca0": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xE74c499fA461AF1844fCa84204490877787cED56": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xb038cF3e233b78225F6D350AC8319bEC8457db4A": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x093279173e34dd4589a83f10a1cae316f6227efe8ac51342fec9e29d78b68d4e": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x67a66cbacb2fe48ec4326932d4528215ad11656a86135f2795f5b90e501eb538": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xe7D0DBE3493830e2Ab62619211A2BfF0Fc60dB42": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x1a3e69d0109bb1be42b80e11034bb6ee98fc466721f26845dc83b2aa8d979137": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x2e2548390b8894d2ffaaababebc2b5f2501920e03a4c611b63b46e19bfc6b75d": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x1D3b1Cd0a0f242d598834b3F2d126dC6bd774657": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x116e1A65717A534B73EcB7d4F6543c65DBCd0E46": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x48dca3ed245fb30931013a676d3451f7602b11150f92743ad93159628cbbe392": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0xBeEF00fc6e87dE086A0e29169A2f6e25cF5C11a9": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x52a2a376586d0775e3e80621facc464f6e96d81c8cb70fd461527dde195a079f": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x236919F11ff9eA9550A4287696C2FC9e18E6e890": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x4440abd9eff38ebf76b8f64c074682acef8c89e77555075478a7582883206604": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x0b2df036bb06b49d893a8f5578cb5a31619f46d7a79cbf11783838204cfdf9e3": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x45f3b5688e7ba25071f78d1ce51d1b893faa3c86897b12204cdff3af6b3611f8": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xae1a30486234bf7e7ac166c7c03d9bc5f2cd8a39be2c48e73c665ac7148c3c28": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x6a331b22b56c9c0ee32a1a7d6f852d2c682ea8b27a1b0f99a9c484a37a951eb7": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x44b343b5087c0bd34207cb5c199f12030777bf6b8c0a128438246f1212f37ca5": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0x3b82e29f0890186d7a66059699e522930c4cbe78ffbccb468c577daa5bc4bc10": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xce983b9ee6344e16ebbcc66812f23caafc63ae83fcc14fa29b66c7e69e9cecf6": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xa3913d896b7e9c0e0a84f1be27d376cf2065616101cb7c44674af8a154e684cc": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:0x5e03f8965e2957291B3c6990C6Cb9023c36d3d30": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xdb0bc9f10a174f29a345c5f30a719933f71ccea7a2a75a632a281929bba1b535": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "morpho:8453:market:0xb4b42dd66cef25614b94510a910d54b2c148e7621d22b4271566724beda63d13": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953452743
+   "at": 1795003256119
   },
   "ethena:1:0x9D39A5DE30e57443BfF2A8307A4256c8797A3497": {
    "dep": 0.23,
@@ -3578,79 +3754,79 @@
    "at": 1794953633129
   },
   "morpho:1:0xbeef0C075Da5D01112AE5cF34d257074fB5DDB2f": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0x82053fe2fc3a3d6cb856458948e9c3589e76f20f3a2079606739b517587267ce": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0x7a25fb17b8bd83a934ad87d9d1725188fc129992ca816f3145b4ab7f673c98c3": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0xb7a75cabc2e8eadd0bc661340a9e359d9828bed6d5cbbcd64188bca8c01e399e": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0x987b2c1979c6cfd6b7833d9b30c09b96ec6de1666579582d8f17730e20dd19b0": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:0xD6d4b804014EF27836dBe9f8f6Bf6c71251548Ec": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0x80c97dd236bafc6c5e41e84797efea2853511455f189525a8df70826a38cb282": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0xaa7231d6bee28b578efe38b52e801d5d3067023853342fc06ded437d2a80ef98": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0x0b352b7550acdb1f39fea4b8f9ef8ac2d7953613b92599610b8fbec8a98a51d1": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0xb5f8d5554d85b782d7080314bba3544983755a75eb5c432f5eae1c47c6af4da4": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0xf135feb27b5f2bd2d54f344fd38dbb5161ff7f0ef4494901fb23f2fe8e58145a": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0x36da61bf253b8a7e07888cb96dbcde65001508159928801aeca932a5b5548119": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:market:0x9551f52490815c3dd64dcd349050ce6f42ef64d70f5805c14920b4fd6d3b2544": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:0x34eCe536d2ae03192B06c0A67030D1Faf4c0Ba43": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "morpho:1:0x75741A12B36D181f44F389E0c6B1E0210311e3Ff": {
-   "dep": 0.19,
+   "dep": 0.27,
    "wd": 0.25,
-   "at": 1794953642353
+   "at": 1795003261651
   },
   "hyperliquid:0xdfc24b077bc1425ad1dea75bcb6f8158e10df303": {
    "dep": 1.26,
@@ -4514,102 +4690,102 @@
   "morpho:143:market:0x9e8441e7af65860feac831ebc117473e3033321abf528ebc8fbde1eeaaa3a626": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:0x78999cc96d2Ba0341588C60CcB0E91c6C33CF371": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0x093bd94086b08a013c96dc0776ebf663e9300e742a2c14479211cc35da6c3439": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:0x80017bF0f793EBbE9679Cd61ff0e395B62CAbB59": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0xc4504d2bf84ff1f6ff015afe00086226425dd5a626e096283504154a71821ec1": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:0x75753e494e5e374C52E1d84fc04EB14B10F2C079": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0xdcaf3f0c5ea425d47dc8bb5842a2f8cd33dd8025afb65f419eec42579ce0e6a8": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:0xdE16452C1f8CC209D8E9b104b7F240D9A251768B": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:0xf57E9898575fab80b0f2aCDe5443276BeC8C542D": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0xe5192cf7306644ce173758036f29af4dd6cdcd5f222d73907ded30ab9b2450e5": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0xba2e101bfd40a1485745543c07fff784c488fc31bdb01dc40ba967bd296f9737": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0x647f2acdadd47ed0fad3ef826e3513fd7fdf9328b0c1f24b8c762c6d79511bf6": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0xcaa68590c9fd1815f5f2e9f61c2001061813f6e346f07505b9e9b3d228b4aa13": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:0x91643f54C4F5F7559BD43a082eFF97594d16708C": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:0xbeEFf443C3CbA3E369DA795002243BeaC311aB83": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0x1ff3cfc2e85ef3defab68c3311c43b0380460361e4092f8ab8004ceffd8cb4b9": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0xe35c5abc6418b6319b014e07aa3c86163a870a957284128f03cf7a9e414f8899": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0x51efed9df487fd3e316421212683e04cfdb198d470c5c936ae4f36efb45b213d": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0x409f2824aee2d8391d4a5924935e13312e157055e262b923b60c9dcb47e6311d": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "morpho:143:market:0x7aeb107bee5e822bac2a9aaa1917d1c9aca5919226b373de1f9205a932bc9f7e": {
    "dep": 0.06,
    "wd": 0.06,
-   "at": 1794953933806
+   "at": 1795003265542
   },
   "aave:137:AaveV3Polygon:0xc2132D05D31c914a87C6611C10748AEb04B58e8F": {
    "dep": 0.12,
@@ -7691,9 +7867,9 @@
    "at": 1794956295195
   },
   "morpho:196:0x4802f950Ec247bcc9126ADF8e10ea025dEC3BB92": {
-   "dep": 0.04,
-   "wd": 0.16,
-   "at": 1794956302036
+   "dep": 0.06,
+   "wd": 0.14,
+   "at": 1795003353217
   },
   "gmx:42161:0x0c11Ed89889Fd03394E8d9d685cC5b85be569C99": {
    "dep": 0.612,
@@ -8607,14 +8783,14 @@
    "at": 1794957624091
   },
   "euler:56:0x95C5Fd8618C68D6156A739C1EAb5aA7c807ff148": {
-   "dep": 0.28,
-   "wd": 0.45,
-   "at": 1794957630657
+   "dep": 0.27,
+   "wd": 0.46,
+   "at": 1795003996636
   },
   "euler:56:0x1eC4eDF4fB939131Dc1628aD61F24c2d3c60132B": {
-   "dep": 0.28,
-   "wd": 0.45,
-   "at": 1794957630657
+   "dep": 0.27,
+   "wd": 0.46,
+   "at": 1795003996636
   },
   "gmx:43114:0x94cE6F65188a92F297C7f0A5A7B3cAd9013450F8": {
    "dep": 0.146,
@@ -10539,6 +10715,1434 @@
    "dep": 1.27,
    "wd": 0.07,
    "at": 1794960051394
+  },
+  "morpho:8453:market:0x7d3f751bf7006ac705a32784935410ccd661f1c92a96b67df51107fc4ca56755": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003256119
+  },
+  "morpho:1:market:0x3702495737953ce1c053b4c402912501eaae458f19a5c97ef0e8eb83d625334e": {
+   "dep": 0.27,
+   "wd": 0.25,
+   "at": 1795003261651
+  },
+  "morpho:143:market:0x03902779aaeaf5702ebf96828e549c6c3086d1e05448b6f3f2b9c65d6026acb1": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003265542
+  },
+  "yearn:1:0x1Fc80CfCF5B345b904A0fB36d4222196Ed9eB8a5": {
+   "dep": 0.1,
+   "wd": 1.82,
+   "at": 1795003279866
+  },
+  "beefy:ethereum:convex-tricrypto-usdt": {
+   "dep": 0.757,
+   "wd": 0.028,
+   "at": 1795003285824
+  },
+  "beefy:ethereum:curve-eth+-weth": {
+   "dep": 0.183,
+   "wd": 0.099,
+   "at": 1795003290529
+  },
+  "beefy:ethereum:morpho-smokehouse-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-v2-ethereum-clearstar-3jane-ecosystem-vault-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-v2-ethereum-steakhouse-high-yield-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-eth-gauntlet-prime-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-eth-gauntlet-frontier-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-v2-ethereum-armitage-pendle-ecosystem-high-yield-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-steakhouse-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-v2-ethereum-steakhouse-reservoir-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:ethereum:morpho-v2-ethereum-armitage-pendle-ecosystem-usdc": {
+   "dep": 0.12,
+   "wd": 0.06,
+   "at": 1795003293213
+  },
+  "beefy:monad:aavev3-monad-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003295935
+  },
+  "beefy:monad:morpho-v2-monad-august-usdc-v2": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003295935
+  },
+  "beefy:monad:morpho-monad-steakhouse-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003295935
+  },
+  "beefy:monad:neverland-monad-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003295935
+  },
+  "beefy:monad:gearbox-monad-edge-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003295935
+  },
+  "beefy:monad:curvance-monad-usdc-wmon-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003295935
+  },
+  "beefy:ethereum:bifi-vault": {
+   "dep": 0.47,
+   "wd": 0.55,
+   "at": 1795003299907
+  },
+  "beefy:ethereum:curve-usdc-rlusd": {
+   "dep": 0.145,
+   "wd": 0.05,
+   "at": 1795003304075
+  },
+  "beefy:ethereum:curve-link-stlink-ng": {
+   "dep": 0.159,
+   "wd": 0.329,
+   "at": 1795003309337
+  },
+  "beefy:ethereum:curve-mseth-weth": {
+   "dep": 0.17,
+   "wd": 0.326,
+   "at": 1795003313915
+  },
+  "beefy:fraxtal:curve-fraxtal-fxb_20291231": {
+   "dep": 1.273,
+   "wd": 0,
+   "at": 1795003322093
+  },
+  "beefy:ethereum:fx-usdc-fxusd": {
+   "dep": 0.136,
+   "wd": 0.034,
+   "at": 1795003326332
+  },
+  "beefy:ethereum:curve-usds-stusds": {
+   "dep": 0.388,
+   "wd": 0,
+   "at": 1795003332936
+  },
+  "yearn:1:0xAD2f9A55518Dba12E8AB069502820923351667C5": {
+   "dep": 0.25,
+   "wd": 0.06,
+   "at": 1795003340105
+  },
+  "yearn:1:0x7c439Df9ADE8831180EA4D546c1E910D4Ba71a86": {
+   "dep": 0.11,
+   "wd": 1.63,
+   "at": 1795003348599
+  },
+  "morpho:196:market:0x0c19a193032b01e2ecee6a0a35e9be9a905a78c52f24a56c6a2f64bd2e0b5601": {
+   "dep": 0.06,
+   "wd": 0.14,
+   "at": 1795003353217
+  },
+  "morpho:196:market:0x22cc0f265a4a093b5c128dce91f5e339f4492740fde9ba8883998a6307b729ac": {
+   "dep": 0.06,
+   "wd": 0.14,
+   "at": 1795003353217
+  },
+  "morpho:196:market:0xdfd1a7454eb7ae5dbbd4399f35e0207255ab479b3ceaf42cd6ec5cf2cbb8ddcc": {
+   "dep": 0.06,
+   "wd": 0.14,
+   "at": 1795003353217
+  },
+  "morpho:196:market:0x0c852bb690ec939c27ca6771de584d47e97b47a4a988526a739821fc529da9c2": {
+   "dep": 0.06,
+   "wd": 0.14,
+   "at": 1795003353217
+  },
+  "beefy:base:morpho-base-steakhouse-high-yield-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003355900
+  },
+  "beefy:base:morpho-base-gauntlet-frontier-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003355900
+  },
+  "beefy:base:morpho-base-gauntlet-prime-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795003355900
+  },
+  "yearn:1:0xf165a634296800812B8B0607a75DeDdcD4D3cC88": {
+   "dep": 0.1,
+   "wd": 1.62,
+   "at": 1795003363808
+  },
+  "beefy:fraxtal:curve-fraxtal-sfrxeth": {
+   "error": "No route right now.",
+   "at": 1795003373123
+  },
+  "beefy:fraxtal:curve-fraxtal-fxb_20261231": {
+   "dep": 1.273,
+   "wd": 0,
+   "at": 1795003381640
+  },
+  "beefy:ethereum:curve-usdc-usdf": {
+   "dep": 0.188,
+   "wd": 0.025,
+   "at": 1795003386233
+  },
+  "suilend:sui:0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL": {
+   "dep": 0.464,
+   "wd": 0.978,
+   "at": 1795003403041
+  },
+  "beefy:ethereum:stakedao-wbtc-cbbtc-hemibtc": {
+   "dep": 0.243,
+   "wd": 0.078,
+   "at": 1795003411344
+  },
+  "navi:sui:11": {
+   "dep": 0.548,
+   "wd": 1.174,
+   "at": 1795003421679
+  },
+  "meteora:solana:EAFXa2hgKu4J7pqYLB2oUozgyd8qKHzWPMFoEE9zEi3R": {
+   "dep": 0.08,
+   "wd": 0.07,
+   "at": 1795003433118
+  },
+  "beefy:ethereum:convex-staked-cvx": {
+   "dep": 0.52,
+   "wd": 0.15,
+   "at": 1795003442349
+  },
+  "yearn:1:0x6E9455D109202b426169F0d8f01A3332DAE160f3": {
+   "dep": 0.09,
+   "wd": 1.08,
+   "at": 1795003457395
+  },
+  "beefy:ethereum:curve-reusd-scrvusd": {
+   "dep": 0.405,
+   "wd": 0.108,
+   "at": 1795003463235
+  },
+  "beefy:ethereum:convex-tricrv": {
+   "dep": 0.299,
+   "wd": 0.283,
+   "at": 1795003468015
+  },
+  "beefy:arbitrum:uniswap-cow-arb-wsteth-weth-vault": {
+   "dep": 0.097,
+   "wd": 0.249,
+   "at": 1795003476891
+  },
+  "beefy:ethereum:curve-paypool": {
+   "dep": 0.13,
+   "wd": 0.034,
+   "at": 1795003481566
+  },
+  "yearn:1:0xaA379c2aA72529d5ec0da8A41e2F41ED7Fe4b48C": {
+   "dep": 0.09,
+   "wd": 0.06,
+   "at": 1795003491651
+  },
+  "beefy:ethereum:stakedao-pmusd-crvusd": {
+   "dep": 0.437,
+   "wd": 0.191,
+   "at": 1795003497131
+  },
+  "suilend:sui:0xb7844e289a8410e50fb3ca48d69eb9cf29e27d223ef90353fe1bd8e27ff8f3f8::coin::COIN": {
+   "dep": 0.774,
+   "wd": 1.408,
+   "at": 1795003505693
+  },
+  "navi:sui:32": {
+   "dep": 0.317,
+   "wd": 1.13,
+   "at": 1795003511064
+  },
+  "beefy:ethereum:curve-frxusd-msusd": {
+   "dep": 0.319,
+   "wd": 0.249,
+   "at": 1795003520351
+  },
+  "scallop:sui:0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT": {
+   "dep": 0.271,
+   "wd": 1.052,
+   "at": 1795003550298
+  },
+  "beefy:ethereum:curve-crvusd-susde": {
+   "dep": 0.301,
+   "wd": 0.178,
+   "at": 1795003556710
+  },
+  "beefy:ethereum:stakedao-frxusd-msusd": {
+   "dep": 0.319,
+   "wd": 0.251,
+   "at": 1795003561365
+  },
+  "beefy:ethereum:curve-bold-lusd": {
+   "dep": 0.474,
+   "wd": 0.073,
+   "at": 1795003567058
+  },
+  "spectra:8453:0xa07f72baa1eda80f6f0e25c2fb55180be46fdf69": {
+   "dep": 0.06,
+   "wd": 0.943,
+   "at": 1795003579334
+  },
+  "scallop:sui:0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH": {
+   "dep": 0.548,
+   "wd": 1.164,
+   "at": 1795003593903
+  },
+  "meteora:solana:2QrWsSWrGvoAqkDC5XSGqjS752RWLaopqAaGrbugSxBL": {
+   "dep": 0.24,
+   "wd": 0.106,
+   "at": 1795003617936
+  },
+  "ember:sui:0xf8d500875677345b6c0110ee8a48abc7c4974ca697df71eefd229827565168d0": {
+   "dep": 0.662,
+   "wd": 1.757,
+   "at": 1795003637687
+  },
+  "navi:sui:23": {
+   "dep": 0.332,
+   "wd": 1.146,
+   "at": 1795003644167
+  },
+  "spectra:14:0x76e3616f8cc8ba745b91c1dd144cae1e885dd543": {
+   "dep": 0.06,
+   "wd": 1.573,
+   "at": 1795003665351
+  },
+  "beefy:ethereum:convex-tricrypto-usdc": {
+   "dep": 0.401,
+   "wd": 0.079,
+   "at": 1795003670830
+  },
+  "beefy:monad:aavev3-monad-usdt0": {
+   "dep": 0.07,
+   "wd": 0.07,
+   "at": 1795003675301
+  },
+  "beefy:ethereum:convex-aleth-frxeth": {
+   "dep": 0.553,
+   "wd": 0.017,
+   "at": 1795003680286
+  },
+  "beefy:ethereum:fx-reusd-fxusd": {
+   "dep": 0.317,
+   "wd": 0.159,
+   "at": 1795003684756
+  },
+  "meteora:solana:5cvcHrD2uh2CXhmZnMHsTVWJW1qtyikVaN3MCJNaCKMh": {
+   "dep": 0.086,
+   "wd": 0.094,
+   "at": 1795003689045
+  },
+  "beefy:base:pancakeswap-cow-base-sol-jitosol-vault": {
+   "dep": 0,
+   "wd": 0.994,
+   "at": 1795003695898
+  },
+  "beefy:ethereum:convex-cvxcrv": {
+   "dep": 0.197,
+   "wd": 0.465,
+   "at": 1795003701410
+  },
+  "beefy:ethereum:convex-tricrypto-llama": {
+   "dep": 0.351,
+   "wd": 0.158,
+   "at": 1795003714687
+  },
+  "beefy:ethereum:convex-gho-crvusd": {
+   "dep": 0.297,
+   "wd": 0.174,
+   "at": 1795003720487
+  },
+  "beefy:ethereum:morpho-steakhouse-weth": {
+   "dep": 0.23,
+   "wd": 0.06,
+   "at": 1795003733058
+  },
+  "beefy:base:aero-cow-base-cbbtc-usdc-vault": {
+   "dep": 0.105,
+   "wd": 0.084,
+   "at": 1795003739215
+  },
+  "beefy:arbitrum:sushi-cow-arb-weth-usdc-vault": {
+   "dep": 0.186,
+   "wd": 0.019,
+   "at": 1795003748706
+  },
+  "beefy:ethereum:curve-msusd-fraxbp": {
+   "dep": 0.387,
+   "wd": 0.215,
+   "at": 1795003761648
+  },
+  "beefy:base:pancakeswap-cow-base-sol-cbbtc-vault": {
+   "dep": 0,
+   "wd": 0.706,
+   "at": 1795003781315
+  },
+  "meteora:solana:8qs7oJiYXzNWEN4KxS1HfthVA1SkyfWzk1WTxb8Qv2Y6": {
+   "dep": 0.082,
+   "wd": 0.072,
+   "at": 1795003790165
+  },
+  "beefy:arbitrum:uniswap-cow-arb-wbtc-tbtc-vault": {
+   "dep": 0.384,
+   "wd": 0.095,
+   "at": 1795003802636
+  },
+  "beefy:base:aero-cow-base-usdc-weth-vault": {
+   "dep": 0.215,
+   "wd": 0.033,
+   "at": 1795003810587
+  },
+  "scallop:sui:0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN": {
+   "dep": 0.284,
+   "wd": 1.057,
+   "at": 1795003817647
+  },
+  "scallop:sui:0x960b531667636f39e85867775f52f6b1f220a058c4de786905bdf761e06a56bb::usdy::USDY": {
+   "dep": 0.32,
+   "wd": 1.021,
+   "at": 1795003823892
+  },
+  "beefy:optimism:curve-op-crvusd-usdt": {
+   "dep": 0.141,
+   "wd": 0.292,
+   "at": 1795003830508
+  },
+  "beefy:monad:curve-monad-cbbtc": {
+   "dep": 0.221,
+   "wd": 0.069,
+   "at": 1795003836250
+  },
+  "beefy:ethereum:stakedao-pmusd-frxusd": {
+   "dep": 0.396,
+   "wd": 0.225,
+   "at": 1795003842465
+  },
+  "beefy:optimism:curve-op-crvusd-usdc": {
+   "dep": 0,
+   "wd": 0.144,
+   "at": 1795003847025
+  },
+  "beefy:base:aero-cow-base-usdc-googlc-vault": {
+   "dep": 0.004,
+   "wd": 0.255,
+   "at": 1795003853236
+  },
+  "beefy:monad:aavev3-monad-ausd": {
+   "dep": 0.07,
+   "wd": 0.07,
+   "at": 1795003857596
+  },
+  "beefy:monad:curvance-monad-ausd-earnausd-ausd": {
+   "dep": 0.07,
+   "wd": 0.07,
+   "at": 1795003857596
+  },
+  "beefy:monad:neverland-monad-ausd": {
+   "dep": 0.07,
+   "wd": 0.07,
+   "at": 1795003857596
+  },
+  "beefy:monad:morpho-monad-steakhouse-ausd": {
+   "dep": 0.07,
+   "wd": 0.07,
+   "at": 1795003857596
+  },
+  "navi:sui:31": {
+   "dep": 0.792,
+   "wd": 0.76,
+   "at": 1795003865168
+  },
+  "beefy:arbitrum:pancake-cow-arb-weth-usdc-500-vault": {
+   "dep": 0.212,
+   "wd": 0.046,
+   "at": 1795003871270
+  },
+  "beefy:base:pancake-cow-base-weth-usdc-vault": {
+   "dep": 0.186,
+   "wd": 0.024,
+   "at": 1795003876567
+  },
+  "beefy:arbitrum:pancake-cow-arb-wbtc-usdc-vault": {
+   "dep": 0.152,
+   "wd": 0.055,
+   "at": 1795003882202
+  },
+  "beefy:base:aero-cow-base-usdc-nvdac-vault": {
+   "dep": 0.211,
+   "wd": 0.189,
+   "at": 1795003887871
+  },
+  "beefy:arbitrum:pancake-cow-arb-wbtc-weth-vault": {
+   "dep": 0.249,
+   "wd": 0.052,
+   "at": 1795003895187
+  },
+  "beefy:base:aero-cow-base-aero-usdc-vault": {
+   "dep": 0.327,
+   "wd": 0,
+   "at": 1795003901314
+  },
+  "beefy:arbitrum:morpho-v2-arbitrum-gauntlet-premium-usdg": {
+   "dep": 0.09,
+   "wd": 0.04,
+   "at": 1795003905137
+  },
+  "beefy:ethereum:convex-staked-cvxCRV": {
+   "dep": 0.82,
+   "wd": 0.01,
+   "at": 1795003909092
+  },
+  "beefy:base:aero-cow-base-vvv-weth-vault": {
+   "dep": 0.604,
+   "wd": 0.065,
+   "at": 1795003919182
+  },
+  "beefy:monad:morpho-v2-monad-hyperithm-apex-cbbtc": {
+   "dep": 0.14,
+   "wd": 0.14,
+   "at": 1795003970938
+  },
+  "beefy:ethereum:stakedao-crvusd-usdt": {
+   "dep": 0.134,
+   "wd": 0.05,
+   "at": 1795003980578
+  },
+  "beefy:ethereum:curve-pyusd-crvusd": {
+   "dep": 0.152,
+   "wd": 0.047,
+   "at": 1795003985107
+  },
+  "beefy:optimism:curve-op-tbtc": {
+   "dep": 0.134,
+   "wd": 0.139,
+   "at": 1795003991885
+  },
+  "euler:56:0xf4940CdE23c164f8CA8D536f3567337349b3208F": {
+   "dep": 0.27,
+   "wd": 0.46,
+   "at": 1795003996636
+  },
+  "beefy:base:curve-base-4pool": {
+   "dep": 0.097,
+   "wd": 0.024,
+   "at": 1795004000995
+  },
+  "scallop:sui:0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA": {
+   "dep": 0.328,
+   "wd": 1.266,
+   "at": 1795004008186
+  },
+  "beefy:base:aero-v2-base-weth-mseth": {
+   "dep": 0.169,
+   "wd": 0.288,
+   "at": 1795004015509
+  },
+  "beefy:arbitrum:curve-arb-crvusd-usdt": {
+   "dep": 0.13,
+   "wd": 0.285,
+   "at": 1795004040719
+  },
+  "silo-vault:50:0x06083db34f1e915fa5cd4e2a198f3680e3ce9c60": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004050150
+  },
+  "silo:50:0xd1ed56ed95c02634d9e2385a04cd5b97078dd932": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004050150
+  },
+  "silo:50:0xf3d1fcb16374fa8f4a5135706c7a5ef4483c1e95": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004050150
+  },
+  "silo:50:0xdbb74aff8d8713f5b8d8edce5a9896f5ebc8dafb": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004050150
+  },
+  "beefy:ethereum:curve-crvusd-yb": {
+   "dep": 0.706,
+   "wd": 0.194,
+   "at": 1795004055024
+  },
+  "beefy:monad:aavev3-monad-weth": {
+   "dep": 0.17,
+   "wd": 0.1,
+   "at": 1795004058921
+  },
+  "beefy:monad:morpho-monad-steakhouse-prime-weth": {
+   "dep": 0.17,
+   "wd": 0.1,
+   "at": 1795004058921
+  },
+  "beefy:monad:neverland-monad-weth": {
+   "dep": 0.17,
+   "wd": 0.1,
+   "at": 1795004058921
+  },
+  "beefy:base:aero-cow-base-usdc-spcxc-vault": {
+   "dep": 0.2,
+   "wd": 0.187,
+   "at": 1795004064753
+  },
+  "beefy:bsc:pancake-cow-bsc-cake-wbnb-vault": {
+   "dep": 0.683,
+   "wd": 0.533,
+   "at": 1795004077894
+  },
+  "beefy:arbitrum:pancake-cow-arb-weth-usdt-500-vault": {
+   "dep": 0.209,
+   "wd": 0.16,
+   "at": 1795004084407
+  },
+  "beefy:optimism:curve-op-crvusd-usdc.e": {
+   "dep": 0.165,
+   "wd": 0.269,
+   "at": 1795004111872
+  },
+  "beefy:optimism:aero-v2-optimism-weth-moobifi": {
+   "dep": 0.587,
+   "wd": 0.07,
+   "at": 1795004119839
+  },
+  "beefy:bsc:pancake-cow-bsc-usdt-wbnb-vault": {
+   "dep": 0.346,
+   "wd": 0.471,
+   "at": 1795004126994
+  },
+  "beefy:ethereum:curve-ebtc-tbtc": {
+   "dep": 9.365,
+   "wd": 0,
+   "at": 1795004133045
+  },
+  "beefy:avax:black-usdc-eurc": {
+   "dep": 0.145,
+   "wd": 0.136,
+   "at": 1795004138753
+  },
+  "beefy:arbitrum:uniswap-cow-arb-tbtc-weth-prod-vault": {
+   "dep": 0.545,
+   "wd": 0,
+   "at": 1795004197739
+  },
+  "beefy:bsc:pancake-cow-bsc-cake-usdt-vault": {
+   "dep": 0.596,
+   "wd": 0.55,
+   "at": 1795004203940
+  },
+  "beefy:ethereum:curve-bold-usdc-new": {
+   "dep": 0.161,
+   "wd": 0.035,
+   "at": 1795004207918
+  },
+  "beefy:arbitrum:uniswap-cow-arb-wbtc-link-vault": {
+   "dep": 0.483,
+   "wd": 0.195,
+   "at": 1795004217195
+  },
+  "beefy:avax:aavev4-avax-usdc": {
+   "dep": 0.06,
+   "wd": 0.09,
+   "at": 1795004219910
+  },
+  "beefy:base:aero-cow-base-cbxrp-cbbtc-vault": {
+   "dep": 0.473,
+   "wd": 0.189,
+   "at": 1795004227921
+  },
+  "beefy:base:aero-cow-base-usdc-aaplc-vault": {
+   "dep": 0.134,
+   "wd": 0.121,
+   "at": 1795004282966
+  },
+  "beefy:monad:aavev3-monad-gho": {
+   "dep": 0.22,
+   "wd": 0.21,
+   "at": 1795004286866
+  },
+  "beefy:optimism:aero-v2-optimism-aleth-weth": {
+   "dep": 0.886,
+   "wd": 0,
+   "at": 1795004295278
+  },
+  "beefy:base:morpho-base-steakhouse-prime-eurc": {
+   "dep": 0.34,
+   "wd": 0.08,
+   "at": 1795004298954
+  },
+  "beefy:ethereum:aavev4-ethereum-frxusd": {
+   "dep": 0.09,
+   "wd": 1.11,
+   "at": 1795004302927
+  },
+  "beefy:ethereum:curve-reusd-sfrxusd": {
+   "dep": 0.343,
+   "wd": 0.113,
+   "at": 1795004308331
+  },
+  "beefy:base:aero-cow-base-msftc-usdc-vault": {
+   "dep": 0.095,
+   "wd": 0.216,
+   "at": 1795004318287
+  },
+  "beefy:arbitrum:uniswap-cow-arb-usdc-aave-vault": {
+   "dep": 0.566,
+   "wd": 0,
+   "at": 1795004344154
+  },
+  "beefy:arbitrum:uniswap-cow-arb-link-usdt-vault": {
+   "dep": 0.204,
+   "wd": 0.234,
+   "at": 1795004350774
+  },
+  "beefy:arbitrum:morpho-arb-gauntlet-core-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004353710
+  },
+  "beefy:arbitrum:morpho-arb-steakhouse-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004353710
+  },
+  "beefy:arbitrum:morpho-arb-gauntlet-prime-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004353710
+  },
+  "beefy:arbitrum:morpho-arb-steakhouse-v2-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004353710
+  },
+  "beefy:arbitrum:morpho-arb-hyperithm-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004353710
+  },
+  "beefy:base:aero-cow-base-usdc-metac-vault": {
+   "dep": 0.17,
+   "wd": 0.051,
+   "at": 1795004360612
+  },
+  "beefy:base:aero-v2-base-msusd-usdc": {
+   "dep": 0.159,
+   "wd": 0.229,
+   "at": 1795004368416
+  },
+  "beefy:arbitrum:uniswap-cow-arb-weth-uni-vault": {
+   "dep": 0.82,
+   "wd": 0.093,
+   "at": 1795004377091
+  },
+  "beefy:arbitrum:curve-arb-crvusd-usdc.e": {
+   "dep": 0.148,
+   "wd": 0.273,
+   "at": 1795004383061
+  },
+  "beefy:bsc:pancake-cow-bsc-eth-usdt-vault": {
+   "dep": 0.559,
+   "wd": 0.234,
+   "at": 1795004409919
+  },
+  "beefy:arbitrum:uniswap-cow-arb-usdc-usdt-vault": {
+   "dep": 0.092,
+   "wd": 0.074,
+   "at": 1795004417923
+  },
+  "beefy:arbitrum:uniswap-cow-arb-crv-weth-vault": {
+   "dep": 0.812,
+   "wd": 0,
+   "at": 1795004426963
+  },
+  "beefy:optimism:aero-v2-optimism-usdc-msusd": {
+   "dep": 0.199,
+   "wd": 0.238,
+   "at": 1795004435225
+  },
+  "beefy:base:aero-cow-base-sndkc-usdc-vault": {
+   "dep": 0.437,
+   "wd": 0,
+   "at": 1795004441171
+  },
+  "beefy:base:aero-cow-base-weth-cbbtc-v2-vault": {
+   "dep": 0.457,
+   "wd": 0,
+   "at": 1795004469060
+  },
+  "beefy:bsc:pancake-cow-bsc-doge-wbnb-vault": {
+   "dep": 0.721,
+   "wd": 0.455,
+   "at": 1795004477110
+  },
+  "beefy:avax:aavev4-avax-usdt": {
+   "dep": 0.08,
+   "wd": 0.08,
+   "at": 1795004481925
+  },
+  "beefy:ethereum:stakedao-mseth-weth": {
+   "dep": 0.519,
+   "wd": 0,
+   "at": 1795004486697
+  },
+  "beefy:bsc:pancake-cow-bsc-sol-wbnb-vault": {
+   "dep": 0.269,
+   "wd": 0.809,
+   "at": 1795004494232
+  },
+  "beefy:monad:aavev3-monad-musd": {
+   "dep": 0.07,
+   "wd": 0.07,
+   "at": 1795004549053
+  },
+  "beefy:ethereum:convex-cvxeth": {
+   "dep": 0.653,
+   "wd": 0,
+   "at": 1795004554488
+  },
+  "beefy:base:pancakeswap-cow-base-sol-usdc-vault": {
+   "dep": 0,
+   "wd": 0.502,
+   "at": 1795004561033
+  },
+  "beefy:base:aero-v2-base-usdc-alusdb": {
+   "dep": 0.171,
+   "wd": 0.179,
+   "at": 1795004567739
+  },
+  "beefy:ethereum:convex-fraxusdc": {
+   "dep": 0.142,
+   "wd": 0.015,
+   "at": 1795004572478
+  },
+  "beefy:base:aero-cow-base-tbtc-weth-vault": {
+   "dep": 0.855,
+   "wd": 0,
+   "at": 1795004581130
+  },
+  "beefy:arbitrum:curve-arb-crvusd-usdc": {
+   "dep": 0.002,
+   "wd": 0.139,
+   "at": 1795004585764
+  },
+  "beefy:base:aero-cow-base-eurc-usdc-vault": {
+   "dep": 0.011,
+   "wd": 0.259,
+   "at": 1795004592356
+  },
+  "beefy:base:aero-v2-base-aero-usdc": {
+   "dep": 0.497,
+   "wd": 0,
+   "at": 1795004597781
+  },
+  "beefy:base:aero-cow-base-cbxrp-weth-vault": {
+   "dep": 0.711,
+   "wd": 0,
+   "at": 1795004621495
+  },
+  "beefy:ethereum:convex-clev": {
+   "dep": 0.806,
+   "wd": 0,
+   "at": 1795004633311
+  },
+  "beefy:arbitrum:pancake-cow-arb-usdc-usdt-vault": {
+   "dep": 0.097,
+   "wd": 0.069,
+   "at": 1795004649320
+  },
+  "beefy:optimism:aero-cow-optimism-usdc-weth-vault": {
+   "dep": 0.429,
+   "wd": 0,
+   "at": 1795004657045
+  },
+  "beefy:base:aero-cow-base-amznc-usdc-vault": {
+   "dep": 0.276,
+   "wd": 0.098,
+   "at": 1795004664505
+  },
+  "beefy:ethereum:sky-staking": {
+   "dep": 0.49,
+   "wd": 0.22,
+   "at": 1795004668760
+  },
+  "beefy:ethereum:fx-fxn-eth": {
+   "dep": 0.855,
+   "wd": 0,
+   "at": 1795004682938
+  },
+  "beefy:base:aero-cow-base-eurc-weth-vault": {
+   "dep": 0.489,
+   "wd": 0,
+   "at": 1795004692110
+  },
+  "beefy:base:aero-cow-base-mstrc-usdc-vault": {
+   "dep": 0.307,
+   "wd": 0,
+   "at": 1795004700331
+  },
+  "beefy:ethereum:stakedao-evausdt-evausdc": {
+   "dep": 0.268,
+   "wd": 0.163,
+   "at": 1795004705895
+  },
+  "beefy:optimism:aero-v2-optimism-usdc-alusd": {
+   "dep": 0.271,
+   "wd": 0.121,
+   "at": 1795004712987
+  },
+  "beefy:ethereum:stakedao-pmusd-ireet": {
+   "dep": 0.545,
+   "wd": 0.228,
+   "at": 1795004718612
+  },
+  "beefy:optimism:aero-cow-optimism-usdc-moobifi-vault": {
+   "dep": 2.054,
+   "wd": 0.162,
+   "at": 1795004726087
+  },
+  "beefy:optimism:morpho-op-gauntlet-prime-usdc": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795004728981
+  },
+  "beefy:base:aero-cow-base-cbzec-usdc-vault": {
+   "dep": 0.56,
+   "wd": 0.043,
+   "at": 1795004754101
+  },
+  "beefy:ethereum:stakedao-usdc-usg": {
+   "dep": 0.188,
+   "wd": 0.028,
+   "at": 1795004758289
+  },
+  "beefy:bsc:pancake-cow-bsc-usdc-wbnb-vault": {
+   "dep": 0.396,
+   "wd": 0.439,
+   "at": 1795004764108
+  },
+  "beefy:base:aero-cow-base-eurc-cbbtc-vault": {
+   "dep": 0.47,
+   "wd": 0.016,
+   "at": 1795004770797
+  },
+  "beefy:bsc:pancake-cow-bsc-btcb-wbnb-vault": {
+   "dep": 0.604,
+   "wd": 0.581,
+   "at": 1795004777727
+  },
+  "beefy:ethereum:stakedao-scrvusd-susde": {
+   "dep": 0.356,
+   "wd": 0.128,
+   "at": 1795004782465
+  },
+  "beefy:arbitrum:uniswap-cow-arb-usdc-uni-vault": {
+   "dep": 0.275,
+   "wd": 0.437,
+   "at": 1795004788624
+  },
+  "beefy:monad:pancake-cow-monad-wmon-usdc-vault": {
+   "dep": 0,
+   "wd": 0.595,
+   "at": 1795004845870
+  },
+  "beefy:base:aero-cow-base-tslac-usdc-vault": {
+   "dep": 0.117,
+   "wd": 0.141,
+   "at": 1795004876551
+  },
+  "beefy:base:aero-cow-base-weth-zro-vault": {
+   "dep": 0.349,
+   "wd": 0.235,
+   "at": 1795004893286
+  },
+  "beefy:base:stakedao-base-superoethb": {
+   "dep": 0.182,
+   "wd": 0.075,
+   "at": 1795004899279
+  },
+  "beefy:base:aero-cow-base-aero-cbbtc-vault": {
+   "dep": 0.63,
+   "wd": 0,
+   "at": 1795004906041
+  },
+  "beefy:bsc:pancake-cow-bsc-wbnb-xvs-vault": {
+   "dep": 0.578,
+   "wd": 0.701,
+   "at": 1795004918255
+  },
+  "beefy:ethereum:curve-weth-rsup": {
+   "dep": 0.923,
+   "wd": 0,
+   "at": 1795004923634
+  },
+  "beefy:base:aero-cow-base-usdc-cbhype-vault": {
+   "dep": 0.782,
+   "wd": 0,
+   "at": 1795004932763
+  },
+  "beefy:bsc:pancake-cow-bsc-usdt-usdc-vault": {
+   "dep": 0.315,
+   "wd": 0.424,
+   "at": 1795004941112
+  },
+  "beefy:base:aero-cow-base-sol-usdc-vault": {
+   "dep": 0,
+   "wd": 0.505,
+   "at": 1795004946867
+  },
+  "beefy:base:aavev3-base-cbeth": {
+   "dep": 0.27,
+   "wd": 0.14,
+   "at": 1795004950615
+  },
+  "beefy:ethereum:stakedao-frxusd-sgho": {
+   "dep": 0.363,
+   "wd": 0.212,
+   "at": 1795004972687
+  },
+  "beefy:base:morpho-v2-base-gauntlet-balanced-weth": {
+   "dep": 0.07,
+   "wd": 0.14,
+   "at": 1795004976263
+  },
+  "beefy:optimism:aero-cow-optimism-usdc-wbtc-vault": {
+   "dep": 0.07,
+   "wd": 0.193,
+   "at": 1795004983337
+  },
+  "beefy:ethereum:stakedao-frxusd-usd3": {
+   "dep": 0.376,
+   "wd": 0.213,
+   "at": 1795004988741
+  },
+  "beefy:optimism:aero-cow-optimism-weth-wbtc-vault": {
+   "dep": 0.281,
+   "wd": 0.134,
+   "at": 1795004997501
+  },
+  "beefy:ethereum:stakedao-mim": {
+   "dep": 2.161,
+   "wd": 2.339,
+   "at": 1795005004242
+  },
+  "beefy:base:aero-cow-base-paxg-usdc-vault": {
+   "dep": 0.069,
+   "wd": 0.268,
+   "at": 1795005064163
+  },
+  "beefy:arbitrum:uniswap-cow-arb-link-eth-vault": {
+   "dep": 0.333,
+   "wd": 0.291,
+   "at": 1795005072606
+  },
+  "beefy:bsc:pancake-cow-bsc-eth-btcb-vault": {
+   "dep": 0.674,
+   "wd": 0.551,
+   "at": 1795005080513
+  },
+  "beefy:ethereum:convex-mim": {
+   "dep": 1.681,
+   "wd": 2.375,
+   "at": 1795005085600
+  },
+  "beefy:base:aero-v2-base-jeur-eurc": {
+   "dep": 0.175,
+   "wd": 0.336,
+   "at": 1795005094435
+  },
+  "beefy:ethereum:stakedao-musd-2pool": {
+   "dep": 0.358,
+   "wd": 0.12,
+   "at": 1795005149910
+  },
+  "beefy:optimism:aero-cow-optimism-usdc-wsteth-vault": {
+   "dep": 0,
+   "wd": 0.271,
+   "at": 1795005156592
+  },
+  "beefy:bsc:pancake-cow-bsc-eth-wbnb-vault": {
+   "dep": 0.617,
+   "wd": 0.44,
+   "at": 1795005162771
+  },
+  "beefy:ethereum:stakedao-vusd-crvusd": {
+   "dep": 0.643,
+   "wd": 0.183,
+   "at": 1795005167520
+  },
+  "beefy:base:pancake-cow-base-weth-eurc-vault": {
+   "dep": 0.374,
+   "wd": 0.107,
+   "at": 1795005174107
+  },
+  "beefy:optimism:curve-op-tricrv": {
+   "dep": 0.406,
+   "wd": 0.213,
+   "at": 1795005179159
+  },
+  "beefy:base:aero-cow-base-aero-weth-vault": {
+   "dep": 0.243,
+   "wd": 0.181,
+   "at": 1795005234199
+  },
+  "beefy:arbitrum:uniswap-cow-arb-ldo-usdc-vault": {
+   "dep": 0.305,
+   "wd": 0.584,
+   "at": 1795005240855
+  },
+  "beefy:base:aero-cow-base-cbbtc-cbdoge-vault": {
+   "dep": 0.452,
+   "wd": 0.244,
+   "at": 1795005248258
+  },
+  "beefy:optimism:aero-v2-optimism-mseth-weth": {
+   "dep": 0.147,
+   "wd": 0.412,
+   "at": 1795005258830
+  },
+  "beefy:base:aero-cow-base-tbtc-cbbtc-vault": {
+   "dep": 0.383,
+   "wd": 0.074,
+   "at": 1795005319280
+  },
+  "beefy:bsc:pancake-cow-bsc-zro-wbnb-vault": {
+   "dep": 0.432,
+   "wd": 0.872,
+   "at": 1795005326005
+  },
+  "beefy:ethereum:morpho-v2-ethereum-steakhouse-prime-instant-pyusd": {
+   "dep": 0.53,
+   "wd": 0.07,
+   "at": 1795005329595
+  },
+  "beefy:ethereum:stakedao-crvusd-frxusd": {
+   "dep": 0.707,
+   "wd": 0.181,
+   "at": 1795005334237
+  },
+  "beefy:base:aero-cow-base-weth-morpho-vault": {
+   "dep": 0.759,
+   "wd": 0.229,
+   "at": 1795005341153
+  },
+  "beefy:megaeth:aavev3-megaeth-usdm": {
+   "dep": 0,
+   "wd": 0.6,
+   "at": 1795005344177
+  },
+  "beefy:bsc:pancake-cow-bsc-usdt-btcb-vault": {
+   "dep": 0,
+   "wd": 1,
+   "at": 1795005398624
+  },
+  "beefy:ethereum:stakedao-susg-reusd": {
+   "dep": 1.016,
+   "wd": 0,
+   "at": 1795005404250
+  },
+  "beefy:ethereum:stakedao-ousd-usde": {
+   "dep": 1.092,
+   "wd": 0,
+   "at": 1795005409744
+  },
+  "beefy:bsc:pancake-cow-bsc-pepe-wbnb-vault": {
+   "dep": 1.512,
+   "wd": 0.812,
+   "at": 1795005416202
+  },
+  "beefy:base:aero-cow-base-sol-cbbtc-vault": {
+   "dep": 0,
+   "wd": 0.69,
+   "at": 1795005423247
+  },
+  "beefy:arbitrum:pancake-cow-arb-arb-usdc-vault": {
+   "dep": 0,
+   "wd": 0.4,
+   "at": 1795005480040
+  },
+  "beefy:monad:curve-monad-mon-lsts": {
+   "dep": 0,
+   "wd": 0.948,
+   "at": 1795005485656
+  },
+  "beefy:base:aero-cow-base-usdc-intcc-vault": {
+   "dep": 0.07,
+   "wd": 0.435,
+   "at": 1795005491556
+  },
+  "beefy:ethereum:fx-gho-fxusd": {
+   "dep": 0.594,
+   "wd": 0.172,
+   "at": 1795005496092
+  },
+  "beefy:ethereum:morpho-v2-ethereum-steakhouse-high-yield-usdt": {
+   "dep": 0.39,
+   "wd": 0.06,
+   "at": 1795005499806
+  },
+  "beefy:base:aero-cow-base-virtual-weth-vault": {
+   "dep": 0.337,
+   "wd": 0.012,
+   "at": 1795005507538
+  },
+  "beefy:robinhood:alandale-cow-robinhood-weth-usdg-vault": {
+   "dep": 0.033,
+   "wd": 0,
+   "at": 1795005516114
+  },
+  "beefy:arbitrum:morpho-arb-steakhouse-usdt": {
+   "dep": 0.08,
+   "wd": 0.06,
+   "at": 1795005520872
+  },
+  "beefy:optimism:aero-cow-optimism-usdc-op-vault": {
+   "dep": 0,
+   "wd": 0.57,
+   "at": 1795005546387
+  },
+  "beefy:base:aero-cow-base-usdc-orclc-vault": {
+   "dep": 0.171,
+   "wd": 0.276,
+   "at": 1795005552437
+  },
+  "beefy:avax:black-weth-wavax": {
+   "dep": 0.188,
+   "wd": 0.379,
+   "at": 1795005560220
+  },
+  "beefy:base:aero-cow-base-weth-usdt-vault": {
+   "dep": 0.145,
+   "wd": 0.061,
+   "at": 1795005567498
+  },
+  "beefy:arbitrum:uniswap-cow-arb-pepe-weth-vault": {
+   "dep": 2.119,
+   "wd": 0.374,
+   "at": 1795005575089
+  },
+  "beefy:optimism:aero-cow-optimism-weth-op-vault": {
+   "dep": 0,
+   "wd": 0.583,
+   "at": 1795005630656
+  },
+  "beefy:ethereum:stakedao-crvusd-usdc": {
+   "dep": 0.345,
+   "wd": 0.036,
+   "at": 1795005634667
+  },
+  "beefy:base:aero-cow-base-vvv-diem-vault": {
+   "dep": 15.072,
+   "wd": 0.02,
+   "at": 1795005642607
+  },
+  "beefy:base:pancake-cow-base-virtual-opg-vault": {
+   "dep": 2.53,
+   "wd": 0,
+   "at": 1795005649426
+  },
+  "beefy:monad:pancake-cow-monad-ausd-wmon-vault": {
+   "dep": 0,
+   "wd": 0.748,
+   "at": 1795005660502
+  },
+  "beefy:monad:neverland-monad-wbtc": {
+   "dep": 0.06,
+   "wd": 0.41,
+   "at": 1795005711512
+  },
+  "beefy:bsc:pancake-cow-bsc-usdt-sol-vault": {
+   "dep": 0,
+   "wd": 1.378,
+   "at": 1795005718474
+  },
+  "beefy:base:pancake-cow-base-cake-usdc-vault": {
+   "dep": 0.113,
+   "wd": 0.405,
+   "at": 1795005725957
+  },
+  "beefy:arbitrum:pancake-cow-arb-cake-weth-vault": {
+   "dep": 0.357,
+   "wd": 0.689,
+   "at": 1795005733740
+  },
+  "beefy:arbitrum:uniswap-cow-arb-weth-dai-vault": {
+   "dep": 0.235,
+   "wd": 0.19,
+   "at": 1795005740985
+  },
+  "beefy:base:aero-cow-base-chip-usdc-vault": {
+   "dep": 0,
+   "wd": 0.736,
+   "at": 1795005797913
+  },
+  "beefy:base:aero-v2-base-virtual-cbbtc": {
+   "dep": 0,
+   "wd": 0.393,
+   "at": 1795005805010
+  },
+  "beefy:base:pancake-cow-base-sol-weth-vault": {
+   "dep": 0,
+   "wd": 0.961,
+   "at": 1795005813076
+  },
+  "beefy:base:aero-cow-base-hype-weth-vault": {
+   "dep": 0,
+   "wd": 0.558,
+   "at": 1795005819822
+  },
+  "beefy:base:aero-v2-base-weth-well": {
+   "dep": 0.228,
+   "wd": 0.946,
+   "at": 1795005882616
+  },
+  "beefy:base:aero-cow-base-weth-aave-vault": {
+   "dep": 0.084,
+   "wd": 0.616,
+   "at": 1795005889656
+  },
+  "beefy:base:aero-cow-base-weth-metac-vault": {
+   "dep": 10.756,
+   "wd": 0.343,
+   "at": 1795005896412
+  },
+  "beefy:bsc:ooev2-ooe-bnb": {
+   "error": "No route right now: Swap impact is too high: 59.84%",
+   "at": 1795005900404
+  },
+  "beefy:arbitrum:sushi-cow-arb-usdc-usdt-vault": {
+   "dep": 0.076,
+   "wd": 0.086,
+   "at": 1795005906990
+  },
+  "beefy:arbitrum:sushi-cow-arb-wbtc-usdc-vault": {
+   "dep": 0.091,
+   "wd": 0.206,
+   "at": 1795005977222
+  },
+  "beefy:monad:neverland-monad-wmon": {
+   "dep": 0.54,
+   "wd": 0.05,
+   "at": 1795005982093
+  },
+  "beefy:base:aero-cow-base-moobifi-weth-vault": {
+   "dep": 0.453,
+   "wd": 1.01,
+   "at": 1795005991799
+  },
+  "beefy:bsc:pancake-cow-bsc-tst-wbnb-vault": {
+   "dep": 0.983,
+   "wd": 0.901,
+   "at": 1795006001661
+  },
+  "beefy:base:aero-cow-base-usdc-himsc-vault": {
+   "dep": 0,
+   "wd": 0.485,
+   "at": 1795006007693
+  },
+  "beefy:arbitrum:sushi-cow-arb-zro-weth-vault": {
+   "dep": 0,
+   "wd": 0.8,
+   "at": 1795006036097
+  },
+  "beefy:base:aero-cow-base-weth-nvdac-vault": {
+   "dep": 0,
+   "wd": 0.514,
+   "at": 1795006043465
+  },
+  "beefy:monad:pancake-cow-monad-wbtc-wmon-vault": {
+   "dep": 2.269,
+   "wd": 0.552,
+   "at": 1795006051027
+  },
+  "beefy:base:aero-cow-base-muc-usdc-vault": {
+   "dep": 1.311,
+   "wd": 0.447,
+   "at": 1795006057448
+  },
+  "beefy:base:aero-cow-base-cbltc-cbbtc-vault": {
+   "dep": 0,
+   "wd": 0.577,
+   "at": 1795006115619
+  },
+  "beefy:avax:black-usdc-black": {
+   "dep": 0.404,
+   "wd": 0.529,
+   "at": 1795006121786
+  },
+  "beefy:ethereum:stakedao-frxusd-usg": {
+   "dep": 0.462,
+   "wd": 0.186,
+   "at": 1795006126841
+  },
+  "beefy:avax:black-avax-black": {
+   "dep": 0.185,
+   "wd": 0.862,
+   "at": 1795006134702
+  },
+  "beefy:ethereum:stakedao-crv-sdcrv": {
+   "dep": 0.39,
+   "wd": 0.53,
+   "at": 1795006139717
+  },
+  "beefy:plasma:lithos-wxpl-usdt0": {
+   "dep": 0.001,
+   "wd": 0.434,
+   "at": 1795006148817
+  },
+  "beefy:base:pancake-cow-base-usdc-cbbtc-vault": {
+   "dep": 0,
+   "wd": 0.301,
+   "at": 1795006176221
+  },
+  "beefy:base:aero-cow-base-weth-cbltc-vault": {
+   "dep": 0.223,
+   "wd": 0.545,
+   "at": 1795006184046
+  },
+  "beefy:ethereum:stakedao-usg-sdola": {
+   "dep": 0.497,
+   "wd": 0.199,
+   "at": 1795006188491
   }
  }
 }

@@ -35,7 +35,8 @@ async function main() {
   const fresh = process.argv.includes("--fresh");
   const cat = (await fetch(CATALOG).then((r) => r.json())) as { opportunities: O[]; unlisted?: O[] };
   const vaults = [...cat.opportunities, ...(cat.unlisted ?? [])].filter((o) => oneClickFor(o)).sort((a, b) => (b.tvlUsd ?? 0) - (a.tvlUsd ?? 0));
-  const keyOf = (o: O) => (PER_VAULT.has(o.protocol) ? o.id : `${o.chain}|${o.protocol}|${o.asset}`);
+  // LP vaults (Beefy, Yearn Curve) depend on their own pool, so they're checked one by one too.
+  const keyOf = (o: O) => (PER_VAULT.has(o.protocol) || (o as { kind?: string }).kind === "Liquidity" ? o.id : `${o.chain}|${o.protocol}|${o.asset}`);
   const groups = new Map<string, O[]>();
   for (const o of vaults) groups.set(keyOf(o), [...(groups.get(keyOf(o)) ?? []), o]);
 
