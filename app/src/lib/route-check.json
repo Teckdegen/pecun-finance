@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-17T23:59:49.896Z",
+ "generatedAt": "2026-11-18T00:01:26.902Z",
  "amountUsd": 100,
  "limitPct": 0.5,
  "passed": [
@@ -111,8 +111,11 @@
   "aavev4:5042:0xB843bdC3a87A05E77E07Df9FE48928b3A34b134d:3",
   "aavev4:8453:0x17905Db0e4A3514467539956c084180616AE7B8D:7",
   "avantis:8453:junior",
+  "compound:10:0x2e44e174f7D53F0212823acC11C01A11d58c5bCB",
   "compound:10:0x995E394b8B2437aC8Ce61Ee0bC610D617962B214",
   "compound:10:0xE36A30D249f7761327fd973001A32010b521b6Fd",
+  "compound:1:0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3",
+  "compound:1:0x5D409e56D886231aDAf00c8775665AD0f9897b56",
   "compound:1:0xA17581A9E3356d9A858b789D68B4d866e593aE94",
   "compound:1:0xc3d688B66703497DAA19211EEdff47f25384cdc3",
   "compound:42161:0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
@@ -495,6 +498,7 @@
   "meteora:solana:FrrzSeT56FHgMruMaEWsC5qL1wFZecMFs2stUypAyJvw",
   "meteora:solana:FtMJoFr6ShjnkSGGZYXxJg21q46ztQBgoPmuvoRW2rnN",
   "meteora:solana:Gis8fU4MutdDa6tHCouMV5Xfgo7hER2fKQWG3v9aQ16U",
+  "meteora:solana:HPQxZ91SJ62AJ7WBSqop2Ttkz1j6cwGNFtxvFdysyjb7",
   "meteora:solana:HWzE4bSqxXR3L2pCrdaCEFNJCQXQN4gjPWEikwTDjwq7",
   "meteora:solana:HgHXbwA6yeVzP69VQZFSjYNgKnUFPPwi8Ns3PSpu162p",
   "meteora:solana:HuPRxaBcjQYrHj6scpQxUa6QqJsS2iA1TXMEEuVWPhog",
@@ -801,6 +805,7 @@
   "morpho:1:market:0x74078d0416c5876d8c5a7a7425fc322377b4c7f80dc4d66e492dd7012b1d60b7",
   "morpho:1:market:0x7421c2741e064e8c53fcb5de9faf7f0025dce75bc1caf26774dd878291c81dac",
   "morpho:1:market:0x755f954513d31d5f24aaf3d0cdc5e913a28383f8ea8ff85be9ffffa7371fb64d",
+  "morpho:1:market:0x760b14c9003f08ac4bf0cfb02596ee4d6f0548a4fde5826bfd56befb9ed62ae9",
   "morpho:1:market:0x7730ef5352412a37d441ab960f5c8f33ea8d1c9f01c34fc2340f65fa1c59ce69",
   "morpho:1:market:0x77e624dd9dd980810c2b804249e88f3598d9c7ec91f16aa5fbf6e3fdf6087f82",
   "morpho:1:market:0x7a25fb17b8bd83a934ad87d9d1725188fc129992ca816f3145b4ab7f673c98c3",
@@ -10474,6 +10479,66 @@
    "dep": 3.681,
    "wd": 0.06,
    "at": 1794959989896
+  },
+  "navi:sui:19": {
+   "dep": 1.076,
+   "wd": 0.192,
+   "at": 1794959995165
+  },
+  "compound:1:0x5D409e56D886231aDAf00c8775665AD0f9897b56": {
+   "dep": 0.09,
+   "wd": 0.07,
+   "at": 1794960000689
+  },
+  "scallop:sui:0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC": {
+   "dep": 0.707,
+   "wd": 0.06,
+   "at": 1794960004937
+  },
+  "compound:10:0x2e44e174f7D53F0212823acC11C01A11d58c5bCB": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1794960009009
+  },
+  "suilend:sui:0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT": {
+   "dep": 1.076,
+   "wd": 0.192,
+   "at": 1794960015518
+  },
+  "suilend:sui:0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN": {
+   "dep": 1.076,
+   "wd": 0.192,
+   "at": 1794960015518
+  },
+  "upshift:14:0x74E3840C9168785c213Bd8077119a0a1D0cf42DD": {
+   "dep": 2.16,
+   "wd": 0.06,
+   "at": 1794960023722
+  },
+  "compound:1:0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3": {
+   "dep": 0.25,
+   "wd": 0.15,
+   "at": 1794960034669
+  },
+  "meteora:solana:AvpjYo2akRt8xCSWHVgcnXD6JwjiSdMK3gBFwCERWEyB": {
+   "dep": 0.084,
+   "wd": 0.07,
+   "at": 1794960042335
+  },
+  "hyperliquid:0x53375ca9a649f337d83d0834fec0db97640a2a06": {
+   "dep": 1.27,
+   "wd": 0.07,
+   "at": 1794960045482
+  },
+  "hyperliquid:0x03449eade411f84543752ba4352f48243bd743ce": {
+   "dep": 1.27,
+   "wd": 0.07,
+   "at": 1794960048460
+  },
+  "hyperliquid:0x4f0936c31f9844950ec14e25c85a0163a141d6a3": {
+   "dep": 1.27,
+   "wd": 0.07,
+   "at": 1794960051394
   }
  }
 }

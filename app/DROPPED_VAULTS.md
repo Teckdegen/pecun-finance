@@ -1,13 +1,13 @@
 # Vaults not listed in Explore
 
-From the route check on 2026-11-17 (scripts/check-routes.ts, $100 in and out, limit 0.5%).
+From the route check on 2026-11-18 (scripts/check-routes.ts, $100 in and out, limit 0.5%).
 These vaults keep their pages so holders can still withdraw; they just aren't listed. To revisit later.
 
-- Too costly at $100: 330 vaults
+- Too costly at $100: 333 vaults
 - No route / error: 42 vaults
-- Not checked yet (LI.FI quota or no one-click): 334 vaults
+- Not checked yet (LI.FI quota or no one-click): 326 vaults
 
-Total: 706
+Total: 701
 
 
 ## Arbitrum
@@ -280,7 +280,6 @@ Total: 706
 | Beefy | msETH-WETH | 2 | $2.3M | Not checked yet |
 | Beefy | fxUSD-USDC | 1 | $1.9M | Not checked yet |
 | Beefy | USDS-stUSDS | 1 | $1.8M | Not checked yet |
-| Compound | USDS | 1 | $1.7M | Not checked yet |
 | Yearn | msETHWETH-f | 1 | $1.7M | Not checked yet |
 | Yearn | reusdsdola | 1 | $1.7M | Not checked yet |
 | Pendle | sUSD3 | 1 | $1.4M | Too costly at $100 (0.09% in / 5.32% out) |
@@ -305,7 +304,6 @@ Total: 706
 | Beefy | BOLD-LUSD | 1 | $402K | Not checked yet |
 | Pendle | USDG | 1 | $384K | No route: Value `4.41363e-11` is not a valid decimal number. |
 | Beefy | cbBTC | 1 | $375K | Not checked yet |
-| Compound | wstETH | 1 | $365K | Not checked yet |
 | Beefy | USDC-WBTC-WETH | 1 | $327K | Not checked yet |
 | Beefy | alETH-frxETH | 1 | $304K | Not checked yet |
 | Beefy | WETH | 2 | $291K | Not checked yet |
@@ -333,7 +331,6 @@ Total: 706
 | Morpho | XAUt | 2 | $63K | Too costly at $100 (0.58% in / 0.06% out) |
 | Beefy | frxUSD | 1 | $53K | Not checked yet |
 | Beefy | reUSD-sfrxUSD | 1 | $50K | Not checked yet |
-| Morpho | DAI | 1 | $50K | Too costly at $100 (0.08% in / 0.08% out) |
 | Beefy | CVX-WETH | 1 | $34K | Not checked yet |
 | Beefy | FRAX-USDC | 1 | $33K | Not checked yet |
 | Pendle | superUSDC | 1 | $28K | No route: Value `4.74404e-11` is not a valid decimal number. |
@@ -369,7 +366,7 @@ Total: 706
 |---|---|---|---|---|
 | Upshift | Monarq XRP Yield Vault | 1 | $4.9M | Too costly at $100 (2.112% in / 0.06% out) |
 | Spectra | FXRP | 1 | $2.7M | Too costly at $100 (2.075% in / 0.06% out) |
-| Upshift | Spark Earn Flare | 1 | $1.3M | Not checked yet |
+| Upshift | Spark Earn Flare | 1 | $1.3M | Too costly at $100 (2.16% in / 0.06% out) |
 | Spectra | WFLR | 5 | $405K | Not checked yet |
 | Spectra | FXRP | 3 | $70K | Not checked yet |
 
@@ -487,7 +484,6 @@ Total: 706
 
 | Protocol | Asset | Vaults | TVL | Why |
 |---|---|---|---|---|
-| Compound | USDC | 1 | $1.5M | Not checked yet |
 | Aave | LINK | 1 | $352K | Too costly at $100 (0.85% in / 0.93% out) |
 | Beefy | crvUSD-USDT | 1 | $157K | Not checked yet |
 | Beefy | crvUSD-USDC | 1 | $141K | Not checked yet |
@@ -552,7 +548,6 @@ Total: 706
 | Meteora | JupSOL-INF | 1 | $200K | Too costly at $100 (0.911% in / 0.07% out) |
 | Kamino | WBTC | 1 | $161K | No route: This Kamino reserve isn't taking deposits right now. |
 | Meteora | PRISMA-prSOL | 1 | $105K | Too costly at $100 (1.411% in / 0% out) |
-| Meteora | SPCX-USDC | 1 | $101K | Too costly at $100 (0.08% in / 0.07% out) |
 | Kamino | FDUSD | 2 | $57K | No route: This Kamino reserve isn't taking deposits right now. |
 | Kamino | bbSOL | 1 | $6K | No route: This Kamino reserve isn't taking deposits right now. |
 | Kamino | tBTC | 1 | $5K | No route: This Kamino reserve isn't taking deposits right now. |
@@ -582,9 +577,9 @@ Total: 706
 | NAVI | USDY | 1 | $2.1M | Too costly at $100 (0.908% in / 0.38% out) |
 | Aftermath | SUI | 1 | $2.1M | Too costly at $100 (1.168% in / 0.219% out) |
 | Scallop | SUI | 1 | $2.1M | Too costly at $100 (3.681% in / 0.06% out) |
-| NAVI | suiUSDT | 1 | $2.1M | Not checked yet |
-| Scallop | USDC | 1 | $1.5M | Not checked yet |
-| Suilend | USDT | 2 | $1.3M | Not checked yet |
+| NAVI | suiUSDT | 1 | $2.1M | Too costly at $100 (1.076% in / 0.192% out) |
+| Scallop | USDC | 1 | $1.5M | Too costly at $100 (0.707% in / 0.06% out) |
+| Suilend | USDT | 2 | $1.3M | Too costly at $100 (1.076% in / 0.192% out) |
 | Suilend | WAL | 1 | $1.2M | Not checked yet |
 | NAVI | suiETH | 1 | $1.1M | Not checked yet |
 | NAVI | WBTC | 1 | $482K | Not checked yet |
