@@ -325,6 +325,8 @@ export function toPreview(q: RelayQuote, fallbackSymbol: string): Preview {
 /** Quote + every transaction it asks for (EVM or Solana), then waits for Relay to report the transfer delivered. */
 export async function relay(s: Signer, p: RelayLeg) {
   const q = await relayQuote(p);
+  checkAutoCost(toPreview(q, "").costPct);
+  await noteLanding(s, p);
   let check: string | undefined;
   for (const step of q.steps!) {
     for (const item of step.items) {
@@ -389,11 +391,180 @@ export async function takeUsdgFee(s: Signer, total: bigint, on: Progress): Promi
     console.error("[pecun] NEXT_PUBLIC_PECUN_TREASURY is not set: no fee wallet to send the platform fee to.");
     throw new ExecError("Deposits are paused for a moment: Pecun's fee wallet isn't set up yet. Nothing was sent.");
   }
+  const run = runs.get(s);
+  if (fee > BigInt(0) && run?.deferFee) {
+    // Inside a deposit: the fee stays in the user's wallet and is only sent once the deposit has landed (see guarded).
+    run.fee += fee;
+    on("fee", "pending", "Taken once your deposit lands");
+    return total - fee;
+  }
   if (fee > BigInt(0)) {
     await sendEvm(s, ROBINHOOD_CHAIN_ID, { to: USDG, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [TREASURY as Address, fee] }) });
     on("fee", "done");
   }
   return total - fee;
+}
+
+/* ---------------- Run safety: fee only after success, stranded funds brought home, cost cap on automatic moves ---------------- */
+
+/** A token a run sent to the user on another chain, with the balance before it arrived. */
+type Landing = { chainId: number; token: Address; owner: Address; before: bigint };
+type Run = { deferFee: boolean; fee: bigint; landings: Landing[] };
+const runs = new WeakMap<object, Run>();
+/** Runs in progress in this tab: the stranded-funds check waits while any are going. */
+let activeRuns = 0;
+export const runsInProgress = () => activeRuns > 0;
+/** While > 0 (automatic returns and sweeps), every bridge or swap leg must cost at most MAX_ROUTE_COST_PCT. */
+let autoGuard = 0;
+const NATIVE_TOKENS = new Set(["0x0000000000000000000000000000000000000000", "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"]);
+
+function checkAutoCost(costPct: number | undefined) {
+  if (autoGuard > 0 && costPct !== undefined && costPct > MAX_ROUTE_COST_PCT)
+    throw new ExecError(`Moving these funds home would cost ${costPct.toFixed(2)}% right now, above Pecun's ${MAX_ROUTE_COST_PCT}% limit. Pecun will try again later.`);
+}
+
+/** Remembers what a Relay leg delivers to the user's own EVM wallet, so a failed run can send it home. */
+async function noteLanding(s: Signer, p: RelayLeg) {
+  const run = runs.get(s);
+  if (!run || p.to === ROBINHOOD_CHAIN_ID || !isAddr(p.recipient) || p.recipient.toLowerCase() !== s.address.toLowerCase()) return;
+  const token = p.outToken as Address;
+  if (!isAddr(token) || NATIVE_TOKENS.has(token.toLowerCase())) return;
+  if (run.landings.some((l) => l.chainId === p.to && l.token.toLowerCase() === token.toLowerCase())) return;
+  const before = await erc20Balance(p.to, token, s.address).catch(() => null);
+  if (before !== null) run.landings.push({ chainId: p.to, token, owner: s.address, before });
+}
+
+/** Runs `f` with every leg held to MAX_ROUTE_COST_PCT. */
+export async function withCostCap<T>(f: () => Promise<T>): Promise<T> {
+  autoGuard++;
+  try {
+    return await f();
+  } finally {
+    autoGuard--;
+  }
+}
+
+/**
+ * Sends anything a failed run left on another chain back to USDG. What can't move now (still in flight, or too costly
+ * right now) is remembered, and the background check (AutoWithdraw) tries again every few minutes.
+ */
+async function sweepHome(s: Signer, landings: Landing[]) {
+  for (const l of [...landings].reverse()) {
+    try {
+      const moved = await sweepOne(s, l);
+      if (!moved) rememberStranded(l);
+    } catch (e) {
+      console.error("[pecun] couldn't bring stranded funds home yet:", e);
+      rememberStranded(l);
+    }
+  }
+}
+
+/** Moves what arrived since `before` home. False when nothing has arrived yet. */
+async function sweepOne(s: Signer, l: Landing): Promise<boolean> {
+  const now = await erc20Balance(l.chainId, l.token, l.owner);
+  if (now <= l.before) return false;
+  const amount = now - l.before;
+  await withCostCap(async () => {
+    const plan = await planRoute({ from: l.chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount, user: l.owner, recipient: l.owner }, "USDG");
+    checkAutoCost(routeCostPct(plan.preview));
+    const before = await usdgOf(s)();
+    await runRoute(s, { from: l.chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount, user: l.owner, recipient: l.owner });
+    await waitForArrival(usdgOf(s), before, 10 * 60_000).catch(() => BigInt(0));
+  });
+  return true;
+}
+
+/* Stranded funds, remembered per user on this device until they're home (or a week has passed). */
+type StrandedNote = { chainId: number; token: Address; before: string; at: number };
+const strandedKey = (owner: string) => `pecun:stranded:${owner.toLowerCase()}`;
+const WEEK = 7 * 24 * 3600_000;
+function readStranded(owner: string): StrandedNote[] {
+  try {
+    return (JSON.parse(globalThis.localStorage?.getItem(strandedKey(owner)) ?? "[]") as StrandedNote[]).filter((n) => Date.now() - n.at < WEEK);
+  } catch {
+    return [];
+  }
+}
+function writeStranded(owner: string, list: StrandedNote[]) {
+  try {
+    if (list.length) globalThis.localStorage?.setItem(strandedKey(owner), JSON.stringify(list));
+    else globalThis.localStorage?.removeItem(strandedKey(owner));
+  } catch {
+    /* storage unavailable */
+  }
+}
+function rememberStranded(l: Landing) {
+  const list = readStranded(l.owner).filter((n) => !(n.chainId === l.chainId && n.token.toLowerCase() === l.token.toLowerCase()));
+  writeStranded(l.owner, [...list, { chainId: l.chainId, token: l.token, before: l.before.toString(), at: Date.now() }]);
+}
+export const hasStranded = (owner: string) => readStranded(owner).length > 0;
+
+/** Background check: brings home funds a failed run left behind. Returns how many were moved. */
+export async function sweepStranded(s: Signer): Promise<number> {
+  if (activeRuns > 0) return 0;
+  let moved = 0;
+  const keep: StrandedNote[] = [];
+  for (const n of readStranded(s.address)) {
+    const l: Landing = { chainId: n.chainId, token: n.token, owner: s.address, before: BigInt(n.before) };
+    try {
+      // If the balance dropped below the mark (spent elsewhere), only what arrives from here on counts.
+      const now = await erc20Balance(l.chainId, l.token, l.owner);
+      if (now < l.before) l.before = now;
+      if (await sweepOne(s, l)) moved++;
+      else keep.push({ ...n, before: l.before.toString() });
+    } catch (e) {
+      console.error("[pecun] stranded funds still waiting:", e);
+      keep.push({ ...n, before: l.before.toString() });
+    }
+  }
+  writeStranded(s.address, keep);
+  return moved;
+}
+
+/**
+ * Wraps an adapter so every run is safe:
+ * - deposit: Pecun's fee is only sent after the deposit lands; if the run fails, no fee is taken and anything already
+ *   moved to the vault's chain goes back to USDG.
+ * - withdraw: if it fails part-way, what reached another chain goes home the same way.
+ * - bringHome (automatic returns): every leg is held to Pecun's route-cost limit, or it waits and tries again later.
+ */
+export function guarded(a: Adapter): Adapter {
+  const run = async <T,>(s: Signer, deferFee: boolean, on: Progress, f: (s: Signer) => Promise<T>): Promise<T> => {
+    const rs: Signer = { ...s };
+    const r: Run = { deferFee, fee: BigInt(0), landings: [] };
+    runs.set(rs, r);
+    activeRuns++;
+    try {
+      const out = await f(rs);
+      if (r.fee > BigInt(0)) {
+        on("fee", "running");
+        await sendEvm(s, ROBINHOOD_CHAIN_ID, { to: USDG, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [TREASURY as Address, r.fee] }) }).then(
+          () => on("fee", "done"),
+          (e) => {
+            console.error("[pecun] deposit landed but the fee transfer failed:", e);
+            on("fee", "skipped");
+          },
+        );
+      }
+      return out;
+    } catch (e) {
+      if (r.fee > BigInt(0)) on("fee", "skipped", "Not charged: the deposit didn't complete");
+      if (r.landings.length) {
+        await sweepHome(s, r.landings);
+        if (e instanceof ExecError || e instanceof Error) e.message += " No fee was taken; any funds already moved are being sent back to your wallet.";
+      }
+      throw e;
+    } finally {
+      activeRuns--;
+    }
+  };
+  return {
+    ...a,
+    deposit: (s, usdg, on) => run(s, true, on, (rs) => a.deposit(rs, usdg, on)),
+    withdraw: (s, amount, on) => run(s, false, on, (rs) => a.withdraw(rs, amount, on)),
+    bringHome: a.bringHome ? (s, on) => run(s, false, on, (rs) => withCostCap(() => a.bringHome!(rs, on))) : undefined,
+  };
 }
 
 /* ---------------- Routes: always end in the vault's own asset ---------------- */
@@ -488,7 +659,7 @@ export async function backToUsdg(s: Signer, leg: Omit<RelayLeg, "to" | "outToken
 }
 
 export const IN_STEPS: Step[] = [
-  { id: "fee", label: "Pecun fee" },
+  { id: "fee", label: "Pecun fee (taken once your deposit lands)" },
   { id: "bridge", label: "Move and swap funds" },
   { id: "deposit", label: "Deposit" },
 ];
@@ -1238,6 +1409,9 @@ export async function lifiQuote(p: LifiLeg): Promise<LifiQuote> {
   const res = await fetch(`${LIFI}/quote?${q}`);
   const j = (await res.json().catch(() => ({}))) as Partial<LifiQuote> & { message?: string };
   if (!j.transactionRequest?.data) throw new ExecError(`Couldn't build the transfer${j.message ? `: ${j.message}` : ""}.`);
+  const est = (j as { estimate?: { fromAmountUSD?: string; toAmountUSD?: string } }).estimate;
+  const fromUsd = Number(est?.fromAmountUSD) || 0;
+  if (fromUsd > 0) checkAutoCost(Math.max(0, ((fromUsd - (Number(est?.toAmountUSD) || 0)) / fromUsd) * 100));
   return j as LifiQuote;
 }
 
@@ -1625,6 +1799,7 @@ export async function fromSui(s: Signer, coinType: string, raw: bigint, on: Prog
   on("sui", "running");
   const usdcOnBase = () => erc20Balance(BASE_CHAIN_ID, BASE_USDC, s.address);
   const baseBefore = await usdcOnBase();
+  await noteLanding(s, { from: SUI_CHAIN_ID, to: BASE_CHAIN_ID, inToken: SUI_USDC, outToken: BASE_USDC, amount: usdcSui, user: s.address, recipient: s.address });
   const digest = await sendSui(
     s,
     async () => (await lifiQuote({ fromChain: SUI_CHAIN_ID, toChain: BASE_CHAIN_ID, fromToken: SUI_USDC, toToken: BASE_USDC, amount: usdcSui, from: sui, to: s.address })).transactionRequest.data,
@@ -1814,7 +1989,10 @@ export function adapterFor(o: Opp): Adapter | null {
 }
 
 export function oneClickFor(o: Opp): Adapter | null {
-  if (!cache.has(o.id)) cache.set(o.id, adapterFor(o));
+  if (!cache.has(o.id)) {
+    const a = adapterFor(o);
+    cache.set(o.id, a && guarded(a));
+  }
   return cache.get(o.id)!;
 }
 

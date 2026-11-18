@@ -3,11 +3,23 @@
 import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { oneClickFor } from "@/lib/exec";
+import { hasStranded, oneClickFor, sweepStranded } from "@/lib/exec";
 import { forgetPending, listPending, runningVaults } from "@/lib/pending-withdrawals";
 import { useAuth } from "./auth-provider";
 
 const EVERY = 5 * 60_000;
+
+type Auth = ReturnType<typeof useAuth>;
+const signerOf = (a: Auth) => ({
+  address: a.evmAddress!,
+  solanaAddress: a.solanaAddress,
+  suiAddress: a.suiAddress,
+  sendEvmTransaction: a.sendEvmTransaction,
+  sendSolanaTransaction: a.sendSolanaTransaction,
+  sendSuiTransaction: a.sendSuiTransaction,
+  signEvmDigest: a.signEvmDigest,
+  signAccountsRequest: a.signAccountsRequest,
+});
 /** After a failed attempt, wait this long before trying that vault again. */
 const BACKOFF = 30 * 60_000;
 
@@ -32,6 +44,17 @@ export function AutoWithdraw() {
     const tick = async () => {
       const a = authRef.current;
       if (!a.evmAddress) return;
+      // Funds a failed deposit or withdrawal left on another chain: bring them home.
+      if (hasStranded(a.evmAddress)) {
+        const moved = await sweepStranded(signerOf(a)).catch((e) => {
+          console.error("[pecun] stranded sweep failed:", e);
+          return 0;
+        });
+        if (moved > 0) {
+          setNotice({ kind: "done", text: "Funds from an unfinished transfer are back in your wallet." });
+          window.dispatchEvent(new Event("pecun:balances-changed"));
+        }
+      }
       for (const o of listPending(a.evmAddress)) {
         if (stopped || runningVaults.has(o.id)) continue;
         if (Date.now() - (failedAt.current.get(o.id) ?? 0) < BACKOFF) continue;
@@ -51,17 +74,7 @@ export function AutoWithdraw() {
         const amount = `${q.arrived.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${q.symbol}`;
         setNotice({ kind: "working", text: `${o.name ?? o.protocol} paid out ${amount}. Bringing it back to your wallet…` });
         try {
-          const signer = {
-            address: a.evmAddress,
-            solanaAddress: a.solanaAddress,
-            suiAddress: a.suiAddress,
-            sendEvmTransaction: a.sendEvmTransaction,
-            sendSolanaTransaction: a.sendSolanaTransaction,
-            sendSuiTransaction: a.sendSuiTransaction,
-            signEvmDigest: a.signEvmDigest,
-            signAccountsRequest: a.signAccountsRequest,
-          };
-          const result = await adapter.bringHome(signer, () => {});
+          const result = await adapter.bringHome(signerOf(a), () => {});
           if (result) setNotice({ kind: "done", text: `${result} from ${o.name ?? o.protocol} is back in your wallet.` });
           const left = await adapter.queue(who).catch(() => null);
           if (left && left.pending <= 0 && left.arrived <= 0) forgetPending(a.evmAddress, o.id);
