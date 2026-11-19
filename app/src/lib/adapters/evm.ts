@@ -11,6 +11,57 @@ const FRGMNT_VAULTS: { address: string; about: string }[] = [
 ];
 
 export async function frgmnt(): Promise<Opportunity[]> {
+  const [vaults, fusd] = await Promise.allSettled([frgmntVaults(), frgmntUsd()]);
+  return [...(vaults.status === "fulfilled" ? vaults.value : []), ...(fusd.status === "fulfilled" ? fusd.value : [])];
+}
+
+/**
+ * Frgmnt USD: USDC mints fUSD 1:1, staked fUSD (sfUSD) earns the fund's lending yield, paid as fUSD. Frgmnt's API gives
+ * the fund's gross lending APR; stakers get it less the 20% performance fee, spread over the fUSD that's staked.
+ */
+async function frgmntUsd(): Promise<Opportunity[]> {
+  const [apr, stats] = await Promise.all([
+    getJson<{ weightedApr?: number }>("https://data.frgmnt.fi/apr/current"),
+    getJson<{ stakingRatio?: { stakedFusd?: number; totalFusd?: number; ratio?: number } }>("https://data.frgmnt.fi/stats/protocol"),
+  ]);
+  const gross = num(apr.weightedApr);
+  const ratio = num(stats.stakingRatio?.ratio) || 1;
+  const apy = (gross * (1 - 0.2)) / Math.max(ratio, 0.5);
+  if (!(apy > 0)) return [];
+  return [
+    {
+      id: "frgmnt:8453:fusd",
+      protocol: "Frgmnt",
+      name: "Frgmnt USD",
+      ticker: "sfUSD",
+      asset: "USDC",
+      kind: "Vault",
+      chain: "Base",
+      apy,
+      apy7d: null,
+      apy30d: null,
+      tvlUsd: num(stats.stakingRatio?.totalFusd),
+      manager: "Frgmnt",
+      redemption: "Instant, 24 hours after your last deposit or yield claim",
+      stablecoin: true,
+      category: "Yield-bearing dollar",
+      address: "0x704c56974e0CA4BF8ff8fe8acc51FBF1E053878E",
+      description:
+        "Frgmnt's dollar. USDC mints fUSD one to one, and staked fUSD (sfUSD) earns the yield of Frgmnt's USDC lending on Morpho, paid out in fUSD. Cashing out returns USDC from the fund; Frgmnt opens it 24 hours after a wallet's last mint or yield claim, and Pecun finishes it for you once that window passes.",
+      details: [
+        { label: "Fees", value: "20% performance; 0% to mint, stake or cash out" },
+        { label: "Staked", value: `${Math.round(ratio * 100)}% of fUSD` },
+        { label: "Minimum", value: "$5" },
+        { label: "Cash out", value: "24 hours after your last deposit or yield claim" },
+      ],
+      links: [{ label: "Frgmnt docs", url: "https://docs.frgmnt.fi/" }],
+      ref: { source: "frgmnt-fusd", id: "fusd", chainId: 8453 },
+      url: "https://app.frgmnt.fi/",
+    } satisfies Opportunity,
+  ];
+}
+
+async function frgmntVaults(): Promise<Opportunity[]> {
   type V = { address: string; name: string; symbol: string; totalAssetsUsd: number | null; netApy: number | null; liquidityUsd: number | null; asset: { symbol: string } };
   const q = FRGMNT_VAULTS.map((v, i) => `v${i}: vaultV2ByAddress(address:"${v.address}", chainId:8453){ address name symbol totalAssetsUsd netApy liquidityUsd asset{ symbol } }`).join(" ");
   const data = await gql<Record<string, V | null>>(MORPHO, `{ ${q} }`);

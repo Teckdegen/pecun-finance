@@ -17,5 +17,6 @@ import "./meteora";
 import "./jupiter-sol";
 import "./gmx";
 import "./beefy";
+import "./frgmnt";
 
 export * from "../execute";
