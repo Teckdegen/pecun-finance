@@ -33,7 +33,7 @@ export const GROUPS: DocGroup[] = [
     pages: [
       { href: "/protocols", title: "Supported protocols", summary: "Every platform Pecun lists." },
       { href: "/providers", title: "Partners and providers", summary: "The infrastructure Pecun runs on." },
-      { href: "/token", title: "$PEN token", summary: "The Pecun token on Robinhood Chain, its 3% tax and the Pecun Fund." },
+      { href: "/token", title: "$PEN token", summary: "The Pecun token on Base, its 3% tax and the Pecun Fund." },
       { href: "/fund", title: "Pecun Fund", summary: "Where the $PEN tax goes, how it is invested and how holders share in it." },
     ],
   },

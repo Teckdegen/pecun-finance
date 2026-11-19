@@ -4,14 +4,14 @@ import { A, Callout, Doc, Facts, H2, List, P, Steps } from "@/components/chrome"
 
 export const metadata: Metadata = {
   title: "$PEN token",
-  description: "$PEN, the Pecun token on Robinhood Chain: supply, the 3% tax and the Pecun Fund it pays into.",
+  description: "$PEN, the Pecun token on Base: supply, the 3% tax and the Pecun Fund it pays into.",
 };
 
 export default function Token() {
   return (
     <Doc href="/token">
       <P>
-        $PEN is the Pecun token, launching on Robinhood Chain. Every trade pays a 3% tax. 70% of it goes into the Pecun Fund, a pool that Pecun puts to work in yield vaults across
+        $PEN is the Pecun token, launching on Base. Every trade pays a 3% tax. 70% of it goes into the Pecun Fund, a pool that Pecun puts to work in yield vaults across
         the protocols it lists, and 30% pays for running Pecun. Holders own a share of the Fund in proportion to how many tokens they hold. The idea is a pool that keeps working for everyone who
         holds, much like a long-term national savings fund.
       </P>
@@ -21,8 +21,8 @@ export default function Token() {
         rows={[
           ["Ticker", "$PEN"],
           ["Total supply", "1,000,000,000 PEN at launch, shrinking as buybacks burn tokens."],
-          ["Launch", "Fair launch on Robinhood Chain, with no presale."],
-          ["Network", "Robinhood Chain"],
+          ["Launch", "Fair launch on Base, with no presale."],
+          ["Network", "Base"],
           ["Tax", "3% on each trade: 70% to the Pecun Fund, 30% to running costs."],
           ["Contract address", "Published here at launch. Don't trust any address you see elsewhere first."],
         ]}
