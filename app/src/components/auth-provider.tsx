@@ -126,6 +126,27 @@ function LiveAuth({ children }: { children: ReactNode }) {
     }
   }, [createWallet, createWalletAccounts, refreshWallets]);
   const ensureAccount = setupWallets;
+  /**
+   * Signs exactly the given hex payload (a 32-byte digest) with a wallet account. Turnkey's signMessage would treat
+   * the hex string as UTF-8 text and sign its characters instead, so this goes straight to signRawPayload.
+   */
+  const signRaw = useCallback(
+    async (address: string, payloadHex: string, hashFunction: "HASH_FUNCTION_NO_OP" | "HASH_FUNCTION_NOT_APPLICABLE") => {
+      const org = latest.current.session?.organizationId;
+      if (!httpClient) throw new Error("Your session is still loading.");
+      const res = await httpClient.signRawPayload({
+        signWith: address,
+        payload: payloadHex.startsWith("0x") ? payloadHex : `0x${payloadHex}`,
+        encoding: "PAYLOAD_ENCODING_HEXADECIMAL",
+        hashFunction,
+        ...(org ? { organizationId: org } : {}),
+      });
+      const out = res?.activity?.result?.signRawPayloadResult;
+      if (!out?.r || !out?.s) throw new Error("Turnkey didn't return a signature.");
+      return out as { r: string; s: string; v: string };
+    },
+    [httpClient],
+  );
   const signAccountsRequest = useCallback(async () => {
     const org = latest.current.session?.organizationId;
     if (!org || !httpClient) return null;
@@ -212,11 +233,12 @@ function LiveAuth({ children }: { children: ReactNode }) {
       signEvmDigest: async (digestHex) => {
         if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
         try {
-          const { r, s: sv, v } = await signMessage({ walletAccount: evmAccount, message: digestHex, encoding: "PAYLOAD_ENCODING_HEXADECIMAL", hashFunction: "HASH_FUNCTION_NO_OP" });
+          const { r, s: sv, v } = await signRaw(evmAccount.address, digestHex, "HASH_FUNCTION_NO_OP");
           const strip = (x: string) => x.replace(/^0x/, "").padStart(64, "0");
           const vv = (parseInt(v || "0", 16) % 27) + 27;
           return { ok: true, signature: `0x${strip(r)}${strip(sv)}${vv.toString(16)}` as `0x${string}` };
         } catch (e) {
+          console.error("[pecun] signEvmDigest failed:", e);
           return { ok: false, error: friendlyError(e, "Couldn't sign with your wallet. Try again.") };
         }
       },
@@ -226,7 +248,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         try {
           const { TurnkeySuiSigner, executeSui } = await import("@/lib/sui");
           const signer = new TurnkeySuiSigner(suiAccount.publicKey, suiAccount.address, (digestHex) =>
-            signMessage({ walletAccount: suiAccount, message: digestHex, encoding: "PAYLOAD_ENCODING_HEXADECIMAL", hashFunction: "HASH_FUNCTION_NOT_APPLICABLE" }),
+            signRaw(suiAccount.address, digestHex, "HASH_FUNCTION_NOT_APPLICABLE"),
           );
           return { ok: true, digest: await executeSui(tx, suiAccount.address, signer) };
         } catch (e) {
@@ -252,7 +274,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest, solAccount, suiAccount, signMessage],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest, solAccount, suiAccount, signMessage, signRaw],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
