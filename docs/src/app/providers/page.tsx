@@ -15,7 +15,6 @@ export default function Providers() {
           ["Relay and LI.FI", "Routing. Move funds and swap one token for another when a deposit or withdrawal needs it. Pecun compares quotes and picks a route."],
           ["Across, deBridge and Mayan", "Additional routes, used when they offer a better transfer."],
           ["Aftermath", "Swap aggregation for some deposits and withdrawals."],
-          ["Transaction sponsors", "Relayers and paymasters that pay network fees on your behalf."],
           ["Protocol data", "Each protocol's own APIs and SDKs, plus LI.FI's token and price data, for rates, TVL and prices."],
           ["Alchemy", "Node provider. Reads and submits on-chain data."],
         ]}

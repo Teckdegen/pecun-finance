@@ -210,7 +210,7 @@ function Faq() {
     ],
     [
       "What does it cost?",
-      "Pecun charges a small fee on deposits and withdrawals, always shown before you confirm. Network fees are currently paid by Pecun. Protocols may charge their own fees on top, which are shown on the vault.",
+      "Pecun charges a small fee on deposits and withdrawals, always shown before you confirm. Protocols may charge their own fees on top, which are shown on the vault.",
     ],
     [
       "Is it risky?",

@@ -81,9 +81,6 @@ const SECTIONS: LegalSection[] = [
         between blockchains or swap one token for another when a deposit or withdrawal needs it. Pecun compares their quotes and may pick a route for you.
       </>,
       <>
-        <B>Transaction sponsorship</B> — relayers and paymaster services used to pay network (gas) fees on your behalf.
-      </>,
-      <>
         <B>Data providers</B> — each Third-Party Protocol&apos;s own APIs and software development kits, LI.FI&apos;s token and price data, and blockchain
         node (RPC) provider Alchemy.
       </>,
@@ -132,13 +129,7 @@ const SECTIONS: LegalSection[] = [
       {
         heading: "Pecun's fees",
         body: [
-          "Pecun charges a fee on each deposit and on each withdrawal made through the App. The fee is shown before you confirm and is paid as part of the transaction, as a transfer to Pecun; on deposits it is taken before your funds enter the product. Fees are not refundable, including when a transaction later fails or a Third-Party Protocol loses value.",
-        ],
-      },
-      {
-        heading: "Network fees",
-        body: [
-          "Pecun currently pays network (gas) fees on your behalf. We may stop or change this at any time; if you will be charged network fees, this will be shown before you confirm.",
+          "Pecun charges a fee on each deposit and on each withdrawal made through the App. The fee is shown before you confirm and is paid as a transfer to Pecun; on deposits it is taken once your funds have entered the product, and no fee is taken if a deposit does not complete. Fees are not refundable once taken, including when a Third-Party Protocol later loses value.",
         ],
       },
       {

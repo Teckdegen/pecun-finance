@@ -40,7 +40,7 @@ export default function Token() {
       <H2>The 3% tax</H2>
       <P>
         Every $PEN trade, buy or sell, pays a 3% tax. The other 97% goes through as normal. Of the tax, 70% goes into the Fund that holders own and 30%
-        pays for running Pecun: the team, infrastructure, security audits and the network fees Pecun covers.
+        pays for running Pecun: the team, infrastructure and security audits.
       </P>
       <ChartCard title="Where each trade goes" caption="Out of every $100 traded, $3 is tax.">
         <Donut
@@ -56,7 +56,7 @@ export default function Token() {
         <SplitBar
           data={[
             { label: "Pecun Fund", value: 70, color: "#2f7d1c", note: "Invested in vaults and strategies for holders." },
-            { label: "Running costs", value: 30, color: "#0a0a0a", note: "The team, infrastructure, audits and network fees." },
+            { label: "Running costs", value: 30, color: "#0a0a0a", note: "The team, infrastructure and audits." },
           ]}
         />
       </ChartCard>

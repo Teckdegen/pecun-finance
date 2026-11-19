@@ -60,13 +60,13 @@ export default function Fund() {
         <SplitBar
           data={[
             { label: "Pecun Fund", value: 70, color: "#2f7d1c", note: "Invested for holders: $2.10 of every $100 traded." },
-            { label: "Running costs", value: 30, color: "#0a0a0a", note: "The team, infrastructure, security audits and the network fees Pecun covers." },
+            { label: "Running costs", value: 30, color: "#0a0a0a", note: "The team, infrastructure and security audits." },
           ]}
         />
       </ChartCard>
 
       <P>
-        Running costs keep Pecun going: the people building it, servers and data, security audits, and the network fees Pecun pays on users&apos; behalf.
+        Running costs keep Pecun going: the people building it, servers and data, and security audits.
         They&apos;re reported alongside the Fund, so it&apos;s clear where every part of the tax goes.
       </P>
 

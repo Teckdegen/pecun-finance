@@ -87,7 +87,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Network risks",
     body: [
-      "Blockchains can become congested, halt or reorganise, and transactions can fail or be delayed. Pecun sponsors network fees but cannot guarantee when or whether a transaction is included.",
+      "Blockchains can become congested, halt or reorganise, and transactions can fail or be delayed. Pecun cannot guarantee when or whether a transaction is included.",
     ],
   },
   {

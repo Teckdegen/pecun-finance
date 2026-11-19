@@ -17,11 +17,11 @@ export default function Deposits() {
         items={[
           {
             title: "You choose an amount",
-            body: "Before you press, Pecun shows the 0.5% fee, the bridge and swap costs, any gas reserve, the total route cost and what you'll receive. Routes that would cost more than 0.5% don't run.",
+            body: "Before you press, Pecun shows the 0.5% fee, the bridge and swap costs, the total route cost and what you'll receive. Routes that would cost more than 0.5% don't run.",
           },
           {
             title: "Bridge from Robinhood Chain",
-            body: "Your USDG moves to the vault's chain. If your wallet there has no gas, a small gas reserve in that chain's own token comes with it and stays in your wallet for this deposit and your withdrawal later.",
+            body: "Your USDG moves to the vault's chain. A small part arrives as that chain's own coin (ETH, SOL, SUI and so on), so your transactions there always go through.",
           },
           { title: "Swap into the vault's asset", body: "The rest is swapped into exactly the asset the vault takes." },
           {
@@ -38,7 +38,6 @@ export default function Deposits() {
           "A vault that the protocol has closed shows as closed and won't take new deposits.",
           <>Pecun's fee is 0.5%, shown before you press and only taken once your deposit lands. See <A href="/fees">Fees</A>.</>,
           "If a deposit fails part-way, no fee is taken and anything that already moved is sent back to your wallet automatically.",
-          "The gas reserve is yours: it's the chain's own gas token, kept in your wallet, not a fee.",
           "Blockchain transactions are final once confirmed. Check the amount and the vault before you approve.",
         ]}
       />

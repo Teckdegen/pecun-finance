@@ -33,7 +33,7 @@ export default function Introduction() {
           ["Who holds your money", "You do. Your wallet is self-custodial and secured by Turnkey."],
           ["Products", "Lending markets, vaults, liquid staking, savings rates and fixed yield."],
           ["Protocols", `${PROTOCOLS.length} platforms, including Aave, Morpho, Lido, Pendle, Kamino and Hyperliquid.`],
-          ["Fees", "A small fee on deposits and withdrawals, always shown before you confirm. Network fees are currently paid by Pecun."],
+          ["Fees", "A small fee on deposits and withdrawals, always shown before you confirm."],
           ["Token", <>$PEN, launching on Robinhood Chain. 70% of its 3% trading tax funds the Pecun Fund. See <A href="/token">$PEN token</A>.</>],
           ["Where", <>Most of the world, with some exceptions. See <A href="/availability">Availability</A>.</>],
         ]}

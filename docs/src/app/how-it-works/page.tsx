@@ -45,11 +45,7 @@ export default function HowItWorks() {
         items={[
           {
             title: "Bridge from Robinhood Chain",
-            body: "Your USDG leaves Robinhood Chain for the vault's chain. Pecun picks the cheapest route it can find and never runs one that costs more than 0.5%.",
-          },
-          {
-            title: "Keep a gas reserve",
-            body: "If your wallet on that chain has no gas, a small amount of its own gas token (about $0.15 on most chains, $0.60 of SOL on Solana, $0.30 of SUI on Sui, $1 on Ethereum) comes with the bridge. It stays in your wallet and pays for this deposit and, later, your withdrawal.",
+            body: "Your USDG leaves Robinhood Chain for the vault's chain, by the cheapest route Pecun can find, never one that costs more than 0.5%. A small part arrives as that chain's own coin (ETH, SOL, SUI and so on), so your transactions there always go through.",
           },
           {
             title: "Swap into the vault's asset",
@@ -63,7 +59,7 @@ export default function HowItWorks() {
       />
       <P>
         Withdrawing runs the same steps backwards and brings your money home as USDG on Robinhood Chain. If anything fails on the way, no fee is taken
-        and whatever already moved is sent back to your wallet. Solana and Sui work the same way: a little of your deposit becomes SOL or SUI for gas.
+        and whatever already moved is sent back to your wallet. It works the same way on every chain, Solana and Sui included.
       </P>
 
       <H2>What Pecun relies on</H2>
@@ -71,7 +67,7 @@ export default function HowItWorks() {
         items={[
           <>The protocols themselves, for the products, the rates and the yield. See <A href="/protocols">Supported protocols</A>.</>,
           "Turnkey, for your self-custodial wallet and signing.",
-          "Routers such as Relay and LI.FI, for the bridges, swaps and gas reserves that move your money between chains.",
+          "Routers such as Relay and LI.FI, for the bridges and swaps that move your money between chains.",
           <>Data and infrastructure providers. See <A href="/providers">Partners and providers</A>.</>,
         ]}
       />

@@ -166,7 +166,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
             </button>
             {n > 0 && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDG" : symbol} />}
             <p className="mt-3 text-xs leading-relaxed text-muted">
-              One click: {side === "add" ? `swaps your USDG into ${symbol} and deposits it` : "withdraws and returns USDG to your wallet"}. Network fees are covered by Pecun.
+              One click: {side === "add" ? `swaps your USDG into ${symbol} and deposits it` : "withdraws and returns USDG to your wallet"}.
               {!live && " Demo mode: connect Turnkey to run it for real."}
             </p>
           </>
@@ -211,7 +211,7 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
   const cost = routeCostPct(p);
   const route: [string, string][] = [
     ["Bridge & swap fees", `≈ $${p.feesUsd.toFixed(2)}`],
-    ...(side === "add" && p.gasReserveUsd ? ([["Gas reserve (stays in your wallet)", `≈ $${p.gasReserveUsd.toFixed(2)}`]] as [string, string][]) : []),
+    ...(side === "add" && p.gasReserveUsd ? ([["Kept in the chain's own coin, for transactions", `≈ $${p.gasReserveUsd.toFixed(2)}`]] as [string, string][]) : []),
     ["Price impact", `${p.impactPct.toFixed(2)}%`],
     ["Total route cost", `${cost.toFixed(2)}% (limit ${MAX_ROUTE_COST_PCT}%)`],
     ["Time", p.seconds ? `~${p.seconds < 60 ? `${p.seconds}s` : `${Math.round(p.seconds / 60)} min`}` : "Under a minute"],
