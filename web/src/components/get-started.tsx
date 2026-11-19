@@ -46,9 +46,18 @@ function useTicker(n: number, ms: number, ref: RefObject<HTMLElement | null>) {
       if (id) window.clearInterval(id);
       id = undefined;
     };
+    // A sticky screen stays "on screen" while later screens cover it, so also check it's actually the one showing:
+    // the topmost element at its centre has to be inside it. Covered screens skip their tick and don't re-render.
+    const showing = () => {
+      const r = el.getBoundingClientRect();
+      const x = Math.min(Math.max(r.left + r.width / 2, 0), window.innerWidth - 1);
+      const y = Math.min(Math.max(r.top + r.height / 2, 0), window.innerHeight - 1);
+      const top = document.elementFromPoint(x, y);
+      return !!top && el.contains(top);
+    };
     const io = new IntersectionObserver(([e]) => {
       stop();
-      if (e.isIntersecting) id = window.setInterval(() => !document.hidden && setI((x) => (x + 1) % n), ms);
+      if (e.isIntersecting) id = window.setInterval(() => !document.hidden && showing() && setI((x) => (x + 1) % n), ms);
     });
     io.observe(el);
     return () => {
@@ -134,13 +143,13 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
 
 /** Keeps the cards in view for half a screen before the next screen rolls over them. */
 function Hold() {
-  return <div aria-hidden className="h-[50dvh]" />;
+  return <div aria-hidden className="h-[50svh]" />;
 }
 
 function Headline({ z, children }: { z: string; children: ReactNode }) {
   return (
     <section
-      className={`sticky top-0 flex h-[100dvh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] ${z}`}
+      className={`sticky top-0 flex h-[100svh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform [transform:translateZ(0)] ${z}`}
     >
       <h2 className="max-w-5xl text-[2.6rem] font-medium leading-[1.1] tracking-[-0.045em] sm:text-[4rem] lg:text-[5.75rem]">{children}</h2>
     </section>
@@ -200,7 +209,7 @@ function CardScreen({
 }) {
   return (
     <section
-      className={`sticky top-0 flex h-[100dvh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
+      className={`sticky top-0 flex h-[100svh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform [transform:translateZ(0)] sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
         <div className="flex items-center justify-between gap-3">
