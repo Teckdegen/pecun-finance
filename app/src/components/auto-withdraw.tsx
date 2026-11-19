@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { hasStranded, oneClickFor, sweepStranded } from "@/lib/exec";
 import { recordActivity, slimVault } from "@/lib/activity";
 import { forgetPending, listPending, runningVaults } from "@/lib/pending-withdrawals";
+import { hasPrivateAddress, processPrivateInbox } from "@/lib/private-receive";
 import type { Opportunity } from "@/lib/types";
 import { useAuth } from "./auth-provider";
 
@@ -56,6 +57,31 @@ export function AutoWithdraw() {
           setNotice({ kind: "done", text: "Funds from an unfinished transfer are back in your wallet." });
           window.dispatchEvent(new Event("pecun:balances-changed"));
         }
+      }
+      // Private funding (Gloam): claim new payments to the private address and cash them out to the wallet.
+      const priv = { address: a.evmAddress, signAccountsRequest: a.signAccountsRequest, signEvmDigest: a.signEvmDigest };
+      if (await hasPrivateAddress(priv).catch(() => false)) {
+        const landed = await processPrivateInbox(priv).catch((e) => {
+          console.error("[pecun] private inbox:", e);
+          return [];
+        });
+        for (const l of landed) {
+          setNotice({ kind: "done", text: `A private deposit of ${Number(l.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} ${l.symbol} landed in your wallet.` });
+          recordActivity(
+            a.evmAddress,
+            {
+              vault: { id: "gloam:private", name: "Private deposit", protocol: "Gloam", chain: "Base", asset: l.symbol, kind: "Vault" } as never,
+              side: "add",
+              amount: l.amount,
+              result: `${l.amount} ${l.symbol}`,
+              status: "done",
+              auto: true,
+              at: Date.now(),
+            },
+            a.signAccountsRequest,
+          );
+        }
+        if (landed.length) window.dispatchEvent(new Event("pecun:balances-changed"));
       }
       for (const o of listPending(a.evmAddress)) {
         if (stopped || runningVaults.has(o.id)) continue;

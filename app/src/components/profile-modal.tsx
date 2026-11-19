@@ -19,6 +19,7 @@ import {
 } from "@/lib/wallet";
 import { ensureGas, type Signer } from "@/lib/execute";
 import { HOME_CHAIN_ID } from "@/lib/wallet";
+import { privateAddress } from "@/lib/private-receive";
 import { useAuth } from "./auth-provider";
 
 type View = "home" | "receive" | "send";
@@ -274,15 +275,78 @@ function StyledQR({ value, size = 260 }: { value: string; size?: number }) {
 }
 
 function Receive({ address, back, close }: { address: string; back: () => void; close: () => void }) {
-  const { copied, copy } = useCopy();
+  const [tab, setTab] = useState<"public" | "private">("public");
   return (
     <>
       <div className="flex items-center justify-between">
         <IconBtn label="Back" onClick={back}><ArrowLeft className="size-5" /></IconBtn>
         <IconBtn label="Close" onClick={close}><X className="size-5" /></IconBtn>
       </div>
-      <h2 className="mt-4 text-[1.9rem] font-medium leading-tight tracking-[-0.03em]">Base address</h2>
+      <div className="mt-4 flex rounded-full bg-white/[0.06] p-1 font-sans text-sm" role="tablist" aria-label="Receive">
+        {(["public", "private"] as const).map((t) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={`h-9 flex-1 rounded-full capitalize transition ${tab === t ? "bg-white/15 font-medium text-white" : "text-white/55 hover:text-white"}`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      {tab === "public" ? <PublicReceive address={address} /> : <PrivateReceive address={address} />}
+    </>
+  );
+}
 
+/** Private funding through Gloam: the wallet's own private receive address, the same on every device. */
+function PrivateReceive({ address }: { address: string }) {
+  const { signAccountsRequest, signEvmDigest } = useAuth();
+  const { copied, copy } = useCopy();
+  const [tag, setTag] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let live = true;
+    setError("");
+    privateAddress({ address: address as `0x${string}`, signAccountsRequest, signEvmDigest })
+      .then((t) => live && setTag(t))
+      .catch((e) => live && setError(e instanceof Error ? e.message : "Couldn't set up your private address."));
+    return () => {
+      live = false;
+    };
+  }, [address, signAccountsRequest, signEvmDigest]);
+
+  if (error) return <p className="mt-8 rounded-2xl border border-red-400/40 bg-red-400/10 px-4 py-3 font-sans text-sm text-white/85">{error}</p>;
+  if (!tag)
+    return (
+      <p className="mt-10 flex items-center justify-center gap-2 font-sans text-sm text-white/55">
+        <Loader2 className="size-4 animate-spin" /> Setting up your private address…
+      </p>
+    );
+  return (
+    <>
+      <div className="mt-6"><StyledQR value={tag} /></div>
+      <fieldset className="mt-7 rounded-[22px] border border-white/15 px-5 pb-5 pt-3 text-center">
+        <legend className="mx-auto px-3">
+          <button type="button" onClick={() => copy(tag)} className="inline-flex items-center gap-2 font-sans text-sm text-white/60 hover:text-white">
+            Private address {copied ? <Check className="size-4 text-accent" /> : <Copy className="size-4" />}
+          </button>
+        </legend>
+        <p className="tabular break-all font-sans text-[13px] leading-snug text-white [font-feature-settings:'calt'_0]">{tag}</p>
+      </fieldset>
+      <p className="mt-5 text-center font-sans text-[15px] text-white/80">
+        Pay this address privately from Gloam. It lands in your wallet as USDC on Base, with nothing linking it to the sender.
+      </p>
+      <p className="mt-2 text-center font-sans text-xs text-white/40">Gloam keeps 0.5% when it lands. Payments arrive while Pecun is open.</p>
+    </>
+  );
+}
+
+function PublicReceive({ address }: { address: string }) {
+  const { copied, copy } = useCopy();
+  return (
+    <>
       <div className="mt-6"><StyledQR value={address} /></div>
 
       <fieldset className="mt-7 rounded-[22px] border border-white/15 px-5 pb-5 pt-3 text-center">

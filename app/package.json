@@ -12,6 +12,7 @@
     "@coral-xyz/anchor": "^0.28.0",
     "@eulerxyz/euler-v2-sdk": "^4.4.0",
     "@gearbox-protocol/sdk": "^18.4.0",
+    "@gloamtrade/sdk": "^0.8.0",
     "@marinade.finance/marinade-ts-sdk": "^6.1.0",
     "@meteora-ag/dlmm": "^1.9.14",
     "@moonwell-fi/moonwell-sdk": "^0.25.2",
@@ -28,6 +29,7 @@
     "qrcode": "^1.5.4",
     "react": "19.1.10",
     "react-dom": "19.1.10",
+    "snarkjs": "^0.7.6",
     "viem": "^2.57.19"
   },
   "devDependencies": {
