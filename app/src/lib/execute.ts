@@ -274,7 +274,8 @@ export type RelayQuote = {
   message?: string;
   steps?: { kind: string; items: RelayItem[] }[];
   details?: {
-    currencyOut?: { amount?: string; amountFormatted?: string; minimumAmount?: string; currency?: { symbol?: string; decimals?: number } };
+    currencyIn?: { amountUsd?: string };
+    currencyOut?: { amount?: string; amountFormatted?: string; minimumAmount?: string; amountUsd?: string; currency?: { symbol?: string; decimals?: number } };
     totalImpact?: { percent?: string };
     slippageTolerance?: { destination?: { percent?: string } };
     timeEstimate?: number;
@@ -655,7 +656,7 @@ export type FarLeg = { via: "lifi" | "cctp"; leg: LifiLeg; out: bigint; min: big
  * an optional small leg into the chain's native coin first); `far` is the hub route for chains Relay can't reach.
  * `keep` is native coin a via-native deposit leaves in the wallet instead of swapping it into the vault's asset.
  */
-type Plan = { hops: RelayLeg[]; preview: Preview; out: bigint; far?: FarLeg; lifi?: { gas?: LifiLeg; main: LifiLeg }; keep?: bigint; via?: string };
+type Plan = { hops: RelayLeg[]; preview: Preview; out: bigint; far?: FarLeg; lifi?: { gas?: LifiLeg; main: LifiLeg }; across?: { gas?: RelayLeg; main: RelayLeg }; keep?: bigint; via?: string; ref?: { inUsd: number; outUsdPerRaw: number } };
 
 const NATIVE_EVM = "0x0000000000000000000000000000000000000000";
 const isNativeEvm = (t: string) => t.toLowerCase() === NATIVE_EVM || t.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
@@ -664,7 +665,11 @@ const isNativeEvm = (t: string) => t.toLowerCase() === NATIVE_EVM || t.toLowerCa
 /** Relay's direct route. */
 async function directPlan(leg: RelayLeg, outSymbol: string): Promise<Plan> {
   const q = await relayQuote(leg);
-  return { hops: [leg], preview: toPreview(q, outSymbol), out: outOf(q).out, via: "relay" };
+  const out = outOf(q).out;
+  const inUsd = Number(q.details?.currencyIn?.amountUsd) || 0;
+  const outUsd = Number(q.details?.currencyOut?.amountUsd) || 0;
+  const ref = inUsd > 0 && outUsd > 0 && out > BigInt(0) ? { inUsd, outUsdPerRaw: outUsd / Number(out) } : undefined;
+  return { hops: [leg], preview: toPreview(q, outSymbol), out, via: "relay", ref };
 }
 
 /** Two hops through USDC on the vault's chain: bridge to USDC, then swap USDC into the asset there (or the reverse). */
@@ -736,6 +741,89 @@ async function lifiPlan(leg: RelayLeg): Promise<Plan | null> {
   return { hops: [], preview: { ...lifiPreview(r), gasReserveUsd: gas ? reserveUsd : undefined }, out: BigInt(r.toAmount), lifi: { gas, main }, via: "lifi" };
 }
 
+/* ---------------- Across (swap API: bridge + swaps on either side, ready-to-sign transactions) ---------------- */
+
+const ACROSS = "https://app.across.to/api";
+type AcrossTx = { chainId: number; to: Address; data: Hex; value?: string };
+type AcrossSwap = {
+  approvalTxns?: AcrossTx[];
+  swapTx?: AcrossTx;
+  expectedOutputAmount: string;
+  minOutputAmount: string;
+  expectedFillTime?: number;
+  outputToken: { decimals: number; symbol: string };
+  fees?: { total?: { amountUsd?: string; pct?: string } };
+  message?: string;
+};
+
+async function acrossQuote(p: RelayLeg): Promise<AcrossSwap> {
+  const q = new URLSearchParams({
+    tradeType: "exactInput",
+    amount: p.amount.toString(),
+    inputToken: p.inToken,
+    originChainId: String(p.from),
+    outputToken: p.outToken,
+    destinationChainId: String(p.to),
+    depositor: p.user,
+    recipient: p.recipient,
+    slippage: String(legSlippageBps / 10_000),
+  });
+  const res = await fetch(`${ACROSS}/swap/approval?${q}`);
+  const j = (await res.json().catch(() => ({}))) as AcrossSwap;
+  if (!res.ok || !j.swapTx?.data) throw new ExecError(`No route right now${j.message ? `: ${j.message}` : ""}.`);
+  checkAutoCost(acrossCost(j));
+  return j;
+}
+/** Across reports the total cost as a negative fraction scaled by 1e18; returned here as a positive percent. */
+const acrossCost = (j: AcrossSwap) => Math.max(0, -Number(j.fees?.total?.pct ?? 0) / 1e16);
+
+function acrossPreview(j: AcrossSwap): Preview {
+  const dec = j.outputToken.decimals;
+  const cost = acrossCost(j);
+  return {
+    out: formatUnits(BigInt(j.expectedOutputAmount), dec),
+    outSymbol: j.outputToken.symbol,
+    minOut: formatUnits(BigInt(j.minOutputAmount), dec),
+    slippagePct: legSlippageBps / 100,
+    impactPct: -cost,
+    feesUsd: Math.max(0, -Number(j.fees?.total?.amountUsd ?? 0)),
+    seconds: j.expectedFillTime ?? 0,
+    costPct: cost,
+    legs: 1,
+  };
+}
+
+/** Across's route; on a deposit, a small Relay leg delivers the chain's native coin first when the wallet there is short. */
+async function acrossPlan(leg: RelayLeg): Promise<Plan | null> {
+  if (leg.from === leg.to || !evmChain(leg.from) || !evmChain(leg.to)) return null;
+  const fromUsdg = leg.from === ROBINHOOD_CHAIN_ID && leg.inToken.toLowerCase() === USDG.toLowerCase();
+  const reserveUsd = fromUsdg && !isNativeEvm(leg.outToken) ? await gasReserveUsd(leg) : 0;
+  let gasAmt = reserveUsd > 0 ? BigInt(Math.round(reserveUsd * 1e6)) : BigInt(0);
+  if (gasAmt * BigInt(5) >= leg.amount) gasAmt = BigInt(0);
+  const main: RelayLeg = { ...leg, amount: leg.amount - gasAmt, gasUsd: 0 };
+  const j = await acrossQuote(main);
+  const gas: RelayLeg | undefined = gasAmt > BigInt(0) ? { ...leg, outToken: NATIVE_EVM, amount: gasAmt, gasUsd: 0, noGasLeg: true } : undefined;
+  return { hops: [], preview: { ...acrossPreview(j), gasReserveUsd: gas ? reserveUsd : undefined }, out: BigInt(j.expectedOutputAmount), across: { gas, main }, via: "across" };
+}
+
+/** Runs an Across plan: the native-coin leg (Relay) first, then Across's approvals and transfer, re-quoted fresh. */
+async function runAcross(s: Signer, p: { gas?: RelayLeg; main: RelayLeg }) {
+  let waitGas: (() => Promise<unknown>) | null = null;
+  if (p.gas) {
+    const g = p.gas;
+    const read = () => tokenBalance(g.to, NATIVE_EVM, g.recipient as Address);
+    const before = await read();
+    await relay(s, g);
+    waitGas = () => waitForArrival(read, before, 10 * 60_000).catch(() => BigInt(0));
+  }
+  await noteLanding(s, p.main);
+  const j = await acrossQuote(p.main);
+  for (const t of j.approvalTxns ?? []) await sendEvm(s, t.chainId, { to: t.to, data: t.data, value: t.value ? BigInt(t.value) : undefined });
+  const tx = j.swapTx!;
+  await sendEvm(s, tx.chainId, { to: tx.to, data: tx.data, value: tx.value ? BigInt(tx.value) : undefined });
+  if (waitGas) await waitGas();
+}
+
 /** One LI.FI transfer from the user's wallet: approve the token if needed, then send. Returns the transaction hash. */
 async function lifiSend(s: Signer, leg: LifiLeg): Promise<Hex> {
   const q = await lifiQuote(leg);
@@ -770,14 +858,25 @@ async function runLifi(s: Signer, p: { gas?: LifiLeg; main: LifiLeg }) {
  */
 export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direct" | "via"): Promise<Plan> {
   if (!viaRelay(leg.from) || !viaRelay(leg.to)) return hubRoute(leg, outSymbol);
-  const [direct, via, native, lifi] = await Promise.allSettled([
+  const [direct, via, native, lifi, across] = await Promise.allSettled([
     force === "via" ? Promise.reject(new ExecError("skipped")) : directPlan(leg, outSymbol),
     force === "direct" ? Promise.resolve(null) : viaUsdcPlan(leg, outSymbol),
     force ? Promise.resolve(null) : viaNativePlan(leg, outSymbol),
     force ? Promise.resolve(null) : lifiPlan(leg),
+    force ? Promise.resolve(null) : acrossPlan(leg),
   ]);
-  const options = [direct, via, native, lifi].flatMap((r) => (r.status === "fulfilled" && r.value ? [r.value] : []));
+  const options = [direct, via, native, lifi, across].flatMap((r) => (r.status === "fulfilled" && r.value ? [r.value] : []));
   if (!options.length) throw direct.status === "rejected" ? direct.reason : new ExecError("No route right now.");
+  // Price every candidate the same way, dollars in vs dollars out at Relay's prices, so a bridge that under-reports
+  // its own cost can't slip past the route-cost limit. The native coin kept for transactions isn't a cost.
+  const ref = direct.status === "fulfilled" ? direct.value.ref : undefined;
+  if (ref)
+    for (const o of options) {
+      const kept = o.preview.gasReserveUsd ?? 0;
+      const spent = ref.inUsd - kept;
+      const cost = spent > 0 ? ((spent - Number(o.out) * ref.outUsdPerRaw) / spent) * 100 : 0;
+      o.preview = { ...o.preview, costPct: Math.max(routeCostPct(o.preview), cost, 0) };
+    }
   // The route that delivers the most of the vault's asset wins (each one's own gas slice already taken out).
   return options.reduce((best, o) => (o.out > best.out ? o : best));
 }
@@ -787,6 +886,7 @@ export async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
   const plan = await planRoute(leg, "");
   if (plan.far) return runHubRoute(s, plan as Plan & { far: FarLeg });
   if (plan.lifi) return runLifi(s, plan.lifi);
+  if (plan.across) return runAcross(s, plan.across);
   const { hops } = plan;
   if (hops.length === 1) return relay(s, hops[0]);
   const [h1, h2] = hops;
