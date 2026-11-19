@@ -78,6 +78,8 @@ export type Preview = {
   costPct?: number;
   /** How many bridge/swap legs the route has. */
   legs?: number;
+  /** USD of the vault chain's gas token delivered with the deposit; it stays in the user's wallet for later moves. */
+  gasReserveUsd?: number;
 };
 
 export type Adapter = {
@@ -276,12 +278,39 @@ export type RelayQuote = {
     totalImpact?: { percent?: string };
     slippageTolerance?: { destination?: { percent?: string } };
     timeEstimate?: number;
+    currencyGasTopup?: { amountUsd?: string };
   };
   fees?: Record<string, { amountUsd?: string } | null>;
 };
-export type RelayLeg = { from: number; to: number; inToken: string; outToken: string; amount: bigint; user: string; recipient: string };
+export type RelayLeg = { from: number; to: number; inToken: string; outToken: string; amount: bigint; user: string; recipient: string; gasUsd?: number };
+
+const GAS_RESERVE_DEFAULT_USD = 0.15;
+/**
+ * How much of the vault chain's gas token (in USD) a deposit's bridge should also deliver. Only on legs leaving
+ * Robinhood Chain for an EVM chain, and only when the user's wallet there is short, so Pecun's gas tank only has to
+ * cover Robinhood Chain; it stays a backup everywhere else.
+ */
+async function gasReserveUsd(p: RelayLeg): Promise<number> {
+  if (p.gasUsd !== undefined) return p.gasUsd;
+  if (p.from !== ROBINHOOD_CHAIN_ID || p.to === ROBINHOOD_CHAIN_ID || !isAddr(p.recipient)) return 0;
+  const c = evmChain(p.to);
+  if (!c || c.feeToken || c.gasReserveUsd === 0) return 0;
+  if (["0x0000000000000000000000000000000000000000", "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"].includes(p.outToken.toLowerCase())) return 0; // already delivers gas
+  const bal = await chainClient(p.to).getBalance({ address: p.recipient as Address }).catch(() => null);
+  if (bal === null || bal >= parseUnits(c.topUp, 18) * BigInt(2)) return 0;
+  return c.gasReserveUsd ?? GAS_RESERVE_DEFAULT_USD;
+}
 
 export async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
+  const gas = await gasReserveUsd(p);
+  if (gas > 0) {
+    const q = await relayQuoteOnce(p, gas).catch(() => null);
+    if (q) return q;
+  }
+  return relayQuoteOnce(p, 0);
+}
+
+async function relayQuoteOnce(p: RelayLeg, gasUsd: number): Promise<RelayQuote> {
   const res = await fetch(`${RELAY}/quote`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -295,6 +324,7 @@ export async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
       amount: p.amount.toString(),
       tradeType: "EXACT_INPUT",
       slippageTolerance: String(legSlippageBps),
+      ...(gasUsd > 0 ? { topupGas: true, topupGasAmount: String(Math.round(gasUsd * 1e6)) } : {}),
     }),
   });
   const q = (await res.json()) as RelayQuote;
@@ -316,9 +346,11 @@ export function toPreview(q: RelayQuote, fallbackSymbol: string): Preview {
     impactPct: Number(q.details?.totalImpact?.percent) || 0,
     feesUsd: fees,
     seconds: q.details?.timeEstimate ?? 0,
-    // Relay's total impact is measured in USD out vs USD in, so it already includes its fees.
+    // Relay's total impact is measured in USD out vs USD in, so it already includes its fees. (Not the gas
+    // reserve: that's the user's own gas token, kept in their wallet, shown on its own line.)
     costPct: Math.max(0, -(Number(q.details?.totalImpact?.percent) || 0)),
     legs: 1,
+    gasReserveUsd: Number(q.details?.currencyGasTopup?.amountUsd) || undefined,
   };
 }
 
@@ -1442,6 +1474,7 @@ export function chainPreview(first: Preview, firstOut: bigint, firstMin: bigint,
     seconds: first.seconds + second.seconds,
     costPct: routeCostPct(first) + routeCostPct(second),
     legs: (first.legs ?? 1) + (second.legs ?? 1),
+    gasReserveUsd: (first.gasReserveUsd ?? 0) + (second.gasReserveUsd ?? 0) || undefined,
   };
 }
 

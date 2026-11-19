@@ -211,6 +211,7 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
   const cost = routeCostPct(p);
   const route: [string, string][] = [
     ["Bridge & swap fees", `≈ $${p.feesUsd.toFixed(2)}`],
+    ...(side === "add" && p.gasReserveUsd ? ([["Gas reserve (stays in your wallet)", `≈ $${p.gasReserveUsd.toFixed(2)}`]] as [string, string][]) : []),
     ["Price impact", `${p.impactPct.toFixed(2)}%`],
     ["Total route cost", `${cost.toFixed(2)}% (limit ${MAX_ROUTE_COST_PCT}%)`],
     ["Time", p.seconds ? `~${p.seconds < 60 ? `${p.seconds}s` : `${Math.round(p.seconds / 60)} min`}` : "Under a minute"],
