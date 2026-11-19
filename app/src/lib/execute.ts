@@ -1901,7 +1901,7 @@ function scallop(coinType: string, symbol: string): Adapter {
 export type Opp = { chain: string; protocol: string; asset: string; name?: string; kind?: string; ticker?: string; address?: string | null; id: string; ref?: { source: string; id: string } | null };
 
 /** Standard ERC-4626 vaults (deposit / withdraw / redeem). */
-const VAULT_PROTOCOLS = new Set(["Euler", "Fluid", "Gearbox", "Silo", "Sky"]);
+const VAULT_PROTOCOLS = new Set(["Euler", "Fluid", "Gearbox", "Silo", "Sky", "Frgmnt"]);
 /** Tokens that are the position themselves; bought and sold through Relay. */
 const TOKEN_PROTOCOLS = new Set(["ether.fi", "Rocket Pool", "Kinetiq", "Ethena"]);
 const SPARK_POOL: Record<number, Address> = { 1: "0xC13e21B648A5Ee794902342038FF3aDAB66BE987" };

@@ -8,6 +8,7 @@
  * Run with the dev server up (it reads the catalog from it):
  *   npx tsx scripts/check-routes.ts            # resume: only routes not checked in the last 24h
  *   npx tsx scripts/check-routes.ts --fresh    # re-check everything
+ *   npx tsx scripts/check-routes.ts --only=frgmnt   # just the routes whose key or vault ids contain this text
  *
  * Results are saved after every route to src/lib/route-check.json, so a throttled or interrupted run can be resumed.
  */
@@ -45,13 +46,19 @@ async function main() {
     file.generatedAt = new Date().toISOString();
     file.limitPct = MAX_ROUTE_COST_PCT;
     const ok = (r?: Result) => !!r && r.dep !== undefined && r.wd !== undefined && r.dep <= MAX_ROUTE_COST_PCT && r.wd <= MAX_ROUTE_COST_PCT;
-    file.passed = vaults.filter((o) => ok(file.results[o.id])).map((o) => o.id).sort();
+    // Vaults missing from this catalog read (a slow source still loading) keep their earlier verdict.
+    const here = new Set(vaults.map((o) => o.id));
+    const kept = (file.passed ?? []).filter((id) => !here.has(id));
+    file.passed = [...new Set([...kept, ...vaults.filter((o) => ok(file.results[o.id])).map((o) => o.id)])].sort();
     writeFileSync(OUT, JSON.stringify(file, null, 1));
   };
 
   let lifiBlocked = false;
   let done = 0;
-  const todo = [...groups].filter(([, list]) => fresh || !list.every((o) => file.results[o.id] && Date.now() - file.results[o.id].at < FRESH_MS));
+  const only = process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length).toLowerCase();
+  const todo = [...groups].filter(([key, list]) =>
+    only ? (key + list.map((o) => o.id).join(" ")).toLowerCase().includes(only) : fresh || !list.every((o) => file.results[o.id] && Date.now() - file.results[o.id].at < FRESH_MS),
+  );
   console.log(`${vaults.length} one-click vaults in ${groups.size} routes; ${todo.length} to check`);
   for (const [key, list] of todo) {
     const o = list[0];

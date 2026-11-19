@@ -2,6 +2,56 @@ import { beefyChainName, evmChainName, isStable } from "../chains.ts";
 import { getJson, gql, mapLimit, num, numOrNull } from "../http.ts";
 import type { Opportunity } from "../types.ts";
 
+/* ---------------- Frgmnt (USDC vaults on Morpho, curated by Frgmnt) ---------------- */
+// Morpho Vault V2s on Base. They aren't on Morpho's listed set, so they're read by address. Execution: ERC-4626.
+
+const FRGMNT_VAULTS: { address: string; about: string }[] = [
+  { address: "0x1DdD2F85566027974E5D0824C09b54Dde1E84651", about: "Lends USDC on Morpho markets backed by major crypto assets (cbBTC, WETH, cbETH, cbXRP, SOL, cbDOGE, cbLTC). At least 20% stays in the cbBTC/USDC market, ready to withdraw, and the vault never supplies more than 10% of a single market." },
+  { address: "0x8aB109d7919A38D90864196666748A59457AAA0D", about: "Lends USDC on Morpho markets backed by tokenized US stocks (such as NVIDIA, Apple, Microsoft and Tesla). A stock market only gets USDC while it pays at least 1 point more than cbBTC/USDC; the rest, including a 10% buffer, stays in cbBTC/USDC, ready to withdraw. Stock prices update during market hours only." },
+];
+
+export async function frgmnt(): Promise<Opportunity[]> {
+  type V = { address: string; name: string; symbol: string; totalAssetsUsd: number | null; netApy: number | null; liquidityUsd: number | null; asset: { symbol: string } };
+  const q = FRGMNT_VAULTS.map((v, i) => `v${i}: vaultV2ByAddress(address:"${v.address}", chainId:8453){ address name symbol totalAssetsUsd netApy liquidityUsd asset{ symbol } }`).join(" ");
+  const data = await gql<Record<string, V | null>>(MORPHO, `{ ${q} }`);
+  return FRGMNT_VAULTS.flatMap((meta, i) => {
+    const v = data[`v${i}`];
+    if (!v) return [];
+    const asset = v.asset?.symbol ?? "USDC";
+    const ready = Math.round(num(v.liquidityUsd)).toLocaleString("en-US");
+    return [
+      {
+        id: `frgmnt:8453:${v.address}`,
+        protocol: "Frgmnt",
+        name: v.name.replace(/^FRGMNT /i, "Frgmnt "),
+        ticker: v.symbol,
+        asset,
+        kind: "Vault",
+        chain: "Base",
+        apy: numOrNull(v.netApy),
+        apy7d: null,
+        apy30d: null,
+        tvlUsd: num(v.totalAssetsUsd),
+        manager: "Frgmnt",
+        redemption: "Instant, up to the vault's free USDC",
+        stablecoin: isStable(asset),
+        category: "Curated lending vault",
+        address: v.address,
+        description: meta.about,
+        details: [
+          { label: "Fees", value: "0% performance, 0% management" },
+          { label: "Ready to withdraw", value: "$" + ready },
+          { label: "Timelocks", value: "3 days to raise caps, add markets or change fees; 7 days to remove a market" },
+          { label: "Governance", value: "Owner and curator are 3-of-4 Safe multisigs" },
+        ],
+        links: [{ label: "Frgmnt docs", url: "https://docs.frgmnt.fi/frgmnt-product/vaults" }],
+        ref: { source: "morpho-v2", id: v.address, chainId: 8453 },
+        url: `https://app.frgmnt.fi/earn/${v.symbol.toLowerCase()}`,
+      } satisfies Opportunity,
+    ];
+  });
+}
+
 /* ---------------- Morpho (v1 + v2 listed vaults) ---------------- */
 
 type MorphoV1 = {

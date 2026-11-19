@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-18T12:51:52.843Z",
+ "generatedAt": "2026-11-19T11:16:42.066Z",
  "amountUsd": 100,
  "limitPct": 0.5,
  "passed": [
@@ -301,6 +301,7 @@
   "ethena:1:0x9D39A5DE30e57443BfF2A8307A4256c8797A3497",
   "etherfi:1:0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
   "euler:130:0x6eAe95ee783e4D862867C4e0E4c3f4B95AA682Ba",
+  "euler:1:0x018b86A893F57a632F90c4A8308353Ac938adc01",
   "euler:1:0x056f3a2E41d2778D3a0c0714439c53af2987718E",
   "euler:1:0x2daCa71Cb58285212Dc05D65Cfd4f59A82BC4cF6",
   "euler:1:0x313603FA690301b0CaeEf8069c065862f9162162",
@@ -376,6 +377,7 @@
   "fluid:9745:0x5E494e8912319cefb1d4Fa516807bB65A8CB9E40",
   "fluid:9745:0x96D7478219bFCc9B5d25F08ccb983815ee9D05e2",
   "fluid:9745:0xd8f824d4252caE7d5E49B95d47B0EfAfe6f2d570",
+  "frgmnt:8453:0x1DdD2F85566027974E5D0824C09b54Dde1E84651",
   "gearbox:1:0x683FAf5BAFd88d4c383cCaf3d61C26AF2E164409",
   "gearbox:1:0x9396DCbf78fc526bb003665337C5E73b699571EF",
   "gearbox:1:0xA9d17f6D3285208280a1Fd9B94479c62e0AABa64",
@@ -650,6 +652,7 @@
   "meteora:solana:9oCwYQJYCWHeXnodFCxdqY1kV4uBPo5P7yWGkNJ2Wjj3",
   "meteora:solana:ARwi1S4DaiTG5DX7S4M4ZsrXqpMD1MrTmbu9ue2tpmEq",
   "meteora:solana:AtcGozT6i1GR3wJAjVwRwmt7qbHqZrBUqKs2DcMAKoVe",
+  "meteora:solana:AvpjYo2akRt8xCSWHVgcnXD6JwjiSdMK3gBFwCERWEyB",
   "meteora:solana:BPWVoUbY9RWaUgYqSViuS5jLpGY4hJ4SHNXNx7mnsiJM",
   "meteora:solana:BoeMUkCLHchTD31HdXsbDExuZZfcUppSLpYtV3LZTH6U",
   "meteora:solana:BzYotLjMtGY8dRtDWEqGqCNCayuy3htaxdp2oSkNETV1",
@@ -12156,6 +12159,11 @@
    "dep": 1.27,
    "wd": 0.07,
    "at": 1795006311838
+  },
+  "frgmnt:8453:0x1DdD2F85566027974E5D0824C09b54Dde1E84651": {
+   "dep": 0.06,
+   "wd": 0.06,
+   "at": 1795087001056
   }
  }
 }

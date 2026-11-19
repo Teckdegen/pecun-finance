@@ -17,6 +17,7 @@ export const PLATFORMS: { name: string; logo: string }[] = [
   { name: "Suilend", logo: "/logos/protocols/suilend.png" },
   { name: "Aftermath", logo: "https://aftermath.finance/coins/afsui.svg" },
   { name: "Gearbox", logo: "/logos/protocols/gearbox.png" },
+  { name: "Frgmnt", logo: "/logos/protocols/frgmnt.png" },
   // Newer platforms use their governance token's logo from LI.FI's open token list.
   { name: "Euler", logo: "https://static.debank.com/image/eth_token/logo_url/0xd9fcd98c322942075a5c3860693e9f4f03aae07b/4af0cfbf57569f8fdb31e4a2fb9d8651.png" },
   { name: "Compound", logo: "https://static.debank.com/image/eth_token/logo_url/0xc00e94cb662c3520282e6f5717214004a7f26888/dd174d3d7083fa027a433dc50edaf0bc.png" },

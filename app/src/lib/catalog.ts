@@ -1,4 +1,4 @@
-import { aave, aaveV4, beefy, euler, fluid, lagoon, lido, morpho, pendle, savingsGho, upshift, yearn } from "./adapters/evm.ts";
+import { aave, aaveV4, beefy, euler, fluid, frgmnt, lagoon, lido, morpho, pendle, savingsGho, upshift, yearn } from "./adapters/evm.ts";
 import { aftermath, ember, hyperliquid, jupiterLend, kamino, marinade, meteora, navi, scallop, solanaStaking } from "./adapters/nonevm.ts";
 import { compound, ethena, sky, spark } from "./adapters/onchain.ts";
 import { avantis, etherfi, frax, gmx, hyperlend, jupiterJlp, kinetiq, resolv, rocketPool, silo, spectra, venus, volo } from "./adapters/more.ts";
@@ -19,6 +19,7 @@ const SOURCES: [string, () => Promise<Opportunity[]>][] = [
   ["Ember", ember],
   ["Upshift", upshift],
   ["Morpho", morpho],
+  ["Frgmnt", frgmnt],
   ["Aave", aave],
   ["Pendle", pendle],
   ["Yearn", yearn],
