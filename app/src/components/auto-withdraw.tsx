@@ -4,7 +4,9 @@ import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { hasStranded, oneClickFor, sweepStranded } from "@/lib/exec";
+import { recordActivity, slimVault } from "@/lib/activity";
 import { forgetPending, listPending, runningVaults } from "@/lib/pending-withdrawals";
+import type { Opportunity } from "@/lib/types";
 import { useAuth } from "./auth-provider";
 
 const EVERY = 5 * 60_000;
@@ -75,7 +77,10 @@ export function AutoWithdraw() {
         setNotice({ kind: "working", text: `${o.name ?? o.protocol} paid out ${amount}. Bringing it back to your wallet…` });
         try {
           const result = await adapter.bringHome(signerOf(a), () => {});
-          if (result) setNotice({ kind: "done", text: `${result} from ${o.name ?? o.protocol} is back in your wallet.` });
+          if (result) {
+            setNotice({ kind: "done", text: `${result} from ${o.name ?? o.protocol} is back in your wallet.` });
+            recordActivity(a.evmAddress, { vault: slimVault(o as Opportunity), side: "withdraw", amount: "payout", result, status: "done", auto: true, at: Date.now() });
+          }
           const left = await adapter.queue(who).catch(() => null);
           if (left && left.pending <= 0 && left.arrived <= 0) forgetPending(a.evmAddress, o.id);
           window.dispatchEvent(new Event("pecun:balances-changed"));

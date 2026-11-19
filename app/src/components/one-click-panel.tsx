@@ -3,6 +3,7 @@
 import { Check, Clock, Loader2, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { budgetLegs, feeBps, MAX_ROUTE_COST_PCT, oneClickFor, resetLegSlippage, routeCostPct, type Preview, type QueueState, type StepStatus } from "@/lib/exec";
+import { firstNumber, recordActivity, slimVault } from "@/lib/activity";
 import { rememberPending, runningVaults } from "@/lib/pending-withdrawals";
 import type { Opportunity } from "@/lib/types";
 import { getBalances } from "@/lib/wallet";
@@ -90,12 +91,24 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
       const result =
         side === "add" ? await adapter.deposit(signer, amount, on) : await adapter.withdraw(signer, n >= (pos ?? 0) - 1e-9 ? "max" : amount, on);
       setRun((r) => (r ? { ...r, result } : r));
+      const all = side === "withdraw" && n >= (pos ?? 0) - 1e-9;
+      recordActivity(evmAddress, {
+        vault: slimVault(o),
+        side,
+        amount: side === "withdraw" && all ? "max" : amount,
+        // Position units moved: what arrived in the vault, or what was taken out of it.
+        units: side === "add" ? firstNumber(result) : all ? pos ?? n : n,
+        result,
+        status: "done",
+        at: Date.now(),
+      });
       setAmount("");
       if (side === "withdraw" && adapter.queue) rememberPending(evmAddress, o);
       void load();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[pecun] one-click failed:", msg);
+      recordActivity(evmAddress, { vault: slimVault(o), side, amount, error: msg, status: "failed", at: Date.now() });
       setRun((r) => (r ? { ...r, error: msg, steps: r.steps.map((s) => (s.status === "running" ? { ...s, status: "failed" } : s)) } : r));
       void load();
     } finally {
@@ -288,28 +301,18 @@ function PendingBox({ q }: { q: QueueState }) {
 function RunView({ run, onRetry, onDone }: { run: Run; onRetry: () => void; onDone: () => void }) {
   return (
     <div className="mt-4" role="status" aria-live="polite">
-      <p className="text-[15px] font-medium">
-        {run.result ? (run.side === "add" ? "Added" : "Withdrawn") : run.error ? "Didn't finish" : run.side === "add" ? "Adding…" : "Withdrawing…"}
-      </p>
-      <ul className="mt-3 space-y-2">
-        {run.steps.map((s) => (
-          <li key={s.id} className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5 text-sm">
-            <span className="grid size-5 shrink-0 place-items-center">
-              {s.status === "done" ? (
-                <Check className="size-4 text-accent" strokeWidth={3} />
-              ) : s.status === "running" ? (
-                <Loader2 className="size-4 animate-spin text-muted" />
-              ) : s.status === "failed" ? (
-                <X className="size-4 text-red-300" strokeWidth={3} />
-              ) : (
-                <span className={`size-1.5 rounded-full ${s.status === "skipped" ? "bg-transparent" : "bg-white/25"}`} />
-              )}
-            </span>
-            <span className={`flex-1 ${s.status === "skipped" ? "text-faint line-through" : ""}`}>{s.label}</span>
-            {s.detail && <span className="text-xs text-muted">{s.detail}</span>}
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center gap-3 rounded-xl border border-line px-4 py-3.5">
+        {run.result ? (
+          <Check className="size-5 shrink-0 text-accent" strokeWidth={3} />
+        ) : run.error ? (
+          <X className="size-5 shrink-0 text-red-300" strokeWidth={3} />
+        ) : (
+          <Loader2 className="size-5 shrink-0 animate-spin text-muted" />
+        )}
+        <p className="text-[15px] font-medium">
+          {run.result ? (run.side === "add" ? "Deposited" : "Withdrawn") : run.error ? "Didn't finish" : run.side === "add" ? "Depositing…" : "Withdrawing…"}
+        </p>
+      </div>
       {run.result && <p className="mt-3 text-sm text-muted">{run.side === "add" ? `${run.result} is now earning.` : `${run.result} is back in your wallet.`}</p>}
       {run.error && <p className="mt-3 break-words rounded-xl border border-red-400/40 bg-red-400/10 px-3 py-2 text-sm text-white/85">{run.error}</p>}
       {(run.result || run.error) && (
