@@ -19,7 +19,14 @@ export type ActivityVault = Pick<
 
 export type ActivityItem = {
   vault: ActivityVault;
-  side: "add" | "withdraw";
+  /** add / withdraw: a vault deposit or withdrawal. send / receive: USDC leaving or reaching the wallet. */
+  side: "add" | "withdraw" | "send" | "receive";
+  /** The transaction, when known (every send and receive has one). */
+  txHash?: string;
+  /** Who the money went to or came from (send / receive). */
+  counterparty?: string;
+  /** Found on chain rather than recorded by Pecun when it happened. */
+  onchain?: boolean;
   /** What was typed: USDC for a deposit, position units for a withdrawal ("max" for everything). */
   amount: string;
   /** Position units this moved into (deposit) or out of (withdrawal) the vault, when known. */
@@ -57,7 +64,61 @@ function saveLocal(owner: string, list: ActivityItem[]) {
   }
 }
 
-const sameItem = (a: ActivityItem, b: ActivityItem) => a.at === b.at && a.side === b.side && a.vault.id === b.vault.id;
+const sameItem = (a: ActivityItem, b: ActivityItem) =>
+  a.txHash && b.txHash ? a.txHash.toLowerCase() === b.txHash.toLowerCase() && a.side === b.side : a.at === b.at && a.side === b.side && a.vault.id === b.vault.id;
+
+/** The wallet itself, for sends and receives (not a vault). */
+export const WALLET_VAULT: ActivityVault = { id: "wallet", name: "Wallet", protocol: "Pecun", chain: "Base", asset: "USDC", kind: "Vault" } as ActivityVault;
+
+type ChainTransfer = { hash: string; from: string; to: string; value: string; decimals: number; at: number };
+
+/** The wallet's USDC transfers on Base, read from the chain (the backup for anything the index doesn't have). */
+async function chainTransfers(owner: string): Promise<ChainTransfer[]> {
+  try {
+    const res = await fetch("/api/transfers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: owner }) });
+    if (!res.ok) return [];
+    return ((await res.json()) as { transfers?: ChainTransfer[] }).transfers ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Chain transfers as activity, leaving out the ones Pecun already recorded another way: a deposit's or withdrawal's
+ * own USDC movement (same amount within 2%, within 15 minutes) and Pecun's fee transfers.
+ */
+function fromChain(owner: string, transfers: ChainTransfer[], known: ActivityItem[]): ActivityItem[] {
+  const me = owner.toLowerCase();
+  const treasury = (process.env.NEXT_PUBLIC_PECUN_TREASURY ?? "").toLowerCase();
+  const out: ActivityItem[] = [];
+  for (const t of transfers) {
+    const side: "send" | "receive" | null = t.from === me ? "send" : t.to === me ? "receive" : null;
+    if (!side) continue;
+    const other = side === "send" ? t.to : t.from;
+    if (treasury && other === treasury) continue;
+    const amount = Number(t.value) / 10 ** t.decimals;
+    if (known.some((k) => k.txHash && k.txHash.toLowerCase() === t.hash.toLowerCase())) continue;
+    const twin = known.some((k) => {
+      if (k.status !== "done" || Math.abs(k.at - t.at) > 15 * 60_000) return false;
+      if ((side === "send" && k.side !== "add") || (side === "receive" && k.side !== "withdraw")) return false;
+      const n = side === "send" ? Number(k.amount) : firstNumber(k.result) ?? 0;
+      return n > 0 && Math.abs(n - amount) / n < 0.02;
+    });
+    if (twin) continue;
+    out.push({
+      vault: WALLET_VAULT,
+      side,
+      amount: String(amount),
+      result: `${amount.toLocaleString("en-US", { maximumFractionDigits: 6 })} USDC`,
+      status: "done",
+      txHash: t.hash,
+      counterparty: other,
+      onchain: true,
+      at: t.at,
+    });
+  }
+  return out;
+}
 const merge = (...lists: ActivityItem[][]) => {
   const out: ActivityItem[] = [];
   for (const l of lists) for (const it of l) if (!out.some((x) => sameItem(x, it))) out.push(it);
@@ -91,13 +152,17 @@ export function recordActivity(owner: string, item: ActivityItem, sign?: SignReq
  */
 export async function loadActivity(owner: string, sign?: SignRequest): Promise<{ items: ActivityItem[]; vaults: string[] }> {
   const local = listActivity(owner);
-  const r = sign ? await remote(owner, sign) : null;
-  if (!r) return { items: local, vaults: [...new Set(local.map((a) => a.vault.id))] };
-  const missing = local.filter((l) => !r.items.some((x) => sameItem(x, l)));
-  for (const m of missing.slice(0, 20)) void remote(owner, sign!, m);
-  const items = merge(r.items, local);
+  const [r, transfers] = await Promise.all([sign ? remote(owner, sign) : Promise.resolve(null), chainTransfers(owner)]);
+  const recorded = r ? merge(r.items, local) : local;
+  // The chain is the backup: transfers the index doesn't have are added (and written to the index below).
+  const found = fromChain(owner, transfers, recorded);
+  const items = merge(recorded, found);
+  if (r && sign) {
+    const missing = items.filter((l) => !r.items.some((x) => sameItem(x, l)));
+    for (const m of missing.slice(0, 25)) void remote(owner, sign, m);
+  }
   saveLocal(owner, items);
-  return { items, vaults: [...new Set([...r.vaults, ...items.map((a) => a.vault.id)])] };
+  return { items, vaults: [...new Set([...(r?.vaults ?? []), ...items.map((a) => a.vault.id)])].filter((id) => id !== WALLET_VAULT.id) };
 }
 
 /** The first number in a result line like "99.28 USDC" or "1,204.5 USD of GM". */

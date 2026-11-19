@@ -19,6 +19,7 @@ import {
 } from "@/lib/wallet";
 import { ensureGas, type Signer } from "@/lib/execute";
 import { HOME_CHAIN_ID } from "@/lib/wallet";
+import { recordActivity, WALLET_VAULT } from "@/lib/activity";
 import { privateAddress } from "@/lib/private-receive";
 import { useAuth } from "./auth-provider";
 
@@ -450,6 +451,13 @@ function SendView({ from, bal, live, close, back, onSent }: {
       return;
     }
     setStage("done");
+    if (live) {
+      recordActivity(
+        from,
+        { vault: WALLET_VAULT, side: "send", amount: tokenStr, result: `${tokenStr} ${token}`, status: "done", txHash: r.hash, counterparty: to.trim().toLowerCase(), at: Date.now() },
+        signAccountsRequest,
+      );
+    }
     onSent();
   };
 

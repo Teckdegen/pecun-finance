@@ -217,6 +217,7 @@ export function PortfolioView() {
 }
 
 const ACTIVITY = ["History", "Pending Withdrawals"] as const;
+const ACTION: Record<ActivityItem["side"], string> = { add: "Deposit", withdraw: "Withdraw", send: "Sent", receive: "Received" };
 
 /** Activity reached from the portfolio Activity button. */
 export function ActivityView() {
@@ -284,10 +285,14 @@ export function ActivityView() {
             <ul className="mt-2 divide-y divide-line overflow-hidden rounded-2xl bg-card">
               {items.map((a, i) => (
                 <li key={`${a.at}-${i}`}>
-                  <Link href={a.vault.slug ? `/earn/${a.vault.slug}` : "/portfolio"} className="grid grid-cols-[1.2fr_2fr_1fr_1fr] items-center gap-2 px-3 py-3 text-sm hover:bg-card-2">
+                  <Link
+                    href={a.txHash && (a.side === "send" || a.side === "receive") ? `https://basescan.org/tx/${a.txHash}` : a.vault.slug ? `/earn/${a.vault.slug}` : "/portfolio"}
+                    target={a.txHash && (a.side === "send" || a.side === "receive") ? "_blank" : undefined}
+                    className="grid grid-cols-[1.2fr_2fr_1fr_1fr] items-center gap-2 px-3 py-3 text-sm hover:bg-card-2"
+                  >
                     <span className="min-w-0">
                       <span className={`block font-medium ${a.status === "failed" ? "text-red-300" : "text-ink"}`}>
-                        {a.side === "add" ? "Deposit" : "Withdraw"}
+                        {ACTION[a.side]}
                         {a.status === "failed" ? " · didn't finish" : ""}
                       </span>
                       <span className="tabular block truncate text-xs text-muted">
@@ -295,8 +300,20 @@ export function ActivityView() {
                       </span>
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-ink">{a.vault.name}</span>
-                      <span className="block truncate text-xs text-muted">{a.vault.protocol}</span>
+                      {a.side === "send" || a.side === "receive" ? (
+                        <>
+                          <span className="tabular block truncate text-ink">
+                            {a.side === "send" ? "To " : "From "}
+                            {a.counterparty ? `${a.counterparty.slice(0, 6)}…${a.counterparty.slice(-4)}` : "—"}
+                          </span>
+                          <span className="block truncate text-xs text-muted">{a.onchain ? "Found on chain" : "Wallet"}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="block truncate text-ink">{a.vault.name}</span>
+                          <span className="block truncate text-xs text-muted">{a.vault.protocol}</span>
+                        </>
+                      )}
                     </span>
                     <span className="truncate text-muted">{a.vault.chain}</span>
                     <span className="tabular truncate text-muted">{date(a.at)}</span>
