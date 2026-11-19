@@ -650,12 +650,21 @@ export const outOf = (q: RelayQuote) => {
  * Circle's CCTP when both ends are native USDC. On a deposit it runs after the Relay hop; on a withdrawal, before it.
  */
 export type FarLeg = { via: "lifi" | "cctp"; leg: LifiLeg; out: bigint; min: bigint; decimals: number; preview: Preview };
-type Plan = { hops: RelayLeg[]; preview: Preview; out: bigint; far?: FarLeg };
+/**
+ * A planned route. `hops` are Relay transfers (one, or two through a middle token); `lifi` is a LI.FI transfer (with
+ * an optional small leg into the chain's native coin first); `far` is the hub route for chains Relay can't reach.
+ * `keep` is native coin a via-native deposit leaves in the wallet instead of swapping it into the vault's asset.
+ */
+type Plan = { hops: RelayLeg[]; preview: Preview; out: bigint; far?: FarLeg; lifi?: { gas?: LifiLeg; main: LifiLeg }; keep?: bigint; via?: string };
+
+const NATIVE_EVM = "0x0000000000000000000000000000000000000000";
+const isNativeEvm = (t: string) => t.toLowerCase() === NATIVE_EVM || t.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
 
 /** Relay's direct route. */
 async function directPlan(leg: RelayLeg, outSymbol: string): Promise<Plan> {
   const q = await relayQuote(leg);
-  return { hops: [leg], preview: toPreview(q, outSymbol), out: outOf(q).out };
+  return { hops: [leg], preview: toPreview(q, outSymbol), out: outOf(q).out, via: "relay" };
 }
 
 /** Two hops through USDC on the vault's chain: bridge to USDC, then swap USDC into the asset there (or the reverse). */
@@ -673,7 +682,86 @@ async function viaUsdcPlan(leg: RelayLeg, outSymbol: string): Promise<Plan | nul
     : { from: vaultChain, to: leg.to, inToken: mid, outToken: leg.outToken, amount: o1.out, user: leg.user, recipient: leg.recipient };
   const q2 = await relayQuote(hop2);
   const o2 = outOf(q2);
-  return { hops: [hop1, hop2], preview: chainPreview(toPreview(q1, "USDC"), o1.out, o1.min, toPreview(q2, outSymbol), o2.out, o2.min, o2.decimals), out: o2.out };
+  return { hops: [hop1, hop2], preview: chainPreview(toPreview(q1, "USDC"), o1.out, o1.min, toPreview(q2, outSymbol), o2.out, o2.min, o2.decimals), out: o2.out, via: "relay-usdc" };
+}
+
+/**
+ * Two hops through the vault chain's native coin. Deposit: bridge USDG into the native coin, keep a slice of it in the
+ * wallet for transactions (when the wallet there is short), swap the rest into the vault's asset. Withdraw: swap the
+ * asset into the native coin there, then bridge it home. Every asset has a market against its chain's native coin.
+ */
+async function viaNativePlan(leg: RelayLeg, outSymbol: string): Promise<Plan | null> {
+  const deposit = leg.from === ROBINHOOD_CHAIN_ID;
+  const vaultChain = deposit ? leg.to : leg.from;
+  const vaultToken = deposit ? leg.outToken : leg.inToken;
+  const c = evmChain(vaultChain);
+  if (!c || c.feeToken || c.gasReserveUsd === 0 || vaultChain === ROBINHOOD_CHAIN_ID || isNativeEvm(vaultToken)) return null;
+  if (deposit) {
+    const keepUsd = leg.inToken.toLowerCase() === USDG.toLowerCase() ? await gasReserveUsd(leg) : 0;
+    const hop1: RelayLeg = { ...leg, outToken: NATIVE_EVM, gasUsd: 0 };
+    const q1 = await relayQuote(hop1);
+    const o1 = outOf(q1);
+    const inUsd = Number(formatUnits(leg.amount, USDG_DECIMALS));
+    const keep = keepUsd > 0 && inUsd > 0 ? (o1.out * BigInt(Math.round(keepUsd * 1e6))) / BigInt(Math.round(inUsd * 1e6)) : BigInt(0);
+    if (keep >= o1.out) return null;
+    const hop2: RelayLeg = { from: vaultChain, to: vaultChain, inToken: NATIVE_EVM, outToken: leg.outToken, amount: o1.out - keep, user: leg.recipient, recipient: leg.recipient, gasUsd: 0 };
+    const q2 = await relayQuote(hop2);
+    const o2 = outOf(q2);
+    const p = chainPreview(toPreview(q1, c.native), o1.out - keep, o1.min > keep ? o1.min - keep : o1.min, toPreview(q2, outSymbol), o2.out, o2.min, o2.decimals);
+    return { hops: [hop1, hop2], preview: { ...p, gasReserveUsd: keepUsd || undefined }, out: o2.out, keep, via: "relay-native" };
+  }
+  const hop1: RelayLeg = { from: vaultChain, to: vaultChain, inToken: leg.inToken, outToken: NATIVE_EVM, amount: leg.amount, user: leg.user, recipient: leg.user, gasUsd: 0 };
+  const q1 = await relayQuote(hop1);
+  const o1 = outOf(q1);
+  const hop2: RelayLeg = { from: vaultChain, to: leg.to, inToken: NATIVE_EVM, outToken: leg.outToken, amount: o1.out, user: leg.user, recipient: leg.recipient };
+  const q2 = await relayQuote(hop2);
+  const o2 = outOf(q2);
+  return { hops: [hop1, hop2], preview: chainPreview(toPreview(q1, c.native), o1.out, o1.min, toPreview(q2, outSymbol), o2.out, o2.min, o2.decimals), out: o2.out, via: "relay-native" };
+}
+
+/**
+ * LI.FI's best route (it aggregates many bridges and DEXes: Across, Stargate, CCTP, Mayan, deBridge, ...). On a
+ * deposit, when the wallet on the vault's chain is short on its native coin, a small separate LI.FI leg delivers it.
+ */
+async function lifiPlan(leg: RelayLeg): Promise<Plan | null> {
+  if (leg.from === leg.to || !evmChain(leg.from) || !evmChain(leg.to)) return null;
+  const fromUsdg = leg.from === ROBINHOOD_CHAIN_ID && leg.inToken.toLowerCase() === USDG.toLowerCase();
+  const reserveUsd = fromUsdg && !isNativeEvm(leg.outToken) ? await gasReserveUsd(leg) : 0;
+  let gasAmt = reserveUsd > 0 ? BigInt(Math.round(reserveUsd * 1e6)) : BigInt(0);
+  if (gasAmt * BigInt(5) >= leg.amount) gasAmt = BigInt(0);
+  const main: LifiLeg = { fromChain: leg.from, toChain: leg.to, fromToken: leg.inToken, toToken: leg.outToken, amount: leg.amount - gasAmt, from: leg.user, to: leg.recipient };
+  const r = await lifiRoute(main);
+  const gas: LifiLeg | undefined =
+    gasAmt > BigInt(0) ? { fromChain: leg.from, toChain: leg.to, fromToken: leg.inToken, toToken: NATIVE_EVM, amount: gasAmt, from: leg.user, to: leg.recipient } : undefined;
+  return { hops: [], preview: { ...lifiPreview(r), gasReserveUsd: gas ? reserveUsd : undefined }, out: BigInt(r.toAmount), lifi: { gas, main }, via: "lifi" };
+}
+
+/** One LI.FI transfer from the user's wallet: approve the token if needed, then send. Returns the transaction hash. */
+async function lifiSend(s: Signer, leg: LifiLeg): Promise<Hex> {
+  const q = await lifiQuote(leg);
+  if (!isNativeEvm(leg.fromToken)) {
+    const spender = q.estimate.approvalAddress ?? q.transactionRequest.to!;
+    const token = leg.fromToken as Address;
+    const allowance = await chainClient(leg.fromChain).readContract({ address: token, abi: erc20Abi, functionName: "allowance", args: [s.address, spender] });
+    if (allowance < leg.amount) await sendEvm(s, leg.fromChain, { to: token, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, leg.amount] }) });
+  }
+  return sendEvm(s, leg.fromChain, { to: q.transactionRequest.to!, data: q.transactionRequest.data as Hex, value: q.transactionRequest.value ? BigInt(q.transactionRequest.value) : undefined });
+}
+
+/** Runs a LI.FI plan: the native-coin leg first (and waits for it), then the main transfer. The caller waits for the main arrival. */
+async function runLifi(s: Signer, p: { gas?: LifiLeg; main: LifiLeg }) {
+  let waitGas: (() => Promise<unknown>) | null = null;
+  if (p.gas) {
+    const g = p.gas;
+    const read = () => tokenBalance(g.toChain, NATIVE_EVM, g.to as Address);
+    const before = await read();
+    const hash = await lifiSend(s, g);
+    waitGas = () => waitForArrival(read, before, 10 * 60_000, lifiFailed(hash, g.fromChain, g.toChain)).catch(() => BigInt(0));
+  }
+  const m = p.main;
+  await noteLanding(s, { from: m.fromChain, to: m.toChain, inToken: m.fromToken, outToken: m.toToken, amount: m.amount, user: m.from, recipient: m.to });
+  await lifiSend(s, m);
+  if (waitGas) await waitGas();
 }
 
 /**
@@ -682,12 +770,15 @@ async function viaUsdcPlan(leg: RelayLeg, outSymbol: string): Promise<Plan | nul
  */
 export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direct" | "via"): Promise<Plan> {
   if (!viaRelay(leg.from) || !viaRelay(leg.to)) return hubRoute(leg, outSymbol);
-  const [direct, via] = await Promise.allSettled([
+  const [direct, via, native, lifi] = await Promise.allSettled([
     force === "via" ? Promise.reject(new ExecError("skipped")) : directPlan(leg, outSymbol),
     force === "direct" ? Promise.resolve(null) : viaUsdcPlan(leg, outSymbol),
+    force ? Promise.resolve(null) : viaNativePlan(leg, outSymbol),
+    force ? Promise.resolve(null) : lifiPlan(leg),
   ]);
-  const options = [direct, via].flatMap((r) => (r.status === "fulfilled" && r.value ? [r.value] : []));
+  const options = [direct, via, native, lifi].flatMap((r) => (r.status === "fulfilled" && r.value ? [r.value] : []));
   if (!options.length) throw direct.status === "rejected" ? direct.reason : new ExecError("No route right now.");
+  // The route that delivers the most of the vault's asset wins (each one's own gas slice already taken out).
   return options.reduce((best, o) => (o.out > best.out ? o : best));
 }
 
@@ -695,14 +786,17 @@ export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direc
 export async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
   const plan = await planRoute(leg, "");
   if (plan.far) return runHubRoute(s, plan as Plan & { far: FarLeg });
+  if (plan.lifi) return runLifi(s, plan.lifi);
   const { hops } = plan;
-  if (hops.length === 1) return relay(s, leg);
+  if (hops.length === 1) return relay(s, hops[0]);
   const [h1, h2] = hops;
-  const read = () => erc20Balance(h1.to, h1.outToken as Address, h1.recipient as Address);
+  const read = () => tokenBalance(h1.to, h1.outToken as Address, h1.recipient as Address);
   const before = await read();
   await relay(s, h1);
   const got = await waitForArrival(read, before, 10 * 60_000);
-  await relay(s, { ...h2, amount: got });
+  // A via-native deposit keeps a slice of the native coin in the wallet for transactions on that chain.
+  const keep = plan.keep && plan.keep < got ? plan.keep : BigInt(0);
+  await relay(s, { ...h2, amount: got - keep });
 }
 
 /** Brings funds back to USDG on Robinhood Chain, then takes Pecun's fee from what arrived. */
