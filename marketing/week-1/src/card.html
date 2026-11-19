@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Pecun post card</title>
+<!--
+  One card per post, in the X banner's style: the graded Big Bend photo with the motion-blurred field, white Inter Tight.
+  Photo: Mick Haupt on Unsplash (Big Bend, Texas), used under the Unsplash License.
+  Open as card.html?id=<post id> (ids in posts.js). render.sh screenshots every card at 1600x900.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=block" rel="stylesheet" />
+<style>
+  :root { --w: 1600px; --h: 900px; --white: #ffffff; --soft: rgba(255, 255, 255, 0.82); --mute: rgba(255, 255, 255, 0.66); --lime: #b8ff9d; --deep: #2f7d1c; --ink: #0a0a0a; }
+  html, body { margin: 0; width: var(--w); height: var(--h); overflow: hidden; background: #2b3320; }
+  body { position: relative; font-family: "Inter", sans-serif; }
+  svg.bg { position: absolute; top: 0; left: 0; width: 1600px; height: 900px; }
+  .layer { position: absolute; top: 0; left: 0; width: 1600px; height: 900px; display: flex; flex-direction: column; align-items: center; color: var(--white); font-family: "Inter", sans-serif; }
+  .shadow { text-shadow: 0 2px 30px rgba(20, 28, 12, 0.5); }
+  h1 { margin: 0; font-family: "Inter Tight", sans-serif; font-weight: 500; letter-spacing: -0.035em; line-height: 1.08; text-align: center; }
+  .sub { margin-top: 26px; font-size: 34px; color: var(--soft); letter-spacing: -0.01em; text-align: center; }
+
+  /* headline */
+  .headline { padding-top: 352px; }
+  .headline h1 { font-size: 104px; }
+
+  /* partner: Pecun × logo */
+  .partner { padding-top: 330px; }
+  .tiles { display: flex; align-items: center; gap: 44px; }
+  .tile { width: 196px; height: 196px; border-radius: 44px; display: grid; place-items: center; box-shadow: 0 18px 50px rgba(15, 22, 8, 0.35); }
+  .tile.pecun { background: var(--deep); }
+  .tile.pecun svg { width: 118px; height: 118px; }
+  .tile.them { background: #ffffff; }
+  .tile.them img { width: 132px; height: 132px; object-fit: contain; border-radius: 24px; }
+  .x { font-family: "Inter Tight", sans-serif; font-size: 72px; font-weight: 500; color: var(--white); opacity: 0.9; }
+  /* partner: just the two marks and a thin line, nothing else */
+  .partner { padding-top: 0; justify-content: center; }
+  .duo { display: flex; align-items: center; gap: 120px; margin-top: 60px; }
+  .duo .rule { width: 4px; height: 330px; border-radius: 2px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 4px 24px rgba(15, 22, 8, 0.35); }
+  .duo .mark { width: 250px; height: 250px; display: grid; place-items: center; filter: drop-shadow(0 18px 40px rgba(15, 22, 8, 0.4)); }
+  .duo .mark svg { width: 250px; height: 250px; }
+  .duo .mark img { width: 250px; height: 250px; object-fit: contain; border-radius: 58px; }
+  body.bare .foot { display: none; }
+
+  /* panels: rates, steps, list */
+  .paneled { padding-top: 300px; }
+  .paneled h1 { font-size: 62px; }
+  .panel { margin-top: 24px; width: 1180px; box-sizing: border-box; padding: 8px 40px; border-radius: 30px; background: rgba(17, 24, 10, 0.42); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.14); }
+  .row { display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+  .row:last-child { border-bottom: 0; }
+  .row b { display: block; font-family: "Inter Tight", sans-serif; font-weight: 500; font-size: 30px; letter-spacing: -0.02em; }
+  .row span { display: block; font-size: 22px; color: var(--mute); margin-top: 3px; }
+  .row .apy { font-family: "Inter Tight", sans-serif; font-weight: 600; font-size: 44px; color: var(--lime); letter-spacing: -0.03em; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 30px 4px; }
+  .step { padding: 0 26px; border-left: 1px solid rgba(255, 255, 255, 0.14); }
+  .step:first-child { border-left: 0; }
+  .step .n { width: 52px; height: 52px; border-radius: 50%; background: var(--lime); color: var(--ink); display: grid; place-items: center; font-family: "Inter Tight", sans-serif; font-weight: 600; font-size: 28px; }
+  .step b { display: block; margin-top: 22px; font-family: "Inter Tight", sans-serif; font-weight: 500; font-size: 38px; letter-spacing: -0.02em; }
+  .step span { display: block; margin-top: 10px; font-size: 25px; line-height: 1.35; color: var(--soft); }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 30px 10px; }
+  .chip { padding: 12px 24px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.16); font-size: 28px; font-family: "Inter Tight", sans-serif; font-weight: 500; letter-spacing: -0.01em; }
+  .chip.home { background: var(--lime); color: var(--ink); border-color: var(--lime); }
+  .note { margin-top: 14px; font-size: 21px; color: var(--mute); text-align: center; }
+
+  /* footer: mark + name left, link right */
+  .foot { position: absolute; left: 64px; right: 64px; top: 800px; display: flex; justify-content: space-between; align-items: center; color: var(--white); }
+  .brand { display: flex; align-items: center; gap: 14px; font-family: "Inter Tight", sans-serif; font-weight: 500; font-size: 36px; letter-spacing: -0.03em; }
+  .brand .mark { width: 50px; height: 50px; border-radius: 13px; background: var(--deep); display: grid; place-items: center; }
+  .brand .mark svg { width: 30px; height: 30px; }
+  .link { font-size: 26px; color: var(--soft); }
+</style>
+</head>
+<body>
+<svg class="bg" id="art" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <filter id="grade" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0.6" />
+      <feColorMatrix values="0.92 0.06 0 0 0.01  0.04 0.98 0.02 0 0.015  0 0.06 0.78 0 0  0 0 0 1 0" />
+      <feComponentTransfer>
+        <feFuncR type="gamma" exponent="1.08" amplitude="0.98" />
+        <feFuncG type="gamma" exponent="1.04" amplitude="1" />
+        <feFuncB type="gamma" exponent="1.12" amplitude="0.95" />
+      </feComponentTransfer>
+    </filter>
+    <filter id="motion" x="-15%" y="-5%" width="130%" height="110%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="40 0.8" />
+    </filter>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0" />
+      <stop offset="0.1" stop-color="#fff" stop-opacity="1" />
+    </linearGradient>
+    <mask id="fieldMask"><rect x="0" y="300" width="1600" height="600" fill="url(#fade)" /></mask>
+    <linearGradient id="skyWash" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef0e6" stop-opacity="0.55" />
+      <stop offset="0.7" stop-color="#eef0e6" stop-opacity="0.12" />
+      <stop offset="1" stop-color="#eef0e6" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2312" stop-opacity="0" />
+      <stop offset="0.4" stop-color="#1b2312" stop-opacity="0.12" />
+      <stop offset="1" stop-color="#141b0d" stop-opacity="0.55" />
+    </linearGradient>
+    <symbol id="leaf" viewBox="12 12 40 40">
+      <path d="M14 50C14 28 28 14 50 14Z" fill="#0a0a0a" />
+      <path d="M50 14C50 36 36 50 14 50Z" fill="#b8ff9d" />
+    </symbol>
+  </defs>
+  <g filter="url(#grade)">
+    <image href="photo.jpg" x="-400" y="-610" width="2400" height="1600" preserveAspectRatio="none" />
+    <g mask="url(#fieldMask)">
+      <image href="photo.jpg" x="-712" y="-610" width="3024" height="1600" preserveAspectRatio="none" filter="url(#motion)" />
+    </g>
+  </g>
+  <rect width="1600" height="900" fill="url(#vignette)" />
+  <rect width="1600" height="380" fill="url(#skyWash)" />
+</svg>
+
+<div class="layer" id="layer"></div>
+<div class="foot shadow">
+  <div class="brand"><span class="mark"><svg><use href="#leaf" /></svg></span>Pecun</div>
+  <div class="link">app.pecun.finance</div>
+</div>
+
+<script src="posts.js"></script>
+<script>
+  const id = new URLSearchParams(location.search).get("id") ?? POSTS[0].id;
+  const c = POSTS.find((p) => p.id === id).card;
+  const L = document.getElementById("layer");
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  if (c.type === "headline") {
+    L.className = "layer headline shadow";
+    L.innerHTML = `<h1>${c.title}</h1><div class="sub">${esc(c.sub)}</div>`;
+  } else if (c.type === "partner") {
+    L.className = "layer partner";
+    document.body.classList.add("bare");
+    L.innerHTML = `<div class="duo"><div class="mark"><svg><use href="#leaf" /></svg></div><div class="rule"></div><div class="mark"><img src="${c.logo}" alt="" /></div></div>`;
+  } else if (c.type === "rates") {
+    L.className = "layer paneled";
+    L.innerHTML = `<h1 class="shadow">${esc(c.title)}</h1><div class="panel">${c.rows
+      .map(([n, d, a]) => `<div class="row"><div><b>${esc(n)}</b><span>${esc(d)}</span></div><div class="apy">${esc(a)}</div></div>`)
+      .join("")}</div><div class="note shadow">${esc(c.note)}</div>`;
+  } else if (c.type === "steps") {
+    L.className = "layer paneled";
+    L.innerHTML = `<h1 class="shadow">${esc(c.title)}</h1><div class="panel"><div class="steps">${c.steps
+      .map(([t, d], i) => `<div class="step"><div class="n">${i + 1}</div><b>${esc(t)}</b><span>${esc(d)}</span></div>`)
+      .join("")}</div></div>${c.note ? `<div class="note shadow">${esc(c.note)}</div>` : ""}`;
+  } else if (c.type === "list") {
+    L.className = "layer paneled";
+    L.innerHTML = `<h1 class="shadow">${esc(c.title)}</h1><div class="panel"><div class="chips">${c.items
+      .map((x) => `<span class="chip${x === "Robinhood Chain" ? " home" : ""}">${esc(x)}</span>`)
+      .join("")}<span class="chip">${esc(c.note)}</span></div></div>`;
+  }
+  Promise.all([document.fonts.ready, ...[...document.images].map((i) => (i.complete ? 0 : new Promise((r) => (i.onload = i.onerror = r))))]).then(() => (document.title = "ready"));
+</script>
+</body>
+</html>

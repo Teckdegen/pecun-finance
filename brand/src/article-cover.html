@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>PECUN X banner: photo</title>
+<!--
+  Photo: Mick Haupt on Unsplash (Big Bend, Texas), used under the Unsplash License.
+  https://unsplash.com/photos/ELuTbEVQdBc
+  Query params: ?y=<0-100> moves the photo up and down; ?field=<px> sets where the motion blur starts;
+  ?w=&h= set the canvas size (default 1500x500, the X banner); ?text=0 leaves the words off; ?ty=<px> and ?fs=<px> move and size the words.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500&display=block" rel="stylesheet" />
+<style>
+  html, body { margin: 0; width: 1500px; height: 500px; overflow: hidden; background: #2b3320; }
+  svg { position: absolute; inset: 0; }
+  .copy {
+    position: absolute; left: 0; right: 0; top: 196px; text-align: center; color: #ffffff;
+    font-family: "Inter Tight", sans-serif; font-weight: 500; font-size: 62px; line-height: 1.12; letter-spacing: -0.035em;
+    text-shadow: 0 2px 30px rgba(20, 28, 12, 0.45);
+  }
+</style>
+</head>
+<body>
+<svg id="art" width="1500" height="500" viewBox="0 0 1500 500">
+  <defs>
+    <!-- Warm, olive, slightly muted: pulls the photo toward PECUN's greens without going neon. -->
+    <filter id="grade" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0.6" />
+      <feColorMatrix values="0.92 0.06 0 0 0.01  0.04 0.98 0.02 0 0.015  0 0.06 0.78 0 0  0 0 0 1 0" />
+      <feComponentTransfer>
+        <feFuncR type="gamma" exponent="1.08" amplitude="0.98" />
+        <feFuncG type="gamma" exponent="1.04" amplitude="1" />
+        <feFuncB type="gamma" exponent="1.12" amplitude="0.95" />
+      </feComponentTransfer>
+    </filter>
+    <!-- Sideways blur: the field streaks past like the view from a moving car. -->
+    <filter id="motion" x="-15%" y="-5%" width="130%" height="110%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="34 0.7" />
+    </filter>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0" />
+      <stop offset="0.18" stop-color="#fff" stop-opacity="1" />
+    </linearGradient>
+    <mask id="fieldMask"><rect id="maskRect" x="0" width="1500" height="500" fill="url(#fade)" /></mask>
+    <!-- Softens the deep blue sky toward the pale, hazy look of the reference. -->
+    <linearGradient id="skyWash" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef0e6" stop-opacity="0.55" />
+      <stop offset="0.7" stop-color="#eef0e6" stop-opacity="0.12" />
+      <stop offset="1" stop-color="#eef0e6" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2312" stop-opacity="0" />
+      <stop offset="0.55" stop-color="#1b2312" stop-opacity="0.08" />
+      <stop offset="1" stop-color="#141b0d" stop-opacity="0.45" />
+    </linearGradient>
+  </defs>
+  <g filter="url(#grade)">
+    <image id="sharp" href="big-bend-mick-haupt-unsplash.jpg" x="0" width="1500" preserveAspectRatio="xMidYMid slice" />
+    <g mask="url(#fieldMask)">
+      <image id="blur" href="big-bend-mick-haupt-unsplash.jpg" x="-200" width="1900" preserveAspectRatio="xMidYMid slice" filter="url(#motion)" />
+    </g>
+  </g>
+  <rect width="1500" height="500" fill="url(#vignette)" />
+  <rect width="1500" height="240" fill="url(#skyWash)" />
+</svg>
+
+<div class="copy" id="copy">Every yield onchain,<br />one click away.</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  const W = Number(q.get("w") ?? 1500), H = Number(q.get("h") ?? 500);
+  document.documentElement.style.width = document.body.style.width = W + "px";
+  document.documentElement.style.height = document.body.style.height = H + "px";
+  const art = document.getElementById("art");
+  art.setAttribute("width", W); art.setAttribute("height", H); art.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  art.querySelectorAll(":scope > rect").forEach((r) => r.setAttribute("width", W));
+  art.querySelector(":scope > rect:last-of-type").setAttribute("height", Math.round(H * 0.48));
+  art.querySelector(":scope > rect:first-of-type").setAttribute("height", H);
+  const copy = document.getElementById("copy");
+  if (q.get("text") === "0") copy.remove();
+  if (q.get("ty")) copy.style.top = q.get("ty") + "px";
+  if (q.get("fs")) copy.style.fontSize = q.get("fs") + "px";
+  const img = new Image();
+  img.onload = () => {
+    const h = (W * img.naturalHeight) / img.naturalWidth;
+    const y = -(h - H) * (Number(q.get("y") ?? 45) / 100);
+    const sharp = document.getElementById("sharp"), blur = document.getElementById("blur");
+    sharp.setAttribute("width", W);
+    blur.setAttribute("x", -W * 0.13); blur.setAttribute("width", W * 1.26);
+    for (const el of [sharp, blur]) {
+      el.setAttribute("height", h);
+      el.setAttribute("y", y);
+      el.setAttribute("preserveAspectRatio", "none");
+    }
+    const field = Number(q.get("field") ?? 210);
+    const m = document.getElementById("maskRect");
+    m.setAttribute("width", W);
+    m.setAttribute("y", field - 40);
+    m.setAttribute("height", H + 40 - field);
+    document.title = "ready";
+  };
+  img.src = "big-bend-mick-haupt-unsplash.jpg";
+</script>
+</body>
+</html>
