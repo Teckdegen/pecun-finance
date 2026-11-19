@@ -3,6 +3,8 @@
 import { AuthState, OtpType, TurnkeyProvider, useTurnkey, type TurnkeyProviderConfig } from "@turnkey/react-wallet-kit";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Transaction as SuiTransaction } from "@mysten/sui/transactions";
+import { keccak256 } from "viem";
+import { EVM_CHAINS } from "@/lib/exec-chains";
 import { authConfigured, EVM_ACCOUNT, friendlyError, PECUN_WALLET, SOLANA_ACCOUNT, SUI_ACCOUNT, TURNKEY_AUTH_PROXY_ID, TURNKEY_ORGANIZATION_ID, type AuthResult, type WalletSetup } from "@/lib/auth";
 
 /** What the sign-in modal and the header need, whether Turnkey is live or the demo is running. */
@@ -47,6 +49,47 @@ export function useAuth(): AuthActions {
   const v = useContext(Ctx);
   if (!v) throw new Error("useAuth must be used inside AuthProvider");
   return v;
+}
+
+/** One JSON-RPC call; returns the result or throws with the node's message. */
+async function rpc(url: string, method: string, params: unknown[]) {
+  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  const j = (await res.json().catch(() => ({}))) as { result?: unknown; error?: { message?: string } };
+  if (j.error) throw new Error(j.error.message ?? "RPC error");
+  return j.result;
+}
+
+/** The node already has this transaction (or one with its nonce): it went out. */
+const ALREADY_SENT = /already known|known transaction|already imported|nonce too low|ALREADY_EXISTS|replacement transaction underpriced/i;
+
+/**
+ * Broadcasts a signed EVM transaction to the chain's RPC and its backups, and returns its hash (worked out from the
+ * signed bytes, so it's known before sending). Public nodes sometimes answer with an error, or time out, for a
+ * transaction they did accept; so before calling it failed, this checks whether the chain has it.
+ */
+async function broadcastEvm(signed: `0x${string}`, rpcUrl: string): Promise<`0x${string}`> {
+  const hash = keccak256(signed);
+  const chain = EVM_CHAINS.find((c) => c.rpc === rpcUrl || c.backups?.includes(rpcUrl));
+  const urls = [...new Set([rpcUrl, ...(chain ? [chain.rpc, ...(chain.backups ?? [])] : [])])];
+  let lastError = "";
+  for (const url of urls) {
+    try {
+      await rpc(url, "eth_sendRawTransaction", [signed]);
+      return hash;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+      if (ALREADY_SENT.test(lastError)) return hash;
+    }
+  }
+  // Every node complained: the transaction may still be in. Look for it before giving up.
+  for (let i = 0; i < 5; i++) {
+    for (const url of urls) {
+      const tx = await rpc(url, "eth_getTransactionByHash", [hash]).catch(() => null);
+      if (tx) return hash;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  throw new Error(lastError || "The transaction couldn't be sent.");
 }
 
 const config: TurnkeyProviderConfig = {
@@ -265,8 +308,17 @@ function LiveAuth({ children }: { children: ReactNode }) {
       sendEvmTransaction: async (unsigned, rpcUrl) => {
         if (!evmAccount) return { ok: false, error: "Your wallet is still loading. Try again in a moment." };
         try {
-          const hash = await signAndSendTransaction({ walletAccount: evmAccount, unsignedTransaction: unsigned, transactionType: "TRANSACTION_TYPE_ETHEREUM", rpcUrl });
-          return { ok: true, hash: (hash.startsWith("0x") ? hash : `0x${hash}`) as `0x${string}` };
+          if (!httpClient) return { ok: false, error: "Your session is still loading. Try again in a moment." };
+          const org = latest.current.session?.organizationId;
+          const res = await httpClient.signTransaction({
+            signWith: evmAccount.address,
+            unsignedTransaction: unsigned.replace(/^0x/, ""),
+            type: "TRANSACTION_TYPE_ETHEREUM",
+            ...(org ? { organizationId: org } : {}),
+          });
+          const raw = res.signedTransaction;
+          const signed = (raw.startsWith("0x") ? raw : `0x${raw}`) as `0x${string}`;
+          return { ok: true, hash: await broadcastEvm(signed, rpcUrl) };
         } catch (e) {
           const msg = e instanceof Error ? e.message : "";
           if (/insufficient funds/i.test(msg)) return { ok: false, error: "Not enough ETH on Base to pay the network fee." };
@@ -274,7 +326,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest, solAccount, suiAccount, signMessage, signRaw],
+    [authState, user, initOtp, completeOtp, loginWithPasskey, signUpWithPasskey, logout, evmAccount, signAndSendTransaction, routing, setupWallets, ensureAccount, signAccountsRequest, solAccount, suiAccount, signMessage, signRaw, httpClient],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
