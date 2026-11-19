@@ -8,10 +8,10 @@ import { buildTx, fromSolana, jupQuote, jupSwap, jupSwapTx, needSol, previewFrom
 
 /**
  * Meteora DLMM pools (meteora:solana:<lbPair>). A pool takes two tokens, so a deposit is a zap:
- *   USDG → the pool's quote token Y (Relay, or Relay + Jupiter) → swap about half into X (Jupiter) → open a position
+ *   USDC → the pool's quote token Y (Relay, or Relay + Jupiter) → swap about half into X (Jupiter) → open a position
  *   with Meteora's Spot strategy over the bins around the current price (both sides, one position of up to 69 bins).
  * Withdrawing removes the liquidity (claiming fees, closing the position when it's all), swaps X back into Y, and
- * routes Y to USDG. Amounts and the position value are in Y.
+ * routes Y to USDC. Amounts and the position value are in Y.
  *
  * A DLMM position is its own account and must be created by a new keypair. Pecun derives that keypair from the user's
  * address, the pool and a slot number, so positions are found again without an indexer (free RPCs block

@@ -44,7 +44,7 @@ import { ROBINHOOD_CHAIN_ID, USDG, USDG_DECIMALS } from "../wallet";
 
 /**
  * Shared Solana plumbing for the Kamino, Meteora and Jupiter Lend (SOL) one-click modules: instruction helpers, native
- * SOL wrapping, a USDG <-> any-Solana-token route (Relay direct, or Relay to USDC plus a Jupiter swap, whichever gives
+ * SOL wrapping, a USDC <-> any-Solana-token route (Relay direct, or Relay to USDC plus a Jupiter swap, whichever gives
  * more), and Jupiter swaps. Everything runs in the browser and is signed with the user's own session.
  */
 
@@ -242,11 +242,11 @@ export async function jupSwap(s: Signer, inMint: string, outMint: string, amount
   return waitForArrival(read, before, 2 * 60_000);
 }
 
-/* ---------------- USDG <-> any Solana token ---------------- */
+/* ---------------- USDC <-> any Solana token ---------------- */
 
 const relayId = (mint: string) => (mint === WSOL ? NATIVE_SOL : mint);
 
-/** `gas`: USDG sent first as a small Relay leg into native SOL (a LI.FI plan on a wallet short of SOL). */
+/** `gas`: USDC sent first as a small Relay leg into native SOL (a LI.FI plan on a wallet short of SOL). */
 type InPlan = { kind: "direct" | "via" | "lifi"; preview: Preview; out: bigint; gas?: bigint };
 
 /** Quotes Relay straight into `mint`, and Relay into USDC plus a Jupiter swap, and keeps whichever delivers more. */
@@ -285,7 +285,7 @@ async function planIn(s: Who, net: bigint, mint: string, symbol: string): Promis
 export const previewToSolana = async (s: Who, usdg: string, mint: string, symbol: string) => (await planIn(s, netOfFee(usdg), mint, symbol)).preview;
 
 /**
- * Takes Pecun's fee, then moves the rest from USDG into `mint` on Solana (native SOL for WSOL). Reports the "bridge"
+ * Takes Pecun's fee, then moves the rest from USDC into `mint` on Solana (native SOL for WSOL). Reports the "bridge"
  * step and returns how much of the token arrived.
  */
 export async function toSolana(s: Signer, usdg: string, mint: string, symbol: string, on: Progress): Promise<bigint> {
@@ -323,11 +323,11 @@ export async function toSolana(s: Signer, usdg: string, mint: string, symbol: st
   return got;
 }
 
-/** Quotes `raw` of `mint` on Solana back to USDG (Relay direct, or a Jupiter swap to USDC then Relay). */
+/** Quotes `raw` of `mint` on Solana back to USDC (Relay direct, or a Jupiter swap to USDC then Relay). */
 async function planOut(s: Who, mint: string, raw: bigint): Promise<InPlan> {
   const sol = needSol(s);
   const direct = relayQuote({ from: SOLANA_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: relayId(mint), outToken: USDG, amount: raw, user: sol, recipient: s.address }).then(
-    (q): InPlan => ({ kind: "direct", preview: toPreview(q, "USDG"), out: outOf(q).out }),
+    (q): InPlan => ({ kind: "direct", preview: toPreview(q, "USDC"), out: outOf(q).out }),
   );
   const via =
     mint === SOL_USDC
@@ -336,7 +336,7 @@ async function planOut(s: Who, mint: string, raw: bigint): Promise<InPlan> {
           const q1 = await jupQuote(mint, SOL_USDC, raw);
           const q2 = await relayQuote({ from: SOLANA_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: SOL_USDC, outToken: USDG, amount: BigInt(q1.outAmount), user: sol, recipient: s.address });
           const o2 = outOf(q2);
-          const p = chainPreview(jupPreview(q1, 6, "USDC"), BigInt(q1.outAmount), BigInt(q1.otherAmountThreshold), toPreview(q2, "USDG"), o2.out, o2.min, USDG_DECIMALS);
+          const p = chainPreview(jupPreview(q1, 6, "USDC"), BigInt(q1.outAmount), BigInt(q1.otherAmountThreshold), toPreview(q2, "USDC"), o2.out, o2.min, USDG_DECIMALS);
           return { kind: "via", preview: p, out: o2.out };
         })();
   const lifi = (async (): Promise<InPlan> => {
@@ -353,7 +353,7 @@ async function planOut(s: Who, mint: string, raw: bigint): Promise<InPlan> {
 
 export const previewFromSolana = async (s: Who, mint: string, raw: bigint) => (await planOut(s, mint, raw)).preview;
 
-/** Moves `raw` of `mint` (native SOL for WSOL) from Solana back to USDG, then takes Pecun's fee. */
+/** Moves `raw` of `mint` (native SOL for WSOL) from Solana back to USDC, then takes Pecun's fee. */
 export async function fromSolana(s: Signer, mint: string, raw: bigint, on: Progress): Promise<string> {
   const sol = needSol(s);
   let amount = mint === WSOL ? await spendableSol(sol, raw) : raw;
@@ -364,9 +364,9 @@ export async function fromSolana(s: Signer, mint: string, raw: bigint, on: Progr
     const before = await usdgOf(s)();
     await sendSol(s, async () => base64ToHex((await lifiQuote({ fromChain: LIFI_SOLANA, toChain: ROBINHOOD_CHAIN_ID, fromToken: relayId(mint), toToken: USDG, amount, from: sol, to: s.address })).transactionRequest.data));
     const back = await waitForArrival(usdgOf(s), before, 15 * 60_000);
-    on("bridge", "done", `${formatUnits(back, USDG_DECIMALS)} USDG`);
+    on("bridge", "done", `${formatUnits(back, USDG_DECIMALS)} USDC`);
     const kept = await takeUsdgFee(s, back, on);
-    return `${formatUnits(kept, USDG_DECIMALS)} USDG`;
+    return `${formatUnits(kept, USDG_DECIMALS)} USDC`;
   }
   on("bridge", "running");
   amount = await jupSwap(s, mint, SOL_USDC, amount);

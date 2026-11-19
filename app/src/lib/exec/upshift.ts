@@ -12,6 +12,7 @@ import {
   netOfFee,
   planRoute,
   registerAdapters,
+  routeInto,
   runRoute,
   sendEvm,
   takeUsdgFee,
@@ -153,7 +154,7 @@ function upshiftVault(chainId: number, vault: Address, symbol: string): Adapter 
     },
     previewWithdraw: async (s, amount) => {
       const a = await asset();
-      return (await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: a.address, outToken: USDG, amount: parseUnits(amount, a.decimals), user: s.address, recipient: s.address }, "USDG")).preview;
+      return (await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: a.address, outToken: USDG, amount: parseUnits(amount, a.decimals), user: s.address, recipient: s.address }, "USDC")).preview;
     },
 
     deposit: async (s, usdg, on) => {
@@ -162,10 +163,7 @@ function upshiftVault(chainId: number, vault: Address, symbol: string): Adapter 
       await canDeposit(s.address);
       const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
       on("bridge", "running");
-      const bal = () => erc20Balance(chainId, a.address, s.address);
-      const before = await bal();
-      await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: a.address, amount: net, user: s.address, recipient: s.address });
-      const got = await waitForArrival(bal, before, 10 * 60_000);
+      const got = await routeInto(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: a.address, amount: net, user: s.address, recipient: s.address });
       on("bridge", "done", `${formatUnits(got, a.decimals)} ${a.symbol}`);
 
       on("deposit", "running");

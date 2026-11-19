@@ -140,7 +140,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
               <div className="flex items-center justify-between text-xs text-muted">
                 <span>{side === "add" ? "Add" : "Withdraw"}</span>
                 <button type="button" onClick={() => setAmount(String(max))} className="hover:text-ink">
-                  {side === "add" ? `Wallet: ${(usdg ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} USDG` : `In vault: ${(pos ?? 0).toLocaleString("en-US", { maximumFractionDigits: 4 })} ${symbol}`}
+                  {side === "add" ? `Wallet: ${(usdg ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} USDC` : `In vault: ${(pos ?? 0).toLocaleString("en-US", { maximumFractionDigits: 4 })} ${symbol}`}
                 </button>
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
@@ -152,7 +152,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
                   onChange={(e) => setAmount(e.target.value.replace(",", ".").replace(/[^0-9.]/g, ""))}
                   className="w-1/2 bg-transparent text-3xl text-ink outline-none placeholder:text-faint"
                 />
-                <span className="text-base font-medium">{side === "add" ? "USDG" : symbol}</span>
+                <span className="text-base font-medium">{side === "add" ? "USDC" : symbol}</span>
               </div>
             </div>
             {n > max && <p className="mt-2 text-xs text-red-300">That&apos;s more than you have.</p>}
@@ -162,11 +162,11 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
               disabled={!ok}
               className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-accent text-[15px] font-medium text-on-accent transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-muted"
             >
-              {!n ? "Enter an amount" : tooCostly ? "Route costs too much right now" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDG` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
+              {!n ? "Enter an amount" : tooCostly ? "Route costs too much right now" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDC` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
             </button>
-            {n > 0 && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDG" : symbol} />}
+            {n > 0 && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDC" : symbol} />}
             <p className="mt-3 text-xs leading-relaxed text-muted">
-              One click: {side === "add" ? `swaps your USDG into ${symbol} and deposits it` : "withdraws and returns USDG to your wallet"}.
+              One click: {side === "add" ? `swaps your USDC into ${symbol} and deposits it` : "withdraws and returns USDC to your wallet"}.
               {!live && " Demo mode: connect Turnkey to run it for real."}
             </p>
           </>
@@ -177,7 +177,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
 }
 
 /**
- * What the user gets, before pressing anything: the platform fee (taken in USDG on Robinhood Chain and sent straight
+ * What the user gets, before pressing anything: the platform fee (taken in USDC on Base and sent straight
  * to Pecun's fee wallet), bridge and swap fees, price impact and slippage, then the amount received.
  */
 function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: string } | null; side: "add" | "withdraw"; amount: number; inSymbol: string }) {
@@ -200,14 +200,14 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
   const pct = feeBps / 100;
   const out = Number(p.out);
   const min = Number(p.minOut);
-  // Deposit: the fee comes off the USDG before routing. Withdraw: it comes off the USDG that arrives back.
+  // Deposit: the fee comes off the USDC before routing. Withdraw: it comes off the USDC that arrives back.
   const fee = side === "add" ? (amount * feeBps) / 10_000 : (out * feeBps) / 10_000;
   const receive = side === "add" ? out : out - fee;
   // Worst case Pecun lets through: the whole route never costs more than MAX_ROUTE_COST_PCT (legs are sized to it).
   const floor = out * (1 - Math.max(0, MAX_ROUTE_COST_PCT - routeCostPct(p)) / 100);
   const worst = Math.max(Math.min(min, out), floor);
   const receiveMin = side === "add" ? worst : worst - (worst * feeBps) / 10_000;
-  const feeRow: [string, string] = [`Platform fee (${pct}%)`, `−${fmt(fee)} USDG`];
+  const feeRow: [string, string] = [`Platform fee (${pct}%)`, `−${fmt(fee)} USDC`];
   const cost = routeCostPct(p);
   const route: [string, string][] = [
     ["Bridge & swap fees", `≈ $${p.feesUsd.toFixed(2)}`],
@@ -265,7 +265,7 @@ function PendingBox({ q }: { q: QueueState }) {
             </span>
             <span className="text-muted">
               {since ? ` · requested ${since}` : ""}
-              {q.wait ? ` · pays out in ${q.wait}` : " · pays out once the queue clears"}. Pecun brings it back to your wallet as USDG automatically while the app is open.
+              {q.wait ? ` · pays out in ${q.wait}` : " · pays out once the queue clears"}. Pecun brings it back to your wallet as USDC automatically while the app is open.
             </span>
           </p>
         </div>
@@ -277,7 +277,7 @@ function PendingBox({ q }: { q: QueueState }) {
             <span className="font-medium text-ink">
               Paid out: {fmt(q.arrived)} {q.symbol}
             </span>
-            <span className="text-muted"> · bringing it back to your wallet as USDG.</span>
+            <span className="text-muted"> · bringing it back to your wallet as USDC.</span>
           </p>
         </div>
       )}

@@ -1,29 +1,41 @@
 import { createPublicClient, encodeFunctionData, erc20Abi, formatUnits, http, parseUnits, serializeTransaction, type Address, type Hex } from "viem";
 
 /**
- * The Pecun wallet that users see: their EVM address on Robinhood Chain, funded with USDG.
+ * The Pecun wallet that users see: their EVM address on Base, funded with USDC. Every deposit starts here and every
+ * withdrawal comes back here; Pecun's gas tank only covers this chain.
  * (Every account also has Solana and Sui addresses; those stay behind the scenes for routing.)
- * All values below were checked on-chain: chain id 4663, USDG symbol, 6 decimals.
  */
-export const ROBINHOOD_CHAIN_ID = 4663;
-export const ROBINHOOD_RPC = "https://rpc.mainnet.chain.robinhood.com";
-export const ROBINHOOD_EXPLORER = "https://robinhoodchain.blockscout.com";
-export const USDG: Address = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
-export const USDG_DECIMALS = 6;
+export const HOME_CHAIN_ID = 8453;
+export const HOME_CHAIN_NAME = "Base";
+export const HOME_RPC = "https://mainnet.base.org";
+export const HOME_EXPLORER = "https://basescan.org";
+export const HOME_TOKEN: Address = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // USDC on Base
+export const HOME_DECIMALS = 6;
+export const HOME_SYMBOL = "USDC";
 export const ETH_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
-export const USDG_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xe343167631d89B6Ffc58B88d6b7fB0228795491D/logo.png";
+export const HOME_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png";
 
-const client = createPublicClient({ transport: http(ROBINHOOD_RPC, { timeout: 20_000, retryCount: 2 }) });
+/**
+ * Older names, kept because the executor uses them everywhere: they mean "the home chain / token" (now USDC on Base),
+ * not Robinhood Chain or USDG. Vaults that live on Robinhood Chain use chain id 4663 from exec-chains.
+ */
+export const ROBINHOOD_CHAIN_ID = HOME_CHAIN_ID;
+export const ROBINHOOD_EXPLORER = HOME_EXPLORER;
+export const USDG = HOME_TOKEN;
+export const USDG_DECIMALS = HOME_DECIMALS;
+export const USDG_LOGO = HOME_LOGO;
+
+const client = createPublicClient({ transport: http(HOME_RPC, { timeout: 20_000, retryCount: 2 }) });
 
 export type Balances = { usdg: number; eth: number; usdgRaw: bigint; ethRaw: bigint; /** USD per ETH; 0 if the price couldn't be loaded */ ethPrice: number };
 
-/** USDG and ETH (for network fees) held by the address on Robinhood Chain. */
+/** USDC and ETH held by the address on Base. */
 export async function getBalances(address: Address): Promise<Balances> {
   const [usdgRaw, ethRaw, ethPrice] = await Promise.all([
     client.readContract({ address: USDG, abi: erc20Abi, functionName: "balanceOf", args: [address] }),
     client.getBalance({ address }),
-    // LI.FI's open price for native ETH on Robinhood Chain.
-    fetch(`https://li.quest/v1/token?chain=${ROBINHOOD_CHAIN_ID}&token=0x0000000000000000000000000000000000000000`)
+    // LI.FI's open price for native ETH on Base.
+    fetch(`https://li.quest/v1/token?chain=${HOME_CHAIN_ID}&token=0x0000000000000000000000000000000000000000`)
       .then((r) => r.json() as Promise<{ priceUSD?: string }>)
       .then((t) => Number(t.priceUSD) || 0)
       .catch(() => 0),
@@ -34,7 +46,7 @@ export async function getBalances(address: Address): Promise<Balances> {
 export const isAddress = (v: string): v is Address => /^0x[a-fA-F0-9]{40}$/.test(v.trim());
 
 /**
- * Builds an unsigned EIP-1559 USDG transfer on Robinhood Chain, ready for Turnkey to sign.
+ * Builds an unsigned EIP-1559 USDC transfer on Base, ready for Turnkey to sign.
  * Returns the serialized transaction without the 0x prefix, plus the network fee estimate in ETH.
  */
 export async function buildUsdgTransfer(from: Address, to: Address, amount: string): Promise<{ unsigned: string; feeEth: number }> {
@@ -48,7 +60,7 @@ export async function buildUsdgTransfer(from: Address, to: Address, amount: stri
   const gasLimit = (gas * BigInt(12)) / BigInt(10); // 20% headroom
   const serialized = serializeTransaction({
     type: "eip1559",
-    chainId: ROBINHOOD_CHAIN_ID,
+    chainId: HOME_CHAIN_ID,
     nonce,
     to: USDG,
     data,
@@ -60,7 +72,7 @@ export async function buildUsdgTransfer(from: Address, to: Address, amount: stri
   return { unsigned: serialized.slice(2), feeEth: Number(formatUnits(gasLimit * fees.maxFeePerGas, 18)) };
 }
 
-/** Builds an unsigned EIP-1559 ETH transfer on Robinhood Chain. Same output as `buildUsdgTransfer`. */
+/** Builds an unsigned EIP-1559 ETH transfer on Base. Same output as `buildUsdgTransfer`. */
 export async function buildEthTransfer(from: Address, to: Address, amount: string): Promise<{ unsigned: string; feeEth: number }> {
   const value = parseUnits(amount, 18);
   const [nonce, gas, fees] = await Promise.all([
@@ -71,7 +83,7 @@ export async function buildEthTransfer(from: Address, to: Address, amount: strin
   const gasLimit = (gas * BigInt(12)) / BigInt(10);
   const serialized = serializeTransaction({
     type: "eip1559",
-    chainId: ROBINHOOD_CHAIN_ID,
+    chainId: HOME_CHAIN_ID,
     nonce,
     to,
     value,

@@ -16,7 +16,7 @@ export type AuthActions = {
   signInWithPasskey: () => Promise<AuthResult>;
   createPasskey: () => Promise<AuthResult>;
   signOut: () => Promise<void>;
-  /** The user's EVM address (Robinhood Chain and every EVM chain). Solana and Sui addresses stay behind the scenes. */
+  /** The user's EVM address (Base and every EVM chain). Solana and Sui addresses stay behind the scenes. */
   evmAddress?: `0x${string}`;
   /** The user's Solana address (in their own wallet; used behind the scenes, never shown). */
   solanaAddress?: string;
@@ -247,7 +247,7 @@ function LiveAuth({ children }: { children: ReactNode }) {
           return { ok: true, hash: (hash.startsWith("0x") ? hash : `0x${hash}`) as `0x${string}` };
         } catch (e) {
           const msg = e instanceof Error ? e.message : "";
-          if (/insufficient funds/i.test(msg)) return { ok: false, error: "Not enough ETH on Robinhood Chain to pay the network fee." };
+          if (/insufficient funds/i.test(msg)) return { ok: false, error: "Not enough ETH on Base to pay the network fee." };
           return { ok: false, error: friendlyError(e, "The transfer didn't go through. Nothing was sent.") };
         }
       },

@@ -20,7 +20,7 @@ export default function HowItWorks() {
           },
           {
             title: "Deposit",
-            body: "You hold USDG on Robinhood Chain. Press once and Pecun bridges it to the vault's chain, swaps it into the vault's own asset and deposits it, all signed by your own session. Every cost is shown before you press.",
+            body: "You hold USDC on Base. Press once and Pecun bridges it to the vault's chain (or, for a vault on Base, goes straight in), swaps it into the vault's own asset and deposits it, all signed by your own session. Every cost is shown before you press.",
           },
           {
             title: "Earn",
@@ -44,8 +44,8 @@ export default function HowItWorks() {
       <Steps
         items={[
           {
-            title: "Bridge from Robinhood Chain",
-            body: "Your USDG leaves Robinhood Chain for the vault's chain, by the cheapest route Pecun can find, never one that costs more than 0.5%. A small part arrives as that chain's own coin (ETH, SOL, SUI and so on), so your transactions there always go through.",
+            title: "Bridge from Base",
+            body: "Your USDC leaves Base for the vault's chain, by the cheapest route Pecun can find across several bridges, never one that costs more than 0.5%. A small part arrives as that chain's own coin (ETH, SOL, SUI and so on), so your transactions there always go through.",
           },
           {
             title: "Swap into the vault's asset",
@@ -58,7 +58,7 @@ export default function HowItWorks() {
         ]}
       />
       <P>
-        Withdrawing runs the same steps backwards and brings your money home as USDG on Robinhood Chain. If anything fails on the way, no fee is taken
+        Withdrawing runs the same steps backwards and brings your money home as USDC on Base. If anything fails on the way, no fee is taken
         and whatever already moved is sent back to your wallet. It works the same way on every chain, Solana and Sui included.
       </P>
 

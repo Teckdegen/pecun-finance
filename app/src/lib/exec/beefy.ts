@@ -41,8 +41,8 @@ import {
 /**
  * Beefy (every active vault type Pecun can build in the browser) and Yearn's Curve-LP vaults.
  *
- * - Single-asset Beefy vaults: USDG → the vault's `want` through Relay, then approve + deposit (the shared evmVault).
- * - LP vaults: USDG → one token of the pool through Relay, then
+ * - Single-asset Beefy vaults: USDC → the vault's `want` through Relay, then approve + deposit (the shared evmVault).
+ * - LP vaults: USDC → one token of the pool through Relay, then
  *     Curve: add_liquidity with that one coin (Beefy's own zap metadata says which method and coins), and back with
  *            remove_liquidity_one_coin;
  *     Beefy CLM (concentrated-liquidity manager) and Solidly / Uniswap-v2 pairs: swap the right share into the other
@@ -170,7 +170,7 @@ function meta(chainId: number, token: Address): Promise<TokenMeta> {
 const STABLE = /^(USDC|USDC\.E|USDBC|USDT|USDT0|USD₮0|DAI|USDS|USDE|CRVUSD|FRXUSD|PYUSD|GHO|AUSD|USD0|LUSD|FRAX|USD1|RLUSD|USDG)$/i;
 const MAJOR = /^(WETH|ETH|WBNB|WAVAX|WMON|WXPL|WBTC|CBBTC)$/i;
 
-/** Orders a pool's tokens by how cheaply Relay reaches them: the user's own USDG, USDC, stables, majors, the rest. */
+/** Orders a pool's tokens by how cheaply Relay reaches them: the user's own USDC, other stables, majors, the rest. */
 async function ranked(chainId: number, tokens: Address[]): Promise<Address[]> {
   const scored = await Promise.all(
     tokens
@@ -195,18 +195,18 @@ const free = (amount: bigint, decimals: number, symbol: string): Quote => {
   return { out: amount, min: amount, preview: { out: f, outSymbol: symbol, minOut: f, slippagePct: 0, impactPct: 0, feesUsd: 0, seconds: 0 } };
 };
 
-/** USDG on Robinhood → `token` on the vault's chain. */
+/** Home USDC on Base → `token` on the vault's chain. */
 async function quoteIn(who: Who, chainId: number, token: Address, amount: bigint): Promise<Quote> {
-  if (isHomeUsdg(chainId, token)) return free(amount, USDG_DECIMALS, "USDG");
+  if (isHomeUsdg(chainId, token)) return free(amount, USDG_DECIMALS, "USDC");
   const m = await meta(chainId, token);
   const p = await planRoute({ from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount, user: who.address, recipient: who.address }, m.symbol);
   return { out: p.out, min: scaleBy(p.out, ratioMin(p.preview)), preview: p.preview };
 }
 
-/** `token` on the vault's chain → USDG on Robinhood. */
+/** `token` on the vault's chain → home USDC on Base. */
 async function quoteOut(who: Who, chainId: number, token: Address, amount: bigint): Promise<Quote> {
-  if (isHomeUsdg(chainId, token)) return free(amount, USDG_DECIMALS, "USDG");
-  const p = await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: token, outToken: USDG, amount, user: who.address, recipient: who.address }, "USDG");
+  if (isHomeUsdg(chainId, token)) return free(amount, USDG_DECIMALS, "USDC");
+  const p = await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: token, outToken: USDG, amount, user: who.address, recipient: who.address }, "USDC");
   return { out: p.out, min: scaleBy(p.out, ratioMin(p.preview)), preview: p.preview };
 }
 
@@ -232,7 +232,7 @@ async function pickRoute(tokens: Address[], quote: (t: Address) => Promise<Quote
 
 const bal = (chainId: number, token: Address, owner: Address) => erc20Balance(chainId, token, owner);
 
-/** Runs USDG → `token`; returns how much arrived. */
+/** Runs USDC → `token`; returns how much arrived. */
 async function bridgeIn(s: Signer, chainId: number, token: Address, amount: bigint): Promise<bigint> {
   if (isHomeUsdg(chainId, token)) return amount;
   const read = () => bal(chainId, token, s.address);
@@ -741,7 +741,7 @@ export function lpVault(chainId: number, holder: Proto, lp: () => Promise<Lp>, v
       return quoteOut(who, chainId, t, o.amount);
     });
 
-  /** Routes every non-dust token back to USDG; returns the USDG that arrived and what stayed behind. */
+  /** Routes every non-dust token back to USDC; returns the USDC that arrived and what stayed behind. */
   const allBack = async (s: Signer, outs: Out, on: Progress) => {
     on("bridge", "running");
     let total = ZERO;
@@ -763,7 +763,7 @@ export function lpVault(chainId: number, holder: Proto, lp: () => Promise<Lp>, v
       }
     }
     if (total <= ZERO) throw new ExecError("Nothing came back yet. Your tokens are in your wallet on the vault's chain.");
-    on("bridge", "done", `${formatUnits(total, USDG_DECIMALS)} USDG`);
+    on("bridge", "done", `${formatUnits(total, USDG_DECIMALS)} USDC`);
     return { total, left };
   };
 
@@ -800,7 +800,7 @@ export function lpVault(chainId: number, holder: Proto, lp: () => Promise<Lp>, v
       const min = quotes.reduce((t, q) => t + q.min, ZERO);
       const outN = Number(formatUnits(out, USDG_DECIMALS));
       const inN = Number(amount);
-      const p = sumPreviews(quotes, formatUnits(out, USDG_DECIMALS), "USDG", formatUnits(withSlippage(min), USDG_DECIMALS), value.symbol === "USD" && inN > 0 ? (outN / inN - 1) * 100 : quotes.reduce((t, q) => t + q.preview.impactPct, 0));
+      const p = sumPreviews(quotes, formatUnits(out, USDG_DECIMALS), "USDC", formatUnits(withSlippage(min), USDG_DECIMALS), value.symbol === "USD" && inN > 0 ? (outN / inN - 1) * 100 : quotes.reduce((t, q) => t + q.preview.impactPct, 0));
       p.slippagePct += Number(lpSlipBps()) / 100;
       withCost(p, quotes, value.symbol === "USD");
       return p;
@@ -810,7 +810,7 @@ export function lpVault(chainId: number, holder: Proto, lp: () => Promise<Lp>, v
       const L = await lp();
       const w = await wantMeta();
       const { token } = await pickRoute(L.entries, (t) => quoteIn(s, chainId, t, netOfFee(usdg)));
-      const tm = isHomeUsdg(chainId, token) ? { decimals: USDG_DECIMALS, symbol: "USDG" } : await meta(chainId, token);
+      const tm = isHomeUsdg(chainId, token) ? { decimals: USDG_DECIMALS, symbol: "USDC" } : await meta(chainId, token);
       const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
       if (isHomeUsdg(chainId, token)) on("bridge", "skipped");
       else on("bridge", "running");
@@ -846,14 +846,14 @@ export function lpVault(chainId: number, holder: Proto, lp: () => Promise<Lp>, v
       const exit = L.oneCoinOut ? (await exitFor(s, L, lpOut)).token : L.entries[0];
       const outs = await L.remove(s, lpOut, exit);
       const shown = await Promise.all(outs.filter((o) => o.amount > ZERO).map(async (o) => {
-        const m = isHomeUsdg(chainId, o.token) ? { decimals: USDG_DECIMALS, symbol: "USDG" } : await meta(chainId, o.token);
+        const m = isHomeUsdg(chainId, o.token) ? { decimals: USDG_DECIMALS, symbol: "USDC" } : await meta(chainId, o.token);
         return `${formatUnits(o.amount, m.decimals)} ${m.symbol}`;
       }));
       on("lp", "done", shown.join(" + "));
 
       const { total, left } = await allBack(s, outs, on);
       const kept = await takeUsdgFee(s, total, on);
-      return `${formatUnits(kept, USDG_DECIMALS)} USDG${left.length ? ` (${left.join(", ")} stayed in your wallet: too small to move)` : ""}`;
+      return `${formatUnits(kept, USDG_DECIMALS)} USDC${left.length ? ` (${left.join(", ")} stayed in your wallet: too small to move)` : ""}`;
     },
   };
 }
@@ -862,7 +862,7 @@ export function lpVault(chainId: number, holder: Proto, lp: () => Promise<Lp>, v
 
 /** Vault id prefixes Pecun can't build in the browser (Pendle PT/LP zaps, Yield Basis, Balancer joins). */
 const SKIP_IDS = /^(pendle-|yb-|balancer|aura-)/;
-/** Tokens Relay can't buy, per chain: vaults that need them stay on the regular page. Robinhood: only USDG and WETH route. */
+/** Tokens Relay can't buy, per chain: vaults that need them stay on the regular page. Robinhood Chain: only USDG and WETH route. */
 const ROUTABLE_ON: Record<number, RegExp> = { [ROBINHOOD_CHAIN_ID]: /^(USDG|WETH|ETH)$/i };
 
 function beefyAdapter(o: Opp): Adapter | null {

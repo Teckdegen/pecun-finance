@@ -31,7 +31,7 @@ const slip = () => legSlippageBpsNow() / 10_000;
 
 /**
  * Pendle fixed yield (PT) and liquidity (LP) markets. Catalog ids: `pendle:<chainId>:<market>` (PT) and
- * `pendle:<chainId>:<market>:lp` (LP). USDG is routed into a token the market's router accepts (a stablecoin on that
+ * `pendle:<chainId>:<market>:lp` (LP). USDC is routed into a token the market's router accepts (a stablecoin on that
  * chain, else the market's own underlying), then Pendle's hosted SDK ("convert", free, no key, CORS-open) builds the
  * Router call: token -> PT (swapExactTokenForPt), token -> LP (addLiquiditySingleToken), and back
  * (swapExactPtForToken / removeLiquiditySingleToken; after maturity, redeemPyToToken). The position is the PT (or LP)
@@ -109,7 +109,7 @@ function pendleMarket(chainId: number, market: Address, lp: boolean, asset: stri
     if (!res.ok) throw new ExecError(res.status === 429 ? "Pendle is busy right now. Try again in a minute." : "Pendle didn't answer. Try again in a moment.");
     return (await res.json()) as Tokens;
   });
-  /** The token we route USDG into (deposit) or out of (withdraw): a stablecoin the router takes, else the underlying. */
+  /** The token we route USDC into (deposit) or out of (withdraw): a stablecoin the router takes, else the underlying. */
   const entry = (dir: "in" | "out") =>
     lazy(async (): Promise<TokenMeta> => {
       const t = await tokens();

@@ -11,7 +11,7 @@ import {
   getBalances,
   isAddress,
   ROBINHOOD_EXPLORER,
-  ROBINHOOD_RPC,
+  HOME_RPC,
   shortAddress,
   USDG_LOGO,
   waitForTx,
@@ -21,11 +21,11 @@ import { useAuth } from "./auth-provider";
 
 type View = "home" | "receive" | "send";
 
-const ROBINHOOD_LOGO = "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/robinhood.svg";
+const CHAIN_LOGO = "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/base.svg";
 const money = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * The signed-in user's wallet: their EVM address on Robinhood Chain, what they hold (USDG and ETH), Send and Receive.
+ * The signed-in user's wallet: their EVM address on Base, what they hold (USDC and ETH), Send and Receive.
  * Solana and Sui addresses exist on the account but are only used behind the scenes.
  */
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -112,7 +112,7 @@ function Home({ account, address, bal, balErr, onClose, onSignOut, go }: {
   onSignOut: () => void;
   go: (v: View) => void;
 }) {
-  // Total = USDG (a dollar each) + ETH at its live price.
+  // Total = USDC (a dollar each) + ETH at its live price.
   const total = (bal?.usdg ?? 0) + (bal?.eth ?? 0) * (bal?.ethPrice ?? 0);
   const [whole, cents] = money(total).split(".");
   return (
@@ -139,11 +139,11 @@ function Home({ account, address, bal, balErr, onClose, onSignOut, go }: {
         <Action icon={<ArrowDown className="size-6" />} label="Receive" onClick={() => go("receive")} />
       </div>
 
-      {/* Tokens held on Robinhood Chain, always listed, even at zero. */}
+      {/* Tokens held on Base, always listed, even at zero. */}
       <div className="mt-6">
         <p className="font-sans text-xs text-white/45">Balances</p>
         <ul className="mt-1 divide-y divide-white/[0.06]">
-          <TokenRow logo={USDG_LOGO} symbol="USDG" name="Global Dollar" amount={bal?.usdg ?? 0} usd={bal?.usdg ?? 0} digits={2} />
+          <TokenRow logo={USDG_LOGO} symbol="USDC" name="USD Coin" amount={bal?.usdg ?? 0} usd={bal?.usdg ?? 0} digits={2} />
           <TokenRow logo={ETH_LOGO} symbol="ETH" name="Network fees" amount={bal?.eth ?? 0} usd={(bal?.eth ?? 0) * (bal?.ethPrice ?? 0)} digits={6} />
         </ul>
       </div>
@@ -161,7 +161,7 @@ function Avatar() {
         </svg>
       </span>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ROBINHOOD_LOGO} alt="Robinhood Chain" title="Robinhood Chain" className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-white ring-2 ring-[#121315]" />
+      <img src={CHAIN_LOGO} alt="Base" title="Base" className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-white ring-2 ring-[#121315]" />
     </span>
   );
 }
@@ -188,7 +188,7 @@ function TokenIcon({ logo, size = 36 }: { logo: string; size?: number }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={logo} alt="" className="rounded-full bg-white" style={{ width: size, height: size }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ROBINHOOD_LOGO} alt="" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-white ring-2 ring-[#121315]" />
+      <img src={CHAIN_LOGO} alt="" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-white ring-2 ring-[#121315]" />
     </span>
   );
 }
@@ -280,24 +280,24 @@ function Receive({ address, back, close }: { address: string; back: () => void; 
         <IconBtn label="Back" onClick={back}><ArrowLeft className="size-5" /></IconBtn>
         <IconBtn label="Close" onClick={close}><X className="size-5" /></IconBtn>
       </div>
-      <h2 className="mt-4 text-[1.9rem] font-medium leading-tight tracking-[-0.03em]">Robinhood Chain address</h2>
+      <h2 className="mt-4 text-[1.9rem] font-medium leading-tight tracking-[-0.03em]">Base address</h2>
 
       <div className="mt-6"><StyledQR value={address} /></div>
 
       <fieldset className="mt-7 rounded-[22px] border border-white/15 px-5 pb-5 pt-3 text-center">
         <legend className="mx-auto px-3">
           <button type="button" onClick={() => copy(address)} className="inline-flex items-center gap-2 font-sans text-sm text-white/60 hover:text-white">
-            Robinhood Chain address {copied ? <Check className="size-4 text-accent" /> : <Copy className="size-4" />}
+            Base address {copied ? <Check className="size-4 text-accent" /> : <Copy className="size-4" />}
           </button>
         </legend>
         <p className="tabular break-all text-[1.05rem] font-medium leading-snug text-white [font-feature-settings:'calt'_0]">{address}</p>
       </fieldset>
 
       <p className="mt-5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center font-sans text-[15px] text-white/80">
-        Use this address to receive USDG and ETH on
+        Use this address to receive USDC and ETH on
         <span className="inline-flex items-center gap-1.5 font-medium text-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ROBINHOOD_LOGO} alt="" className="size-5 rounded-full bg-white" /> Robinhood Chain
+          <img src={CHAIN_LOGO} alt="" className="size-5 rounded-full bg-white" /> Base
         </span>
       </p>
       <p className="mt-2 text-center font-sans text-xs text-white/40">Tokens sent on any other network may be lost.</p>
@@ -307,7 +307,7 @@ function Receive({ address, back, close }: { address: string; back: () => void; 
 
 /* ---------- send ---------- */
 
-type Token = "USDG" | "ETH";
+type Token = "USDC" | "ETH";
 
 function SendView({ from, bal, live, close, back, onSent }: {
   from: `0x${string}`;
@@ -318,7 +318,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
   onSent: () => void;
 }) {
   const { sendEvmTransaction } = useAuth();
-  const [token, setToken] = useState<Token>("USDG");
+  const [token, setToken] = useState<Token>("USDC");
   const [picker, setPicker] = useState(false);
   const [inUsd, setInUsd] = useState(true);
   const [input, setInput] = useState("");
@@ -329,14 +329,14 @@ function SendView({ from, bal, live, close, back, onSent }: {
   const [hash, setHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState("");
 
-  const price = token === "USDG" ? 1 : bal?.ethPrice ?? 0;
-  const balance = token === "USDG" ? bal?.usdg ?? 0 : bal?.eth ?? 0;
-  const decimals = token === "USDG" ? 6 : 18;
+  const price = token === "USDC" ? 1 : bal?.ethPrice ?? 0;
+  const balance = token === "USDC" ? bal?.usdg ?? 0 : bal?.eth ?? 0;
+  const decimals = token === "USDC" ? 6 : 18;
   const n = Number(input) || 0;
   // The amount in tokens, whichever way it was typed.
   const tokens = inUsd ? (price > 0 ? n / price : 0) : n;
   const usd = inUsd ? n : n * price;
-  const tokenStr = tokens > 0 ? tokens.toFixed(Math.min(decimals, token === "USDG" ? 6 : 8)).replace(/\.?0+$/, "") : "0";
+  const tokenStr = tokens > 0 ? tokens.toFixed(Math.min(decimals, token === "USDC" ? 6 : 8)).replace(/\.?0+$/, "") : "0";
   // Demo mode holds nothing, so it skips the balance check to let the whole flow be tried.
   const tooMuch = live && tokens > balance;
   const amountOk = tokens > 0 && !tooMuch && (!inUsd || price > 0);
@@ -352,7 +352,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
       return;
     }
     try {
-      const build = token === "USDG" ? buildUsdgTransfer : buildEthTransfer;
+      const build = token === "USDC" ? buildUsdgTransfer : buildEthTransfer;
       const t = await build(from, to.trim() as `0x${string}`, tokenStr);
       setUnsigned(t.unsigned);
       setFee(t.feeEth);
@@ -366,7 +366,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
   const send = async () => {
     setStage("sending");
     setError("");
-    const r = await sendEvmTransaction(unsigned, ROBINHOOD_RPC);
+    const r = await sendEvmTransaction(unsigned, HOME_RPC);
     if (!r.ok) {
       setError(r.error);
       setStage("review");
@@ -416,7 +416,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
           <dl className="mt-6 divide-y divide-white/10 rounded-2xl border border-white/10 text-left font-sans text-sm">
             {[
               ["Status", "Confirmed"],
-              ["Network", "Robinhood Chain"],
+              ["Network", "Base"],
               ["Transaction", shortAddress(hash)],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between px-4 py-3">
@@ -452,7 +452,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
         <dl className="mt-6 divide-y divide-white/10 rounded-2xl border border-white/10 font-sans text-sm">
           {[
             ["To", shortAddress(to)],
-            ["Network", "Robinhood Chain"],
+            ["Network", "Base"],
             ["Network fee", fee != null ? `≈ ${fee.toLocaleString("en-US", { maximumFractionDigits: 8 })} ETH` : "—"],
           ].map(([k, v]) => (
             <div key={k} className="flex items-center justify-between px-4 py-3">
@@ -462,7 +462,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
           ))}
         </dl>
         {live && bal && fee != null && bal.eth < fee + (token === "ETH" ? tokens : 0) && (
-          <p className="mt-3 font-sans text-xs text-amber">You need a little more ETH on Robinhood Chain for the network fee.</p>
+          <p className="mt-3 font-sans text-xs text-amber">You need a little more ETH on Base for the network fee.</p>
         )}
         <button
           type="button"
@@ -516,19 +516,19 @@ function SendView({ from, bal, live, close, back, onSent }: {
         {/* Token picker */}
         <div className="relative border-t border-white/10">
           <button type="button" onClick={() => setPicker((p) => !p)} className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-white/[0.03]">
-            <TokenIcon logo={token === "USDG" ? USDG_LOGO : ETH_LOGO} size={40} />
+            <TokenIcon logo={token === "USDC" ? USDG_LOGO : ETH_LOGO} size={40} />
             <span className="min-w-0 flex-1">
               <span className="block text-[16px] font-medium">{token}</span>
               <span className="tabular block font-sans text-[13px] text-white/50">
-                Balance: {balance.toLocaleString("en-US", { maximumFractionDigits: token === "USDG" ? 2 : 6 })} (${money(balance * price)})
+                Balance: {balance.toLocaleString("en-US", { maximumFractionDigits: token === "USDC" ? 2 : 6 })} (${money(balance * price)})
               </span>
             </span>
             <ChevronDown className={`size-5 text-white/60 transition ${picker ? "rotate-180" : ""}`} />
           </button>
           {picker && (
             <ul className="absolute inset-x-3 top-full z-10 mt-1 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b1e] shadow-[0_18px_40px_rgba(0,0,0,0.5)]">
-              {(["USDG", "ETH"] as Token[]).map((t) => {
-                const b = t === "USDG" ? bal?.usdg ?? 0 : bal?.eth ?? 0;
+              {(["USDC", "ETH"] as Token[]).map((t) => {
+                const b = t === "USDC" ? bal?.usdg ?? 0 : bal?.eth ?? 0;
                 return (
                   <li key={t}>
                     <button
@@ -540,9 +540,9 @@ function SendView({ from, bal, live, close, back, onSent }: {
                       }}
                       className={`flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.05] ${t === token ? "bg-white/[0.04]" : ""}`}
                     >
-                      <TokenIcon logo={t === "USDG" ? USDG_LOGO : ETH_LOGO} size={32} />
+                      <TokenIcon logo={t === "USDC" ? USDG_LOGO : ETH_LOGO} size={32} />
                       <span className="flex-1 text-[15px] font-medium">{t}</span>
-                      <span className="tabular font-sans text-sm text-white/55">{b.toLocaleString("en-US", { maximumFractionDigits: t === "USDG" ? 2 : 6 })}</span>
+                      <span className="tabular font-sans text-sm text-white/55">{b.toLocaleString("en-US", { maximumFractionDigits: t === "USDC" ? 2 : 6 })}</span>
                       {t === token && <Check className="size-4 text-accent" />}
                     </button>
                   </li>
@@ -559,7 +559,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
         <input
           value={to}
           onChange={(e) => setTo(e.target.value.trim())}
-          placeholder="Wallet address on Robinhood Chain"
+          placeholder="Wallet address on Base"
           spellCheck={false}
           autoComplete="off"
           className="mt-1 w-full bg-transparent font-mono text-[14px] text-white outline-none placeholder:font-sans placeholder:text-[16px] placeholder:text-white/35"

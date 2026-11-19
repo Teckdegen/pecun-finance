@@ -31,9 +31,9 @@ const slipBps = () => BigInt(legSlippageBpsNow());
  * Every Spectra pool is a Curve StableSwap-NG pool with coins(0) = the interest-bearing token (IBT, an ERC-4626 vault
  * over the underlying) and coins(1) = the PT (checked on-chain for every listed pool).
  *
- * Buy:  USDG -> underlying (Relay, or Relay + LI.FI) -> IBT.deposit -> pool.exchange(IBT -> PT).
+ * Buy:  USDC -> underlying (Relay, or Relay + LI.FI) -> IBT.deposit -> pool.exchange(IBT -> PT).
  * Sell: before maturity pool.exchange(PT -> IBT) -> IBT.redeem; at maturity PT.redeem (1 PT -> its underlying value).
- * Then underlying -> USDG. The position is the PT balance, shown in PT units.
+ * Then underlying -> USDC. The position is the PT balance, shown in PT units.
  * Flare (chain 14) pools switch on by themselves once chain 14 is in EVM_CHAINS (Relay doesn't serve Flare; the
  * route goes Relay -> USDC on Base -> LI.FI/Stargate -> FXRP / WFLR).
  */

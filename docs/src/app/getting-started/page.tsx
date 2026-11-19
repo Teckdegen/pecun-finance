@@ -38,7 +38,7 @@ export default function GettingStarted() {
               </>
             ),
           },
-          { title: "Add funds", body: "Send the asset you want to put to work to your Pecun wallet address, shown in the app. Double-check the address before you send." },
+          { title: "Add funds", body: "Send USDC on Base to your Pecun wallet address, shown in the app. Only send USDC on the Base network, and double-check the address before you send." },
           {
             title: "Pick a vault",
             body: (

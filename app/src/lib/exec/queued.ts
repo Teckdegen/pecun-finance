@@ -6,7 +6,7 @@ import { OUT_STEPS, type Step } from "../execute";
 /**
  * Shared bits for vaults whose withdrawals are queued (Ember, Upshift): the user asks to withdraw, the protocol's
  * operator pays the assets into the user's wallet on the vault's chain once the queue clears (days later), and a
- * later press of Withdraw brings what was paid out back to USDG.
+ * later press of Withdraw brings what was paid out back to USDC.
  *
  * Paid-out funds sit in the user's own wallet as a plain token, which the chain can't tie back to the vault, so we keep
  * a note per vault and wallet of how much was requested and not yet brought home. The note is only a convenience
@@ -80,7 +80,7 @@ export function catalogWait(o: unknown): string {
 }
 
 export const requestedMessage = (amount: bigint, decimals: number, symbol: string, protocol: string, wait: string, where: string) =>
-  `Withdrawal of ${formatUnits(amount, decimals)} ${symbol} requested. ${protocol} pays it out${wait ? ` in ${wait}` : " once its queue clears"}, and Pecun brings it back to your wallet as USDG automatically whenever you have the app open.`;
+  `Withdrawal of ${formatUnits(amount, decimals)} ${symbol} requested. ${protocol} pays it out${wait ? ` in ${wait}` : " once its queue clears"}, and Pecun brings it back to your wallet as USDC automatically whenever you have the app open.`;
 
 /** What the user asked for, in raw units ("max" = everything). */
 export const wanted = (amount: string | "max", decimals: number, everything: bigint) => (amount === "max" ? everything : parseUnits(amount, decimals));

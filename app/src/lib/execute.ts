@@ -94,7 +94,7 @@ export type Adapter = {
   withdraw: (s: Signer, amount: string | "max", on: Progress) => Promise<string>;
   /** Queued-withdrawal vaults only: what's waiting in the protocol's queue and what's been paid out but not brought home. */
   queue?: (s: Who) => Promise<QueueState>;
-  /** Queued-withdrawal vaults only: brings paid-out funds back to USDG without requesting anything new. Null if nothing arrived. */
+  /** Queued-withdrawal vaults only: brings paid-out funds back to USDC without requesting anything new. Null if nothing arrived. */
   bringHome?: (s: Signer, on: Progress) => Promise<string | null>;
 };
 
@@ -102,7 +102,7 @@ export type QueueState = {
   symbol: string;
   /** Still in the protocol's queue (asset units). */
   pending: number;
-  /** Paid out to the user's wallet, not yet brought back as USDG (asset units). */
+  /** Paid out to the user's wallet, not yet brought back as USDC (asset units). */
   arrived: number;
   /** "about 3 days", "up to a week", or "" if unknown. */
   wait: string;
@@ -288,8 +288,8 @@ export type RelayLeg = { from: number; to: number; inToken: string; outToken: st
 const GAS_RESERVE_DEFAULT_USD = 0.15;
 /**
  * How much of the vault chain's gas token (in USD) a deposit's bridge should also deliver. Only on legs leaving
- * Robinhood Chain for an EVM chain, and only when the user's wallet there is short, so Pecun's gas tank only has to
- * cover Robinhood Chain; it stays a backup everywhere else.
+ * Base for an EVM chain, and only when the user's wallet there is short, so Pecun's gas tank only has to
+ * cover Base; it stays a backup everywhere else.
  */
 async function gasReserveUsd(p: RelayLeg): Promise<number> {
   if (p.gasUsd !== undefined) return p.gasUsd;
@@ -307,7 +307,7 @@ async function gasReserveUsd(p: RelayLeg): Promise<number> {
  * split: a small leg into native SOL (the user's gas reserve, about $0.60) and the rest into the vault's asset.
  */
 const SOLANA_NATIVE = "11111111111111111111111111111111";
-const SOL_RESERVE_USDG = BigInt(600_000); // $0.60 of USDG (6 decimals): about 0.008 SOL
+const SOL_RESERVE_USDG = BigInt(600_000); // $0.60 of USDC (6 decimals): about 0.008 SOL
 export async function solanaGasLeg(p: RelayLeg): Promise<RelayLeg | null> {
   if (p.noGasLeg || p.from !== ROBINHOOD_CHAIN_ID || p.to !== SOLANA_CHAIN_ID || p.outToken === SOLANA_NATIVE) return null;
   if (p.amount <= SOL_RESERVE_USDG * BigInt(5)) return null; // too small to split
@@ -438,11 +438,11 @@ export async function waitForArrival(read: () => Promise<bigint>, before: bigint
   throw new ExecError("Funds haven't arrived yet. They will; check again in a few minutes.");
 }
 
-/* ---------------- fee + USDG legs shared by every adapter ---------------- */
+/* ---------------- fee + USDC legs shared by every adapter ---------------- */
 
 export const usdgOf = (s: { address: Address }) => () => erc20Balance(ROBINHOOD_CHAIN_ID, USDG, s.address);
 
-/** Takes Pecun's fee from a USDG amount on Robinhood Chain; returns what's left. */
+/** Takes Pecun's fee from a USDC amount on Base; returns what's left. */
 export async function takeUsdgFee(s: Signer, total: bigint, on: Progress): Promise<bigint> {
   const fee = (total * BigInt(feeBps)) / BigInt(10_000);
   on("fee", fee > BigInt(0) ? "running" : "skipped");
@@ -504,7 +504,7 @@ export async function withCostCap<T>(f: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Sends anything a failed run left on another chain back to USDG. What can't move now (still in flight, or too costly
+ * Sends anything a failed run left on another chain back to USDC. What can't move now (still in flight, or too costly
  * right now) is remembered, and the background check (AutoWithdraw) tries again every few minutes.
  */
 async function sweepHome(s: Signer, landings: Landing[]) {
@@ -525,7 +525,7 @@ async function sweepOne(s: Signer, l: Landing): Promise<boolean> {
   if (now <= l.before) return false;
   const amount = now - l.before;
   await withCostCap(async () => {
-    const plan = await planRoute({ from: l.chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount, user: l.owner, recipient: l.owner }, "USDG");
+    const plan = await planRoute({ from: l.chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount, user: l.owner, recipient: l.owner }, "USDC");
     checkAutoCost(routeCostPct(plan.preview));
     const before = await usdgOf(s)();
     await runRoute(s, { from: l.chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount, user: l.owner, recipient: l.owner });
@@ -584,7 +584,7 @@ export async function sweepStranded(s: Signer): Promise<number> {
 /**
  * Wraps an adapter so every run is safe:
  * - deposit: Pecun's fee is only sent after the deposit lands; if the run fails, no fee is taken and anything already
- *   moved to the vault's chain goes back to USDG.
+ *   moved to the vault's chain goes back to USDC.
  * - withdraw: if it fails part-way, what reached another chain goes home the same way.
  * - bringHome (automatic returns): every leg is held to Pecun's route-cost limit, or it waits and tries again later.
  */
@@ -691,7 +691,7 @@ async function viaUsdcPlan(leg: RelayLeg, outSymbol: string): Promise<Plan | nul
 }
 
 /**
- * Two hops through the vault chain's native coin. Deposit: bridge USDG into the native coin, keep a slice of it in the
+ * Two hops through the vault chain's native coin. Deposit: bridge USDC into the native coin, keep a slice of it in the
  * wallet for transactions (when the wallet there is short), swap the rest into the vault's asset. Withdraw: swap the
  * asset into the native coin there, then bridge it home. Every asset has a market against its chain's native coin.
  */
@@ -729,7 +729,8 @@ async function viaNativePlan(leg: RelayLeg, outSymbol: string): Promise<Plan | n
  * deposit, when the wallet on the vault's chain is short on its native coin, a small separate LI.FI leg delivers it.
  */
 async function lifiPlan(leg: RelayLeg): Promise<Plan | null> {
-  if (leg.from === leg.to || !evmChain(leg.from) || !evmChain(leg.to)) return null;
+  // Same-chain legs are swaps: LI.FI's DEX aggregation competes with Relay's there too.
+  if (!evmChain(leg.from) || !evmChain(leg.to)) return null;
   const fromUsdg = leg.from === ROBINHOOD_CHAIN_ID && leg.inToken.toLowerCase() === USDG.toLowerCase();
   const reserveUsd = fromUsdg && !isNativeEvm(leg.outToken) ? await gasReserveUsd(leg) : 0;
   let gasAmt = reserveUsd > 0 ? BigInt(Math.round(reserveUsd * 1e6)) : BigInt(0);
@@ -853,10 +854,17 @@ async function runLifi(s: Signer, p: { gas?: LifiLeg; main: LifiLeg }) {
 }
 
 /**
- * Plans USDG → vault asset (or back), always ending in the vault's own asset. Quotes Relay's direct route and the
+ * Plans USDC → vault asset (or back), always ending in the vault's own asset. Quotes Relay's direct route and the
  * route through USDC on the vault's chain side by side, and picks whichever delivers more. `force` is for tests.
  */
+/** A leg that starts and ends in the same token on the same chain (e.g. home USDC into a USDC vault on Base). */
+export const sameLeg = (l: RelayLeg) => l.from === l.to && l.inToken.toLowerCase() === l.outToken.toLowerCase();
+
 export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direct" | "via"): Promise<Plan> {
+  if (sameLeg(leg)) {
+    const dec = isHomeUsdg(leg.from, leg.inToken) ? USDG_DECIMALS : (await tokenMeta(leg.from, leg.inToken as Address)).decimals;
+    return { hops: [], preview: { ...sameAmountPreview(formatUnits(leg.amount, dec), outSymbol), costPct: 0, legs: 0 }, out: leg.amount, via: "none" };
+  }
   if (!viaRelay(leg.from) || !viaRelay(leg.to)) return hubRoute(leg, outSymbol);
   const [direct, via, native, lifi, across] = await Promise.allSettled([
     force === "via" ? Promise.reject(new ExecError("skipped")) : directPlan(leg, outSymbol),
@@ -883,6 +891,7 @@ export async function planRoute(leg: RelayLeg, outSymbol: string, force?: "direc
 
 /** Runs a planned route: one Relay transfer, or bridge to USDC, wait for it, then swap what arrived. */
 export async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
+  if (sameLeg(leg)) return;
   const plan = await planRoute(leg, "");
   if (plan.far) return runHubRoute(s, plan as Plan & { far: FarLeg });
   if (plan.lifi) return runLifi(s, plan.lifi);
@@ -899,15 +908,22 @@ export async function runRoute(s: Signer, leg: RelayLeg): Promise<void> {
   await relay(s, { ...h2, amount: got - keep });
 }
 
-/** Brings funds back to USDG on Robinhood Chain, then takes Pecun's fee from what arrived. */
+/** Runs `leg` (an EVM leg) and returns how much of its output arrived; a same-token leg is already there. */
+export async function routeInto(s: Signer, leg: RelayLeg, timeoutMs = 10 * 60_000): Promise<bigint> {
+  if (sameLeg(leg)) return leg.amount;
+  const read = () => tokenBalance(leg.to, leg.outToken as Address, leg.recipient as Address);
+  const before = await read();
+  await runRoute(s, leg);
+  return waitForArrival(read, before, timeoutMs);
+}
+
+/** Brings funds back to the home token (USDC on Base), then takes Pecun's fee from what arrived. */
 export async function backToUsdg(s: Signer, leg: Omit<RelayLeg, "to" | "outToken" | "recipient">, on: Progress): Promise<string> {
   on("bridge", "running");
-  const before = await usdgOf(s)();
-  await runRoute(s, { ...leg, to: ROBINHOOD_CHAIN_ID, outToken: USDG, recipient: s.address });
-  const back = await waitForArrival(usdgOf(s), before, 10 * 60_000);
-  on("bridge", "done", `${formatUnits(back, USDG_DECIMALS)} USDG`);
+  const back = await routeInto(s, { ...leg, to: ROBINHOOD_CHAIN_ID, outToken: USDG, recipient: s.address });
+  on("bridge", "done", `${formatUnits(back, USDG_DECIMALS)} USDC`);
   const kept = await takeUsdgFee(s, back, on);
-  return `${formatUnits(kept, USDG_DECIMALS)} USDG`;
+  return `${formatUnits(kept, USDG_DECIMALS)} USDC`;
 }
 
 export const IN_STEPS: Step[] = [
@@ -940,7 +956,7 @@ export type Proto = {
 
 export const MAX_UINT = BigInt(2) ** BigInt(256) - BigInt(1);
 export const isAddr = (a?: string | null): a is Address => !!a && /^0x[0-9a-fA-F]{40}$/.test(a);
-/** Robinhood Chain USDG: already the user's wallet token, so there is nothing to bridge or swap. */
+/** Base USDC: already the user's wallet token, so there is nothing to bridge or swap. */
 export const isHomeUsdg = (chainId: number, token: string) => chainId === ROBINHOOD_CHAIN_ID && token.toLowerCase() === USDG.toLowerCase();
 
 export async function tokenMeta(chainId: number, token: Address): Promise<TokenMeta> {
@@ -977,14 +993,14 @@ export function evmVault(chainId: number, proto: Proto, label: string): Adapter 
     previewDeposit: async (s, usdg) => {
       const a = await asset();
       const net = netOfFee(usdg);
-      if (await home()) return sameAmountPreview(formatUnits(net, USDG_DECIMALS), "USDG");
+      if (await home()) return sameAmountPreview(formatUnits(net, USDG_DECIMALS), "USDC");
       return (await planRoute({ from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: a.address, amount: net, user: s.address, recipient: s.address }, a.symbol)).preview;
     },
 
     previewWithdraw: async (s, amount) => {
       const a = await asset();
-      if (await home()) return sameAmountPreview(amount, "USDG");
-      return (await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: a.address, outToken: USDG, amount: parseUnits(amount, a.decimals), user: s.address, recipient: s.address }, "USDG")).preview;
+      if (await home()) return sameAmountPreview(amount, "USDC");
+      return (await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: a.address, outToken: USDG, amount: parseUnits(amount, a.decimals), user: s.address, recipient: s.address }, "USDC")).preview;
     },
 
     deposit: async (s, usdg, on) => {
@@ -1032,7 +1048,7 @@ export function evmVault(chainId: number, proto: Proto, label: string): Adapter 
       if (await home()) {
         on("bridge", "skipped");
         const kept = await takeUsdgFee(s, out, on);
-        return `${formatUnits(kept, USDG_DECIMALS)} USDG`;
+        return `${formatUnits(kept, USDG_DECIMALS)} USDC`;
       }
       return backToUsdg(s, { from: chainId, inToken: a.address, amount: out, user: s.address }, on);
     },
@@ -1333,15 +1349,12 @@ export function evmToken(chainId: number, token: Address, symbol: string): Adapt
     previewDeposit: async (s, usdg) =>
       (await planRoute({ from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: netOfFee(usdg), user: s.address, recipient: s.address }, symbol)).preview,
     previewWithdraw: async (s, amount) =>
-      (await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: token, outToken: USDG, amount: parseUnits(amount, (await meta()).decimals), user: s.address, recipient: s.address }, "USDG")).preview,
+      (await planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: token, outToken: USDG, amount: parseUnits(amount, (await meta()).decimals), user: s.address, recipient: s.address }, "USDC")).preview,
     deposit: async (s, usdg, on) => {
       const m = await meta();
       const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
       on("bridge", "running");
-      const read = () => erc20Balance(chainId, token, s.address);
-      const before = await read();
-      await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: s.address, recipient: s.address });
-      const got = await waitForArrival(read, before, 10 * 60_000);
+      const got = await routeInto(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: s.address, recipient: s.address });
       const shown = `${formatUnits(got, m.decimals)} ${symbol}`;
       on("bridge", "done", shown);
       return shown;
@@ -1443,7 +1456,7 @@ function hyperliquidVault(vault: Address): Adapter {
     previewWithdraw: async (s, amount) =>
       toPreview(
         await relayQuote({ from: HYPERLIQUID_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: HL_USDC, outToken: USDG, amount: parseUnits(amount, 8), user: s.address, recipient: s.address }),
-        "USDG",
+        "USDC",
       ),
 
     deposit: async (s, usdg, on) => {
@@ -1498,7 +1511,7 @@ function solanaToken(mint: string, symbol: string): Adapter {
       return toPreview(await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: SOLANA_CHAIN_ID, inToken: USDG, outToken: mint, amount: net, user: s.address, recipient: need(s) }), symbol);
     },
     previewWithdraw: async (s, amount) =>
-      toPreview(await relayQuote({ from: SOLANA_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: mint, outToken: USDG, amount: parseUnits(amount, await decimals()), user: need(s), recipient: s.address }), "USDG"),
+      toPreview(await relayQuote({ from: SOLANA_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: mint, outToken: USDG, amount: parseUnits(amount, await decimals()), user: need(s), recipient: s.address }), "USDC"),
     deposit: async (s, usdg, on) => {
       const sol = need(s);
       const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
@@ -1569,7 +1582,7 @@ function jupiterLend(jlToken: string, assetSymbol: string): Adapter {
     },
     previewWithdraw: async (s, amount) => {
       const t = await jupToken(jlToken);
-      return toPreview(await relayQuote({ from: SOLANA_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: t.assetAddress, outToken: USDG, amount: parseUnits(amount, t.asset.decimals), user: need(s), recipient: s.address }), "USDG");
+      return toPreview(await relayQuote({ from: SOLANA_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: t.assetAddress, outToken: USDG, amount: parseUnits(amount, t.asset.decimals), user: need(s), recipient: s.address }), "USDC");
     },
     deposit: async (s, usdg, on) => {
       const sol = need(s);
@@ -1946,7 +1959,7 @@ async function scallopPool(coinType: string): Promise<ScallopPool> {
   return p;
 }
 
-/* Shared Sui route: USDG → USDC (Relay) → USDC on Sui (LI.FI/Mayan) → swap into the asset on Sui (LI.FI), and back. */
+/* Shared Sui route: USDC → USDC (Relay) → USDC on Sui (LI.FI/Mayan) → swap into the asset on Sui (LI.FI), and back. */
 
 export const isSuiCoin = (t: string) => t === SUI_TYPE || t === "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
 const lifiSuiType = (t: string) => (isSuiCoin(t) ? SUI_TYPE : t);
@@ -1999,7 +2012,7 @@ async function lifiFromBase(s: Signer, leg: LifiLeg): Promise<Hex> {
 
 export async function previewToSui(s: Who, usdg: string, coinType: string): Promise<Preview> {
   const sui = needSui(s);
-  // Robinhood -> Base: the full route race (Relay, LI.FI, Across...). Base -> Sui: LI.FI's cheapest bridge.
+  // Home -> Base USDC (nothing to do when home is Base USDC): the full route race (Relay, LI.FI, Across...). Base -> Sui: LI.FI's cheapest bridge.
   const hop = await planRoute({ from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: netOfFee(usdg), user: s.address, recipient: s.address }, "USDC");
   const o1 = { out: hop.out, min: parseUnits(hop.preview.minOut, 6) };
   const reserve = await suiReserveFor(sui, o1.out);
@@ -2028,7 +2041,7 @@ export async function previewFromSui(s: Who, coinType: string, raw: bigint): Pro
   const r1 = await lifiRoute({ fromChain: SUI_CHAIN_ID, toChain: BASE_CHAIN_ID, fromToken: SUI_USDC, toToken: BASE_USDC, amount: usdc, from: sui, to: s.address });
   const p01 = swap ? chainPreview(swap, usdc, usdcMin, lifiPreview(r1), BigInt(r1.toAmount), BigInt(r1.toAmountMin), 6) : lifiPreview(r1);
   const min01 = scaledMin(BigInt(r1.toAmountMin), usdc, usdcMin);
-  const home = await planRoute({ from: BASE_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: BASE_USDC, outToken: USDG, amount: BigInt(r1.toAmount), user: s.address, recipient: s.address }, "USDG");
+  const home = await planRoute({ from: BASE_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: BASE_USDC, outToken: USDG, amount: BigInt(r1.toAmount), user: s.address, recipient: s.address }, "USDC");
   return chainPreview(p01, BigInt(r1.toAmount), min01, home.preview, home.out, parseUnits(home.preview.minOut, USDG_DECIMALS), USDG_DECIMALS);
 }
 
@@ -2039,9 +2052,7 @@ export async function toSui(s: Signer, usdg: string, coinType: string, decimals:
   const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
 
   on("bridge", "running");
-  const baseBefore = await usdcOnBase();
-  await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: net, user: s.address, recipient: s.address });
-  const usdc = await waitForArrival(usdcOnBase, baseBefore, 10 * 60_000);
+  const usdc = await routeInto(s, { from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: net, user: s.address, recipient: s.address });
   on("bridge", "done", `${formatUnits(usdc, 6)} USDC`);
 
   on("sui", "running");
@@ -2070,7 +2081,7 @@ export async function toSui(s: Signer, usdg: string, coinType: string, decimals:
   return got;
 }
 
-/** Runs the route from `raw` of `coinType` on Sui back to USDG, then takes the fee. */
+/** Runs the route from `raw` of `coinType` on Sui back to USDC, then takes the fee. */
 export async function fromSui(s: Signer, coinType: string, raw: bigint, on: Progress): Promise<string> {
   const sui = needSui(s);
   const readUsdc = () => suiBalance(sui, SUI_USDC);

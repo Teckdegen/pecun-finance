@@ -27,7 +27,7 @@ type Notice = { kind: "working" | "done" | "error"; text: string };
 
 /**
  * Finishes queued withdrawals by itself. While the app is open (on load, then every 5 minutes) it checks each vault
- * the user has a pending withdrawal in; once the protocol has paid out, it brings the funds back to USDG with the
+ * the user has a pending withdrawal in; once the protocol has paid out, it brings the funds back to USDC with the
  * user's own session, like the second Withdraw press would, so there's nothing left to press.
  */
 export function AutoWithdraw() {

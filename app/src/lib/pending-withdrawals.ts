@@ -4,7 +4,7 @@ import type { Opp } from "./execute";
 
 /**
  * Withdrawals waiting in a protocol's queue (Ember, Upshift), remembered per user on this device so Pecun can bring the
- * payout back to USDG by itself once the protocol pays it out, without the user pressing anything.
+ * payout back to USDC by itself once the protocol pays it out, without the user pressing anything.
  */
 
 const key = (owner: string) => `pecun:pending-withdrawals:${owner.toLowerCase()}`;

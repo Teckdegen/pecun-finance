@@ -14,6 +14,7 @@ import {
   OUT_STEPS,
   planRoute,
   registerAdapters,
+  routeInto,
   runRoute,
   sendEvm,
   sleep,
@@ -39,8 +40,8 @@ const slipBps = () => BigInt(legSlippageBpsNow());
  * keeper executes it a few seconds later at oracle prices, minting GM/GLV or paying out the pool's tokens. If the keeper
  * can't execute (pool cap reached, price moved past the minimum), it cancels and refunds everything to the user.
  *
- * Deposits are single-sided: USDG → (Relay) one of the pool's own tokens (USDC when the pool has it), then deposited.
- * Withdrawals pay out the pool's long and short tokens; each is routed back to USDG, then Pecun's fee is taken once.
+ * Deposits are single-sided: USDC → (Relay) one of the pool's own tokens (USDC when the pool has it), then deposited.
+ * Withdrawals pay out the pool's long and short tokens; each is routed back to USDC, then Pecun's fee is taken once.
  * The position is shown in USD: GM/GLV balance × the token price GMX's own Reader contracts compute from GMX's public
  * oracle prices (arbitrum-api.gmxinfra.io / avalanche-api.gmxinfra.io).
  *
@@ -709,7 +710,7 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
 
   const balance = (owner: Address) => erc20Balance(chainId, pool.token, owner);
 
-  /** Picks the first pool token Relay can route USDG into; returns it with its route. */
+  /** Picks the first pool token Relay can route USDC into; returns it with its route. */
   const pickRoute = async (owner: Address, net: bigint) => {
     const list = await pool.depositTokens();
     const order = preferred ? [preferred, ...list.filter((t) => !same(t, preferred!))] : list;
@@ -754,7 +755,7 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       const legs = (await payoutLegs(chainId, w.outs)).filter((l) => l.usd >= DUST_USD);
       const plans = await Promise.all(
         legs.map((l) =>
-          planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount: l.amount, user: owner, recipient: owner }, "USDG").catch((e: unknown) =>
+          planRoute({ from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount: l.amount, user: owner, recipient: owner }, "USDC").catch((e: unknown) =>
             e instanceof Error ? e : new ExecError(String(e)),
           ),
         ),
@@ -811,7 +812,7 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       const weight = (i: number) => (legsUsd > 0 ? legs[i].usd / legsUsd : 0);
       const p: Preview = {
         out: formatUnits(out, USDG_DECIMALS),
-        outSymbol: "USDG",
+        outSymbol: "USDC",
         minOut: formatUnits(minus(min, slipBps()), USDG_DECIMALS),
         slippagePct: Math.max(...plans.map((x) => x.preview.slippagePct)) + Number(slipBps()) / 100,
         impactPct: plans.reduce((t, x, i) => t + x.preview.impactPct * weight(i), 0) + (req > 0 ? (legsUsd / req - 1) * 100 : 0),
@@ -830,10 +831,7 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       const net = await takeUsdgFee(s, parseUnits(usdg, USDG_DECIMALS), on);
       const { token, t } = first;
       on("bridge", "running");
-      const read = () => erc20Balance(chainId, token, s.address);
-      const before = await read();
-      await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: s.address, recipient: s.address, gasUsd: first.gasUsd });
-      const received = await waitForArrival(read, before, 10 * 60_000);
+      const received = await routeInto(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: s.address, recipient: s.address, gasUsd: first.gasUsd });
       on("bridge", "done", `${formatUnits(received, t.decimals)} ${t.symbol}`);
 
       on("deposit", "running");
@@ -885,7 +883,7 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       const legs = await payoutLegs(chainId, outs);
       on("keeper", "done", legs.map((l) => `${Number(formatUnits(l.amount, l.decimals)).toPrecision(6)} ${l.symbol}`).join(" + "));
 
-      // Each payout token back to USDG, then Pecun's fee once on the total.
+      // Each payout token back to USDC, then Pecun's fee once on the total.
       on("bridge", "running");
       let back = ZERO;
       const left: string[] = [];
@@ -896,19 +894,17 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
           continue;
         }
         try {
-          const b0 = await usdgOf(s)();
-          await runRoute(s, { from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount: l.amount, user: s.address, recipient: s.address });
-          back += await waitForArrival(usdgOf(s), b0, 10 * 60_000);
+          back += await routeInto(s, { from: chainId, to: ROBINHOOD_CHAIN_ID, inToken: l.token, outToken: USDG, amount: l.amount, user: s.address, recipient: s.address });
         } catch (e) {
           lastErr = e;
           left.push(`${formatUnits(l.amount, l.decimals)} ${l.symbol}`);
         }
       }
       if (back === ZERO) throw lastErr ?? new ExecError("The payout was too small to move back.");
-      on("bridge", "done", `${formatUnits(back, USDG_DECIMALS)} USDG`);
+      on("bridge", "done", `${formatUnits(back, USDG_DECIMALS)} USDC`);
       const kept = await takeUsdgFee(s, back, on);
       const chainName = evmChain(chainId)?.names[0] ?? "the pool's chain";
-      return `${formatUnits(kept, USDG_DECIMALS)} USDG${left.length ? ` (left in your wallet on ${chainName}: ${left.join(", ")})` : ""}`;
+      return `${formatUnits(kept, USDG_DECIMALS)} USDC${left.length ? ` (left in your wallet on ${chainName}: ${left.join(", ")})` : ""}`;
     },
   };
 }

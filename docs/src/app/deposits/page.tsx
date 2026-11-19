@@ -7,7 +7,7 @@ export default function Deposits() {
   return (
     <Doc href="/deposits">
       <P>
-        A deposit moves USDG from your Pecun wallet on Robinhood Chain into the vault you picked, on whichever chain it lives. It's one press: the
+        A deposit moves USDC from your Pecun wallet on Base into the vault you picked, on whichever chain it lives. Vaults on Base take it directly, with no bridge. It's one press: the
         bridge, the swaps and the deposit all happen for you. In return you receive the vault's position token, in your own wallet, which represents
         your share and grows as the vault earns.
       </P>
@@ -20,8 +20,8 @@ export default function Deposits() {
             body: "Before you press, Pecun shows the 0.5% fee, the bridge and swap costs, the total route cost and what you'll receive. Routes that would cost more than 0.5% don't run.",
           },
           {
-            title: "Bridge from Robinhood Chain",
-            body: "Your USDG moves to the vault's chain. A small part arrives as that chain's own coin (ETH, SOL, SUI and so on), so your transactions there always go through.",
+            title: "Bridge from Base",
+            body: "Your USDC moves to the vault's chain, by the cheapest of several bridges. A small part arrives as that chain's own coin (ETH, SOL, SUI and so on), so your transactions there always go through.",
           },
           { title: "Swap into the vault's asset", body: "The rest is swapped into exactly the asset the vault takes." },
           {

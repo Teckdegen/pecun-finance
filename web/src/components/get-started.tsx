@@ -155,7 +155,7 @@ const pick = (names: string[]): Mark[] => names.map((n) => PARTNERS.find((p) => 
 const PLATFORM_MARKS = pick(["Aave", "Lido", "Pendle"]);
 /** What you deposit with. */
 const DEPOSIT_MARKS: Mark[] = [
-  { name: "USDG", logo: tw("ethereum/assets/0xe343167631d89B6Ffc58B88d6b7fB0228795491D") },
+  { name: "USDC", logo: tw("ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48") },
   { name: "ETH", logo: tw("ethereum/info") },
 ];
 /** The vault tokens you hold while earning: Lido stETH, Ethena sUSDe, JitoSOL. */

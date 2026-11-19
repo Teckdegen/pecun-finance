@@ -25,7 +25,7 @@ export type WalletSetup = { ok: true; created: boolean } | { ok: false; error: s
 /**
  * Every account's wallet lives in the user's own Turnkey sub-organization: Turnkey holds the keys, and only the
  * user's sign-in (email code or passkey session) can move funds. Pecun's server key has no access to it.
- * The EVM address is the one users see (Robinhood Chain and every EVM chain); Solana and Sui stay hidden and are
+ * The EVM address is the one users see (Base and every EVM chain); Solana and Sui stay hidden and are
  * used behind the scenes for deposits on those chains.
  */
 export const EVM_ACCOUNT = { curve: "CURVE_SECP256K1" as const, pathFormat: "PATH_FORMAT_BIP32" as const, path: "m/44'/60'/0'/0/0", addressFormat: "ADDRESS_FORMAT_ETHEREUM" as const };
