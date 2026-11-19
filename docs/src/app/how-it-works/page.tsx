@@ -20,7 +20,7 @@ export default function HowItWorks() {
           },
           {
             title: "Deposit",
-            body: "When you deposit, Pecun prepares the transaction, shows you the fees and the APY after fees, and you approve it from your wallet. If the deposit needs a swap first, Pecun finds a route for you.",
+            body: "You hold USDG on Robinhood Chain. Press once and Pecun bridges it to the vault's chain, swaps it into the vault's own asset and deposits it, all signed by your own session. Every cost is shown before you press.",
           },
           {
             title: "Earn",
@@ -35,16 +35,43 @@ export default function HowItWorks() {
           ["Pecun is", "An interface that finds yield, prepares transactions and tracks positions."],
           ["Pecun isn't", "A bank, a fund, an exchange or an adviser. It doesn't run the products it lists, and it doesn't trade or invest for you."],
           ["Your money", "Moves from your wallet straight into the protocol. Pecun never holds it."],
-          ["Every transaction", "Is one you approve. Nothing moves without your confirmation."],
+          ["Every transaction", "Is signed with your own sign-in. Pecun's servers can't move your money on their own."],
         ]}
       />
+
+      <H2>One click, step by step</H2>
+      <P>Here's what happens behind the button when you deposit into a vault on another chain.</P>
+      <Steps
+        items={[
+          {
+            title: "Bridge from Robinhood Chain",
+            body: "Your USDG leaves Robinhood Chain for the vault's chain. Pecun picks the cheapest route it can find and never runs one that costs more than 0.5%.",
+          },
+          {
+            title: "Keep a gas reserve",
+            body: "If your wallet on that chain has no gas, a small amount of its own gas token (about $0.15 on most chains, $1 on Ethereum) comes with the bridge. It stays in your wallet and pays for this deposit and, later, your withdrawal.",
+          },
+          {
+            title: "Swap into the vault's asset",
+            body: "The rest is swapped into exactly the asset the vault takes, on that chain.",
+          },
+          {
+            title: "Deposit",
+            body: "The asset goes into the vault and the position lands in your wallet, under your name. Pecun's fee is only taken once the deposit lands.",
+          },
+        ]}
+      />
+      <P>
+        Withdrawing runs the same steps backwards and brings your money home as USDG on Robinhood Chain. If anything fails on the way, no fee is taken
+        and whatever already moved is sent back to your wallet. On Solana and Sui, Pecun covers the network fees instead.
+      </P>
 
       <H2>What Pecun relies on</H2>
       <List
         items={[
           <>The protocols themselves, for the products, the rates and the yield. See <A href="/protocols">Supported protocols</A>.</>,
           "Turnkey, for your self-custodial wallet and signing.",
-          "Routers such as Relay and LI.FI, when a deposit or withdrawal needs a swap or a transfer.",
+          "Routers such as Relay and LI.FI, for the bridges, swaps and gas reserves that move your money between chains.",
           <>Data and infrastructure providers. See <A href="/providers">Partners and providers</A>.</>,
         ]}
       />

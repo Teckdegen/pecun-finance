@@ -73,7 +73,7 @@ export const PROTOCOLS: { name: string; logo: string; kind: string }[] = [
   { name: "Euler", logo: debank("eth_token/logo_url/0xd9fcd98c322942075a5c3860693e9f4f03aae07b/4af0cfbf57569f8fdb31e4a2fb9d8651.png"), kind: "Lending" },
   { name: "Compound", logo: debank("eth_token/logo_url/0xc00e94cb662c3520282e6f5717214004a7f26888/dd174d3d7083fa027a433dc50edaf0bc.png"), kind: "Lending" },
   { name: "Moonwell", logo: debank("mobm_token/logo_url/0x511ab53f793683763e5a8829738301368a2411e3/b82e97dd371cfdacb522ffebd7840729.png"), kind: "Lending" },
-  { name: "Fluid", logo: "https://etherscan.io/token/images/fluid_32.png", kind: "Lending" },
+  { name: "Fluid", logo: local("fluid.png"), kind: "Lending" },
   { name: "Spark", logo: debank("eth_token/logo_url/0xc20059e0317de91738d13af027dfc4a50781b066/0a37a6ea8ac42a95d75ee255142c102c.png"), kind: "Savings and lending" },
   { name: "Ethena", logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x57e114B691Db790C35207b2e685D4A43181e6061/logo.png", kind: "Delta-neutral" },
   { name: "Sky", logo: debank("eth_token/logo_url/0x56072c95faa701256059aa122697b133aded9279/6ee24b04e01abbd4f2ace465a430fad4.png"), kind: "Savings" },
@@ -90,6 +90,8 @@ export const PROTOCOLS: { name: string; logo: string; kind: string }[] = [
   { name: "Resolv", logo: local("resolv.svg"), kind: "Delta-neutral" },
   { name: "Kinetiq", logo: local("kinetiq.svg"), kind: "Liquid staking" },
   { name: "Spectra", logo: local("spectra.ico"), kind: "Fixed yield" },
-  { name: "Avantis", logo: local("avantis.png"), kind: "Perps liquidity" },
+  { name: "Veranta (formerly Avantis)", logo: local("avantis.png"), kind: "Perps liquidity" },
   { name: "HyperLend", logo: local("hyperlend.ico"), kind: "Lending" },
+  { name: "Frgmnt", logo: local("frgmnt.png"), kind: "Curated lending vaults" },
+  { name: "Solana stake pools", logo: local("jito.png"), kind: "Liquid staking: Jito, BlazeStake, Drift and more" },
 ];

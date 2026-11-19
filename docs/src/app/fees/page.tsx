@@ -11,8 +11,8 @@ export default function Fees() {
       <H2>Who charges what</H2>
       <Facts
         rows={[
-          ["Pecun's fee", "A small fee on each deposit and each withdrawal. It's shown before you confirm and paid as part of the transaction."],
-          ["Network fees", "Currently paid by Pecun on your behalf. If that ever changes, any network fee will be shown before you confirm."],
+          ["Pecun's fee", "0.5% on each deposit and each withdrawal, in USDG. It's shown before you press. On a deposit it's only taken once the deposit lands; if a deposit fails, there's no fee."],
+          ["Network fees", "Pecun pays them on Robinhood Chain, Solana and Sui. On other chains, a deposit brings a small gas reserve in that chain's own gas token (about $0.15, $1 on Ethereum) from your deposit. It stays in your wallet and covers your moves there. It's shown before you press, and only added when your wallet there has no gas."],
           ["Protocol fees", "Set by each protocol, not by Pecun: performance, management, deposit, withdrawal or unstaking fees. Shown on the vault page where the protocol reports them."],
           ["Swaps and routing", "When a deposit or withdrawal needs a swap, routers may charge a fee and prices can move (slippage). The quote is shown before you confirm."],
         ]}
