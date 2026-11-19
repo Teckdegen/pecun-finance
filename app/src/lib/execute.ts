@@ -237,7 +237,7 @@ export async function ensureAllowance(s: Signer, chainId: number, token: Address
 /* ---------------- Solana ---------------- */
 
 /** Covers fees plus rent for a new token account. */
-export const SOL_NEEDED = BigInt(4_000_000); // 0.004 SOL
+export const SOL_NEEDED = BigInt(3_000_000); // 0.003 SOL: fees plus rent for one new token account
 
 export async function sendSol(s: Signer, unsignedHex: () => Promise<string>): Promise<string> {
   if (!s.solanaAddress) throw new ExecError("Your Solana account is still being set up. Try again in a moment.");
@@ -282,7 +282,7 @@ export type RelayQuote = {
   };
   fees?: Record<string, { amountUsd?: string } | null>;
 };
-export type RelayLeg = { from: number; to: number; inToken: string; outToken: string; amount: bigint; user: string; recipient: string; gasUsd?: number };
+export type RelayLeg = { from: number; to: number; inToken: string; outToken: string; amount: bigint; user: string; recipient: string; gasUsd?: number; noGasLeg?: boolean };
 
 const GAS_RESERVE_DEFAULT_USD = 0.15;
 /**
@@ -301,7 +301,26 @@ async function gasReserveUsd(p: RelayLeg): Promise<number> {
   return c.gasReserveUsd ?? GAS_RESERVE_DEFAULT_USD;
 }
 
+/**
+ * Solana: Relay can't add a gas top-up there, so when the user's Solana wallet is short on SOL, a deposit's bridge is
+ * split: a small leg into native SOL (the user's gas reserve, about $0.60) and the rest into the vault's asset.
+ */
+const SOLANA_NATIVE = "11111111111111111111111111111111";
+const SOL_RESERVE_USDG = BigInt(600_000); // $0.60 of USDG (6 decimals): about 0.008 SOL
+async function solanaGasLeg(p: RelayLeg): Promise<RelayLeg | null> {
+  if (p.noGasLeg || p.from !== ROBINHOOD_CHAIN_ID || p.to !== SOLANA_CHAIN_ID || p.outToken === SOLANA_NATIVE) return null;
+  if (p.amount <= SOL_RESERVE_USDG * BigInt(5)) return null; // too small to split
+  const have = await lamports(p.recipient).catch(() => null);
+  if (have === null || have >= SOL_NEEDED) return null;
+  return { ...p, outToken: SOLANA_NATIVE, amount: SOL_RESERVE_USDG, noGasLeg: true };
+}
+
 export async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
+  const solGas = await solanaGasLeg(p);
+  if (solGas) {
+    const q = await relayQuote({ ...p, amount: p.amount - solGas.amount, noGasLeg: true });
+    return { ...q, details: { ...q.details, currencyGasTopup: { amountUsd: formatUnits(solGas.amount, USDG_DECIMALS) } } };
+  }
   const gas = await gasReserveUsd(p);
   if (gas > 0) {
     const q = await relayQuoteOnce(p, gas).catch(() => null);
@@ -356,6 +375,13 @@ export function toPreview(q: RelayQuote, fallbackSymbol: string): Preview {
 
 /** Quote + every transaction it asks for (EVM or Solana), then waits for Relay to report the transfer delivered. */
 export async function relay(s: Signer, p: RelayLeg) {
+  const solGas = await solanaGasLeg(p);
+  if (solGas) {
+    const before = await lamports(p.recipient);
+    await relay(s, solGas);
+    await waitForArrival(() => lamports(p.recipient), before, 5 * 60_000).catch(() => BigInt(0));
+    p = { ...p, amount: p.amount - solGas.amount, noGasLeg: true };
+  }
   const q = await relayQuote(p);
   checkAutoCost(toPreview(q, "").costPct);
   await noteLanding(s, p);
@@ -1748,16 +1774,40 @@ export const suiOutSteps = (coinType: string, symbol: string, withdrawLabel?: st
   OUT_STEPS[2],
 ];
 
+/**
+ * Sui: no bridge adds gas there, so when the user's Sui wallet is short on SUI, a little of the USDC that reaches Base
+ * (about $0.30) is bridged into SUI as their gas reserve, and the rest goes on to the vault.
+ */
+const SUI_RESERVE_USDC = BigInt(300_000); // $0.30 of USDC (6 decimals)
+async function suiReserveFor(sui: string, usdc: bigint): Promise<bigint> {
+  if (usdc <= SUI_RESERVE_USDC * BigInt(5)) return BigInt(0);
+  const have = await suiBalance(sui, SUI_TYPE).catch(() => null);
+  return have !== null && have < SUI_GAS * BigInt(3) ? SUI_RESERVE_USDC : BigInt(0);
+}
+const withReserve = (p: Preview, reserve: bigint): Preview =>
+  reserve > BigInt(0) ? { ...p, gasReserveUsd: (p.gasReserveUsd ?? 0) + Number(formatUnits(reserve, 6)) } : p;
+
+/** One LI.FI transfer from the user's Base wallet: approve if needed, send; returns the transaction hash. */
+async function lifiFromBase(s: Signer, leg: LifiLeg): Promise<Hex> {
+  const q = await lifiQuote(leg);
+  const spender = q.estimate.approvalAddress ?? q.transactionRequest.to!;
+  const allowance = await chainClient(BASE_CHAIN_ID).readContract({ address: BASE_USDC, abi: erc20Abi, functionName: "allowance", args: [s.address, spender] });
+  if (allowance < leg.amount) await sendEvm(s, BASE_CHAIN_ID, { to: BASE_USDC, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, leg.amount] }) });
+  return sendEvm(s, BASE_CHAIN_ID, { to: q.transactionRequest.to!, data: q.transactionRequest.data as Hex, value: q.transactionRequest.value ? BigInt(q.transactionRequest.value) : undefined });
+}
+
 export async function previewToSui(s: Who, usdg: string, coinType: string): Promise<Preview> {
   const sui = needSui(s);
   const rq = await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: netOfFee(usdg), user: s.address, recipient: s.address });
   const o1 = outOf(rq);
-  const r1 = await lifiRoute({ fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: SUI_USDC, amount: o1.out, from: s.address, to: sui });
+  const reserve = await suiReserveFor(sui, o1.out);
+  const main = o1.out - reserve;
+  const r1 = await lifiRoute({ fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: SUI_USDC, amount: main, from: s.address, to: sui });
   const p12 = chainPreview(toPreview(rq, "USDC"), o1.out, o1.min, lifiPreview(r1), BigInt(r1.toAmount), BigInt(r1.toAmountMin), 6);
-  if (coinType === SUI_USDC) return p12;
+  if (coinType === SUI_USDC) return withReserve(p12, reserve);
   const min12 = scaledMin(BigInt(r1.toAmountMin), o1.out, o1.min);
   const r2 = await lifiRoute({ fromChain: SUI_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: SUI_USDC, toToken: lifiSuiType(coinType), amount: BigInt(r1.toAmount), from: sui, to: sui });
-  return chainPreview(p12, BigInt(r1.toAmount), min12, lifiPreview(r2), BigInt(r2.toAmount), BigInt(r2.toAmountMin), r2.toToken.decimals);
+  return withReserve(chainPreview(p12, BigInt(r1.toAmount), min12, lifiPreview(r2), BigInt(r2.toAmount), BigInt(r2.toAmountMin), r2.toToken.decimals), reserve);
 }
 
 export async function previewFromSui(s: Who, coinType: string, raw: bigint): Promise<Preview> {
@@ -1792,14 +1842,18 @@ export async function toSui(s: Signer, usdg: string, coinType: string, decimals:
   on("bridge", "done", `${formatUnits(usdc, 6)} USDC`);
 
   on("sui", "running");
-  const q = await lifiQuote({ fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: SUI_USDC, amount: usdc, from: s.address, to: sui });
-  const spender = q.estimate.approvalAddress ?? q.transactionRequest.to!;
-  const allowance = await chainClient(BASE_CHAIN_ID).readContract({ address: BASE_USDC, abi: erc20Abi, functionName: "allowance", args: [s.address, spender] });
-  if (allowance < usdc) await sendEvm(s, BASE_CHAIN_ID, { to: BASE_USDC, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, usdc] }) });
+  // Gas reserve first (when the Sui wallet is short): a little of the USDC becomes SUI.
+  const readSui = () => suiBalance(sui, SUI_TYPE);
+  const suiBefore = await readSui();
+  const reserve = await suiReserveFor(sui, usdc);
+  const gasHash = reserve > BigInt(0)
+    ? await lifiFromBase(s, { fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: SUI_TYPE, amount: reserve, from: s.address, to: sui })
+    : null;
   const readUsdc = () => suiBalance(sui, SUI_USDC);
   const usdcBefore = await readUsdc();
-  const hash = await sendEvm(s, BASE_CHAIN_ID, { to: q.transactionRequest.to!, data: q.transactionRequest.data as Hex, value: q.transactionRequest.value ? BigInt(q.transactionRequest.value) : undefined });
+  const hash = await lifiFromBase(s, { fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: SUI_USDC, amount: usdc - reserve, from: s.address, to: sui });
   const usdcSui = await waitForArrival(readUsdc, usdcBefore, 15 * 60_000, lifiFailed(hash, BASE_CHAIN_ID, SUI_CHAIN_ID));
+  if (gasHash) await waitForArrival(readSui, suiBefore, 15 * 60_000, lifiFailed(gasHash, BASE_CHAIN_ID, SUI_CHAIN_ID)).catch(() => BigInt(0));
   on("sui", "done", `${formatUnits(usdcSui, 6)} USDC`);
   if (coinType === SUI_USDC) return usdcSui;
 

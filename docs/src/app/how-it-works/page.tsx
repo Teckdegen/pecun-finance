@@ -49,7 +49,7 @@ export default function HowItWorks() {
           },
           {
             title: "Keep a gas reserve",
-            body: "If your wallet on that chain has no gas, a small amount of its own gas token (about $0.15 on most chains, $1 on Ethereum) comes with the bridge. It stays in your wallet and pays for this deposit and, later, your withdrawal.",
+            body: "If your wallet on that chain has no gas, a small amount of its own gas token (about $0.15 on most chains, $0.60 of SOL on Solana, $0.30 of SUI on Sui, $1 on Ethereum) comes with the bridge. It stays in your wallet and pays for this deposit and, later, your withdrawal.",
           },
           {
             title: "Swap into the vault's asset",
@@ -63,7 +63,7 @@ export default function HowItWorks() {
       />
       <P>
         Withdrawing runs the same steps backwards and brings your money home as USDG on Robinhood Chain. If anything fails on the way, no fee is taken
-        and whatever already moved is sent back to your wallet. On Solana and Sui, Pecun covers the network fees instead.
+        and whatever already moved is sent back to your wallet. Solana and Sui work the same way: a little of your deposit becomes SOL or SUI for gas.
       </P>
 
       <H2>What Pecun relies on</H2>

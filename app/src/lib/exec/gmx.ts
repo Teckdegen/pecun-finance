@@ -378,6 +378,18 @@ async function nativeUsd(chainId: number, wei: bigint): Promise<number> {
   return p ? Number(formatUnits(wei * p.min, 30)) : 0;
 }
 
+/**
+ * GMX charges a keeper fee in the chain's gas token on every deposit and withdrawal request, more than the default
+ * gas reserve covers. When the wallet holds less than this (USD), a GMX deposit's bridge brings this much instead, so
+ * both the deposit and the later withdrawal are paid from the user's own reserve.
+ */
+const GMX_GAS_RESERVE_USD = 0.75;
+async function gmxGasReserve(chainId: number, owner: Address): Promise<number | undefined> {
+  const bal = await chainClient(chainId).getBalance({ address: owner }).catch(() => null);
+  if (bal === null) return undefined;
+  return (await nativeUsd(chainId, bal)) < GMX_GAS_RESERVE_USD ? GMX_GAS_RESERVE_USD : undefined;
+}
+
 /** Keeper-executed requests stay in the account's list until executed or cancelled. */
 async function pendingCount(chainId: number, list: "ACCOUNT_DEPOSIT_LIST" | "ACCOUNT_WITHDRAWAL_LIST" | "ACCOUNT_GLV_DEPOSIT_LIST" | "ACCOUNT_GLV_WITHDRAWAL_LIST", owner: Address) {
   return chainClient(chainId).readContract({ address: NETS[chainId].dataStore, abi: DS_ABI, functionName: "getBytes32Count", args: [keyOf(list, owner)] });
@@ -701,13 +713,14 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
   const pickRoute = async (owner: Address, net: bigint) => {
     const list = await pool.depositTokens();
     const order = preferred ? [preferred, ...list.filter((t) => !same(t, preferred!))] : list;
+    const gasUsd = await gmxGasReserve(chainId, owner);
     let last: unknown;
     for (const token of order) {
       try {
         const t = await tokenInfo(chainId, token);
-        const plan = await planRoute({ from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: owner, recipient: owner }, t.symbol);
+        const plan = await planRoute({ from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: owner, recipient: owner, gasUsd }, t.symbol);
         preferred = token;
-        return { token, t, plan };
+        return { token, t, plan, gasUsd };
       } catch (e) {
         last = e;
       }
@@ -819,7 +832,7 @@ function gmxAdapter(pool: Pool, label: string): Adapter {
       on("bridge", "running");
       const read = () => erc20Balance(chainId, token, s.address);
       const before = await read();
-      await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: s.address, recipient: s.address });
+      await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: chainId, inToken: USDG, outToken: token, amount: net, user: s.address, recipient: s.address, gasUsd: first.gasUsd });
       const received = await waitForArrival(read, before, 10 * 60_000);
       on("bridge", "done", `${formatUnits(received, t.decimals)} ${t.symbol}`);
 
