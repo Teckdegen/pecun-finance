@@ -14,6 +14,12 @@ import { formatUnits, parseUnits } from "viem";
 import {
   backToUsdg,
   chainPreview,
+  lifiPreview,
+  lifiQuote,
+  lifiRoute,
+  lifiSend,
+  solanaGasLeg,
+  usdgOf,
   ExecError,
   netOfFee,
   outOf,
@@ -30,7 +36,10 @@ import {
   type Who,
   legSlippageBpsNow,
 } from "../execute";
-import { lamports, SOLANA_CHAIN_ID, solana, splBalance, splDecimals } from "../solana";
+import { base64ToHex, lamports, SOLANA_CHAIN_ID, solana, splBalance, splDecimals } from "../solana";
+
+/** LI.FI's id for Solana. */
+const LIFI_SOLANA = 1151111081099710;
 import { ROBINHOOD_CHAIN_ID, USDG, USDG_DECIMALS } from "../wallet";
 
 /**
@@ -237,7 +246,8 @@ export async function jupSwap(s: Signer, inMint: string, outMint: string, amount
 
 const relayId = (mint: string) => (mint === WSOL ? NATIVE_SOL : mint);
 
-type InPlan = { kind: "direct" | "via"; preview: Preview; out: bigint };
+/** `gas`: USDG sent first as a small Relay leg into native SOL (a LI.FI plan on a wallet short of SOL). */
+type InPlan = { kind: "direct" | "via" | "lifi"; preview: Preview; out: bigint; gas?: bigint };
 
 /** Quotes Relay straight into `mint`, and Relay into USDC plus a Jupiter swap, and keeps whichever delivers more. */
 async function planIn(s: Who, net: bigint, mint: string, symbol: string): Promise<InPlan> {
@@ -256,7 +266,15 @@ async function planIn(s: Who, net: bigint, mint: string, symbol: string): Promis
           const p = chainPreview(toPreview(q1, "USDC"), o1.out, o1.min, jupPreview(q2, dec, symbol), BigInt(q2.outAmount), BigInt(q2.otherAmountThreshold), dec);
           return { kind: "via", preview: p, out: BigInt(q2.outAmount) };
         })();
-  const options = (await Promise.allSettled([direct, via])).flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+  // LI.FI's cheapest bridge into the token; a small Relay leg brings native SOL first when the wallet is short.
+  const lifi = (async (): Promise<InPlan> => {
+    const g = await solanaGasLeg({ from: ROBINHOOD_CHAIN_ID, to: SOLANA_CHAIN_ID, inToken: USDG, outToken: relayId(mint), amount: net, user: s.address, recipient: sol });
+    const gas = g?.amount ?? ZERO;
+    const r = await lifiRoute({ fromChain: ROBINHOOD_CHAIN_ID, toChain: LIFI_SOLANA, fromToken: USDG, toToken: relayId(mint), amount: net - gas, from: s.address, to: sol });
+    const p = lifiPreview(r);
+    return { kind: "lifi", preview: { ...p, outSymbol: symbol, gasReserveUsd: gas > ZERO ? Number(formatUnits(gas, USDG_DECIMALS)) : undefined }, out: BigInt(r.toAmount), gas };
+  })();
+  const options = (await Promise.allSettled([direct, via, lifi])).flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
   if (!options.length) {
     const d = await direct.catch((e) => e);
     throw d instanceof Error ? d : new ExecError("No route right now.");
@@ -282,6 +300,18 @@ export async function toSolana(s: Signer, usdg: string, mint: string, symbol: st
     const before = await read();
     await relay(s, { from: ROBINHOOD_CHAIN_ID, to: SOLANA_CHAIN_ID, inToken: USDG, outToken: relayId(mint), amount: net, user: s.address, recipient: sol });
     got = await waitForArrival(read, before, 10 * 60_000);
+  } else if (plan.kind === "lifi") {
+    let main = net;
+    if (plan.gas && plan.gas > ZERO) {
+      const lb = await lamports(sol);
+      await relay(s, { from: ROBINHOOD_CHAIN_ID, to: SOLANA_CHAIN_ID, inToken: USDG, outToken: NATIVE_SOL, amount: plan.gas, user: s.address, recipient: sol, noGasLeg: true });
+      await waitForArrival(() => lamports(sol), lb, 5 * 60_000).catch(() => ZERO);
+      main = net - plan.gas;
+    }
+    const read = () => solBalance(sol, mint);
+    const before = await read();
+    await lifiSend(s, { fromChain: ROBINHOOD_CHAIN_ID, toChain: LIFI_SOLANA, fromToken: USDG, toToken: relayId(mint), amount: main, from: s.address, to: sol });
+    got = await waitForArrival(read, before, 15 * 60_000);
   } else {
     const read = () => splBalance(sol, SOL_USDC);
     const before = await read();
@@ -309,7 +339,11 @@ async function planOut(s: Who, mint: string, raw: bigint): Promise<InPlan> {
           const p = chainPreview(jupPreview(q1, 6, "USDC"), BigInt(q1.outAmount), BigInt(q1.otherAmountThreshold), toPreview(q2, "USDG"), o2.out, o2.min, USDG_DECIMALS);
           return { kind: "via", preview: p, out: o2.out };
         })();
-  const options = (await Promise.allSettled([direct, via])).flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+  const lifi = (async (): Promise<InPlan> => {
+    const r = await lifiRoute({ fromChain: LIFI_SOLANA, toChain: ROBINHOOD_CHAIN_ID, fromToken: relayId(mint), toToken: USDG, amount: raw, from: sol, to: s.address });
+    return { kind: "lifi", preview: lifiPreview(r), out: BigInt(r.toAmount) };
+  })();
+  const options = (await Promise.allSettled([direct, via, lifi])).flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
   if (!options.length) {
     const d = await direct.catch((e) => e);
     throw d instanceof Error ? d : new ExecError("No route right now.");
@@ -325,6 +359,15 @@ export async function fromSolana(s: Signer, mint: string, raw: bigint, on: Progr
   let amount = mint === WSOL ? await spendableSol(sol, raw) : raw;
   const plan = await planOut(s, mint, amount);
   if (plan.kind === "direct") return backToUsdg(s, { from: SOLANA_CHAIN_ID, inToken: relayId(mint), amount, user: sol }, on);
+  if (plan.kind === "lifi") {
+    on("bridge", "running");
+    const before = await usdgOf(s)();
+    await sendSol(s, async () => base64ToHex((await lifiQuote({ fromChain: LIFI_SOLANA, toChain: ROBINHOOD_CHAIN_ID, fromToken: relayId(mint), toToken: USDG, amount, from: sol, to: s.address })).transactionRequest.data));
+    const back = await waitForArrival(usdgOf(s), before, 15 * 60_000);
+    on("bridge", "done", `${formatUnits(back, USDG_DECIMALS)} USDG`);
+    const kept = await takeUsdgFee(s, back, on);
+    return `${formatUnits(kept, USDG_DECIMALS)} USDG`;
+  }
   on("bridge", "running");
   amount = await jupSwap(s, mint, SOL_USDC, amount);
   return backToUsdg(s, { from: SOLANA_CHAIN_ID, inToken: SOL_USDC, amount, user: sol }, on);

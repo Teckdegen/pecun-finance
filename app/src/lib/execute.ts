@@ -308,7 +308,7 @@ async function gasReserveUsd(p: RelayLeg): Promise<number> {
  */
 const SOLANA_NATIVE = "11111111111111111111111111111111";
 const SOL_RESERVE_USDG = BigInt(600_000); // $0.60 of USDG (6 decimals): about 0.008 SOL
-async function solanaGasLeg(p: RelayLeg): Promise<RelayLeg | null> {
+export async function solanaGasLeg(p: RelayLeg): Promise<RelayLeg | null> {
   if (p.noGasLeg || p.from !== ROBINHOOD_CHAIN_ID || p.to !== SOLANA_CHAIN_ID || p.outToken === SOLANA_NATIVE) return null;
   if (p.amount <= SOL_RESERVE_USDG * BigInt(5)) return null; // too small to split
   const have = await lamports(p.recipient).catch(() => null);
@@ -825,7 +825,7 @@ async function runAcross(s: Signer, p: { gas?: RelayLeg; main: RelayLeg }) {
 }
 
 /** One LI.FI transfer from the user's wallet: approve the token if needed, then send. Returns the transaction hash. */
-async function lifiSend(s: Signer, leg: LifiLeg): Promise<Hex> {
+export async function lifiSend(s: Signer, leg: LifiLeg): Promise<Hex> {
   const q = await lifiQuote(leg);
   if (!isNativeEvm(leg.fromToken)) {
     const spender = q.estimate.approvalAddress ?? q.transactionRequest.to!;
@@ -1981,6 +1981,13 @@ async function suiReserveFor(sui: string, usdc: bigint): Promise<bigint> {
 const withReserve = (p: Preview, reserve: bigint): Preview =>
   reserve > BigInt(0) ? { ...p, gasReserveUsd: (p.gasReserveUsd ?? 0) + Number(formatUnits(reserve, 6)) } : p;
 
+/** End-to-end cost of a Sui deposit: dollars in (less the coins kept for transactions) vs dollars out. */
+const suiInCost = (p: Preview, inUsd: number, outUsd: number): Preview => {
+  const spent = inUsd - (p.gasReserveUsd ?? 0);
+  const cost = spent > 0 && outUsd > 0 ? ((spent - outUsd) / spent) * 100 : 0;
+  return { ...p, costPct: Math.max(routeCostPct(p), cost, 0) };
+};
+
 /** One LI.FI transfer from the user's Base wallet: approve if needed, send; returns the transaction hash. */
 async function lifiFromBase(s: Signer, leg: LifiLeg): Promise<Hex> {
   const q = await lifiQuote(leg);
@@ -1992,16 +1999,19 @@ async function lifiFromBase(s: Signer, leg: LifiLeg): Promise<Hex> {
 
 export async function previewToSui(s: Who, usdg: string, coinType: string): Promise<Preview> {
   const sui = needSui(s);
-  const rq = await relayQuote({ from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: netOfFee(usdg), user: s.address, recipient: s.address });
-  const o1 = outOf(rq);
+  // Robinhood -> Base: the full route race (Relay, LI.FI, Across...). Base -> Sui: LI.FI's cheapest bridge.
+  const hop = await planRoute({ from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: netOfFee(usdg), user: s.address, recipient: s.address }, "USDC");
+  const o1 = { out: hop.out, min: parseUnits(hop.preview.minOut, 6) };
   const reserve = await suiReserveFor(sui, o1.out);
   const main = o1.out - reserve;
   const r1 = await lifiRoute({ fromChain: BASE_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: BASE_USDC, toToken: SUI_USDC, amount: main, from: s.address, to: sui });
-  const p12 = chainPreview(toPreview(rq, "USDC"), o1.out, o1.min, lifiPreview(r1), BigInt(r1.toAmount), BigInt(r1.toAmountMin), 6);
-  if (coinType === SUI_USDC) return withReserve(p12, reserve);
+  const p12 = chainPreview(hop.preview, o1.out, o1.min, lifiPreview(r1), BigInt(r1.toAmount), BigInt(r1.toAmountMin), 6);
+  const inUsd = Number(formatUnits(netOfFee(usdg), USDG_DECIMALS));
+  if (coinType === SUI_USDC) return suiInCost(withReserve(p12, reserve), inUsd, Number(formatUnits(BigInt(r1.toAmount), 6)));
   const min12 = scaledMin(BigInt(r1.toAmountMin), o1.out, o1.min);
   const r2 = await lifiRoute({ fromChain: SUI_CHAIN_ID, toChain: SUI_CHAIN_ID, fromToken: SUI_USDC, toToken: lifiSuiType(coinType), amount: BigInt(r1.toAmount), from: sui, to: sui });
-  return withReserve(chainPreview(p12, BigInt(r1.toAmount), min12, lifiPreview(r2), BigInt(r2.toAmount), BigInt(r2.toAmountMin), r2.toToken.decimals), reserve);
+  const p = withReserve(chainPreview(p12, BigInt(r1.toAmount), min12, lifiPreview(r2), BigInt(r2.toAmount), BigInt(r2.toAmountMin), r2.toToken.decimals), reserve);
+  return suiInCost(p, inUsd, Number(r2.toAmountUSD) || 0);
 }
 
 export async function previewFromSui(s: Who, coinType: string, raw: bigint): Promise<Preview> {
@@ -2018,9 +2028,8 @@ export async function previewFromSui(s: Who, coinType: string, raw: bigint): Pro
   const r1 = await lifiRoute({ fromChain: SUI_CHAIN_ID, toChain: BASE_CHAIN_ID, fromToken: SUI_USDC, toToken: BASE_USDC, amount: usdc, from: sui, to: s.address });
   const p01 = swap ? chainPreview(swap, usdc, usdcMin, lifiPreview(r1), BigInt(r1.toAmount), BigInt(r1.toAmountMin), 6) : lifiPreview(r1);
   const min01 = scaledMin(BigInt(r1.toAmountMin), usdc, usdcMin);
-  const rq = await relayQuote({ from: BASE_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: BASE_USDC, outToken: USDG, amount: BigInt(r1.toAmount), user: s.address, recipient: s.address });
-  const o2 = outOf(rq);
-  return chainPreview(p01, BigInt(r1.toAmount), min01, toPreview(rq, "USDG"), o2.out, o2.min, USDG_DECIMALS);
+  const home = await planRoute({ from: BASE_CHAIN_ID, to: ROBINHOOD_CHAIN_ID, inToken: BASE_USDC, outToken: USDG, amount: BigInt(r1.toAmount), user: s.address, recipient: s.address }, "USDG");
+  return chainPreview(p01, BigInt(r1.toAmount), min01, home.preview, home.out, parseUnits(home.preview.minOut, USDG_DECIMALS), USDG_DECIMALS);
 }
 
 /** Runs the fee + route into `coinType` on Sui; returns how much of it arrived. */
@@ -2031,7 +2040,7 @@ export async function toSui(s: Signer, usdg: string, coinType: string, decimals:
 
   on("bridge", "running");
   const baseBefore = await usdcOnBase();
-  await relay(s, { from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: net, user: s.address, recipient: s.address });
+  await runRoute(s, { from: ROBINHOOD_CHAIN_ID, to: BASE_CHAIN_ID, inToken: USDG, outToken: BASE_USDC, amount: net, user: s.address, recipient: s.address });
   const usdc = await waitForArrival(usdcOnBase, baseBefore, 10 * 60_000);
   on("bridge", "done", `${formatUnits(usdc, 6)} USDC`);
 
