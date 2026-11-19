@@ -79,7 +79,7 @@ export function AutoWithdraw() {
           const result = await adapter.bringHome(signerOf(a), () => {});
           if (result) {
             setNotice({ kind: "done", text: `${result} from ${o.name ?? o.protocol} is back in your wallet.` });
-            recordActivity(a.evmAddress, { vault: slimVault(o as Opportunity), side: "withdraw", amount: "payout", result, status: "done", auto: true, at: Date.now() });
+            recordActivity(a.evmAddress, { vault: slimVault(o as Opportunity), side: "withdraw", amount: "payout", result, status: "done", auto: true, at: Date.now() }, a.signAccountsRequest);
           }
           const left = await adapter.queue(who).catch(() => null);
           if (left && left.pending <= 0 && left.arrived <= 0) forgetPending(a.evmAddress, o.id);

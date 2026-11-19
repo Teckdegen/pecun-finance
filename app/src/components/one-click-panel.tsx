@@ -101,14 +101,14 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
         result,
         status: "done",
         at: Date.now(),
-      });
+      }, signAccountsRequest);
       setAmount("");
       if (side === "withdraw" && adapter.queue) rememberPending(evmAddress, o);
       void load();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[pecun] one-click failed:", msg);
-      recordActivity(evmAddress, { vault: slimVault(o), side, amount, error: msg, status: "failed", at: Date.now() });
+      recordActivity(evmAddress, { vault: slimVault(o), side, amount, error: msg, status: "failed", at: Date.now() }, signAccountsRequest);
       setRun((r) => (r ? { ...r, error: msg, steps: r.steps.map((s) => (s.status === "running" ? { ...s, status: "failed" } : s)) } : r));
       void load();
     } finally {

@@ -3,7 +3,7 @@
 import { ArrowLeft, Clock, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { listActivity, netUnits, type ActivityItem, type ActivityVault } from "@/lib/activity";
+import { loadActivity, netUnits, type ActivityItem, type ActivityVault, type SignRequest } from "@/lib/activity";
 import { oneClickFor } from "@/lib/exec";
 import { chainIdByName } from "@/lib/exec-chains";
 import { listPending } from "@/lib/pending-withdrawals";
@@ -38,8 +38,8 @@ function usdPerUnit(chain: string, symbol: string): Promise<number | null> {
 type Row = { o: Opportunity | ActivityVault; amount: number; symbol: string; usd: number | null; earned: number | null; earnedUsd: number | null };
 const DEFI_KINDS = new Set(["Lending", "Liquid staking"]);
 
-/** Every vault the user may be in: share tokens found in their wallet, plus vaults they used through Pecun. */
-async function findVaults(owner: string): Promise<(Opportunity | ActivityVault)[]> {
+/** Every vault the user may be in: share tokens found on-chain in their wallet, plus vaults they used through Pecun. */
+async function findVaults(owner: string, log: { items: ActivityItem[]; vaults: string[] }): Promise<(Opportunity | ActivityVault)[]> {
   const [cat, held] = await Promise.all([
     fetch("/api/opportunities").then((r) => r.json() as Promise<Catalog>),
     fetch("/api/holdings", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: owner }) })
@@ -58,13 +58,15 @@ async function findVaults(owner: string): Promise<(Opportunity | ActivityVault)[
     const o = byToken.get(`${t.chainId}:${t.token}`);
     if (o) found.set(o.id, o);
   }
-  for (const a of listActivity(owner)) if (!found.has(a.vault.id)) found.set(a.vault.id, byId.get(a.vault.id) ?? a.vault);
+  for (const a of log.items) if (!found.has(a.vault.id)) found.set(a.vault.id, byId.get(a.vault.id) ?? a.vault);
+  for (const id of log.vaults) if (!found.has(id) && byId.has(id)) found.set(id, byId.get(id)!);
   for (const p of listPending(owner)) if (!found.has(p.id)) found.set(p.id, byId.get(p.id) ?? (p as Opportunity));
   return [...found.values()];
 }
 
-async function readRows(owner: string, who: { address: `0x${string}`; solanaAddress?: string; suiAddress?: string }): Promise<Row[]> {
-  const vaults = await findVaults(owner);
+async function readRows(owner: string, who: { address: `0x${string}`; solanaAddress?: string; suiAddress?: string }, sign: SignRequest): Promise<Row[]> {
+  const log = await loadActivity(owner, sign);
+  const vaults = await findVaults(owner, log);
   const rows: Row[] = [];
   // A few at a time, so public RPCs don't rate-limit.
   for (let i = 0; i < vaults.length; i += 6) {
@@ -76,7 +78,7 @@ async function readRows(owner: string, who: { address: `0x${string}`; solanaAddr
         if (!(amount > 1e-9)) return null;
         const symbol = a.positionSymbol;
         const rate = await usdPerUnit(o.chain, symbol);
-        const net = netUnits(owner, o.id);
+        const net = netUnits(log.items, o.id);
         const earned = net !== undefined && net > 0 ? Math.max(0, amount - net) : null;
         return { o, amount, symbol, usd: rate === null ? null : amount * rate, earned, earnedUsd: earned === null || rate === null ? null : earned * rate };
       }),
@@ -88,7 +90,7 @@ async function readRows(owner: string, who: { address: `0x${string}`; solanaAddr
 
 /** Portfolio overview: the user's live positions across every chain, with value and estimated yield earned. */
 export function PortfolioView() {
-  const { signedIn, evmAddress, solanaAddress, suiAddress } = useAuth();
+  const { signedIn, evmAddress, solanaAddress, suiAddress, signAccountsRequest } = useAuth();
   const [book, setBook] = useState<"vaults" | "defi">("vaults");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState(false);
@@ -97,13 +99,13 @@ export function PortfolioView() {
     if (!evmAddress) return;
     setError(false);
     try {
-      setRows(await readRows(evmAddress, { address: evmAddress, solanaAddress, suiAddress }));
+      setRows(await readRows(evmAddress, { address: evmAddress, solanaAddress, suiAddress }, signAccountsRequest));
     } catch (e) {
       console.error("[pecun] portfolio:", e);
       setError(true);
       setRows((r) => r ?? []);
     }
-  }, [evmAddress, solanaAddress, suiAddress]);
+  }, [evmAddress, solanaAddress, suiAddress, signAccountsRequest]);
   useEffect(() => void load(), [load]);
   useEffect(() => {
     const f = () => void load();
@@ -218,7 +220,7 @@ const ACTIVITY = ["History", "Pending Withdrawals"] as const;
 
 /** Activity reached from the portfolio Activity button. */
 export function ActivityView() {
-  const { signedIn, evmAddress } = useAuth();
+  const { signedIn, evmAddress, signAccountsRequest } = useAuth();
   const [tab, setTab] = useState<(typeof ACTIVITY)[number]>("History");
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [pending, setPending] = useState<ReturnType<typeof listPending>>([]);
@@ -226,8 +228,8 @@ export function ActivityView() {
   useEffect(() => {
     if (!evmAddress) return;
     const f = () => {
-      setItems(listActivity(evmAddress));
       setPending(listPending(evmAddress));
+      void loadActivity(evmAddress, signAccountsRequest).then((r) => setItems(r.items));
     };
     f();
     window.addEventListener("pecun:activity-changed", f);
@@ -236,7 +238,7 @@ export function ActivityView() {
       window.removeEventListener("pecun:activity-changed", f);
       window.removeEventListener("pecun:balances-changed", f);
     };
-  }, [evmAddress]);
+  }, [evmAddress, signAccountsRequest]);
 
   const date = (t: number) => new Date(t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
