@@ -17,6 +17,8 @@ import {
   waitForTx,
   type Balances,
 } from "@/lib/wallet";
+import { ensureGas, type Signer } from "@/lib/execute";
+import { HOME_CHAIN_ID } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
 
 type View = "home" | "receive" | "send";
@@ -25,7 +27,8 @@ const CHAIN_LOGO = "https://raw.githubusercontent.com/lifinance/types/main/src/a
 const money = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * The signed-in user's wallet: their EVM address on Base, what they hold (USDC and ETH), Send and Receive.
+ * The signed-in user's wallet: their address on Base, their USDC, Send and Receive. The small amount of Base ETH that
+ * pays for transactions is Pecun's top-up, so it isn't shown.
  * Solana and Sui addresses exist on the account but are only used behind the scenes.
  */
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -112,8 +115,7 @@ function Home({ account, address, bal, balErr, onClose, onSignOut, go }: {
   onSignOut: () => void;
   go: (v: View) => void;
 }) {
-  // Total = USDC (a dollar each) + ETH at its live price.
-  const total = (bal?.usdg ?? 0) + (bal?.eth ?? 0) * (bal?.ethPrice ?? 0);
+  const total = bal?.usdg ?? 0;
   const [whole, cents] = money(total).split(".");
   return (
     <>
@@ -144,7 +146,6 @@ function Home({ account, address, bal, balErr, onClose, onSignOut, go }: {
         <p className="font-sans text-xs text-white/45">Balances</p>
         <ul className="mt-1 divide-y divide-white/[0.06]">
           <TokenRow logo={USDG_LOGO} symbol="USDC" name="USD Coin" amount={bal?.usdg ?? 0} usd={bal?.usdg ?? 0} digits={2} />
-          <TokenRow logo={ETH_LOGO} symbol="ETH" name="Network fees" amount={bal?.eth ?? 0} usd={(bal?.eth ?? 0) * (bal?.ethPrice ?? 0)} digits={6} />
         </ul>
       </div>
     </>
@@ -294,7 +295,7 @@ function Receive({ address, back, close }: { address: string; back: () => void; 
       </fieldset>
 
       <p className="mt-5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center font-sans text-[15px] text-white/80">
-        Use this address to receive USDC and ETH on
+        Use this address to receive USDC on
         <span className="inline-flex items-center gap-1.5 font-medium text-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={CHAIN_LOGO} alt="" className="size-5 rounded-full bg-white" /> Base
@@ -308,6 +309,8 @@ function Receive({ address, back, close }: { address: string; back: () => void; 
 /* ---------- send ---------- */
 
 type Token = "USDC" | "ETH";
+/** Enough Base ETH for one transfer, with room to spare (Base gas is a tiny fraction of a cent). */
+const GAS_NEED = BigInt(10_000_000_000_000); // 0.00001 ETH
 
 function SendView({ from, bal, live, close, back, onSent }: {
   from: `0x${string}`;
@@ -317,14 +320,14 @@ function SendView({ from, bal, live, close, back, onSent }: {
   back: () => void;
   onSent: () => void;
 }) {
-  const { sendEvmTransaction } = useAuth();
+  const { sendEvmTransaction, signAccountsRequest } = useAuth();
   const [token, setToken] = useState<Token>("USDC");
   const [picker, setPicker] = useState(false);
   const [inUsd, setInUsd] = useState(true);
   const [input, setInput] = useState("");
   const [to, setTo] = useState("");
   const [stage, setStage] = useState<"form" | "review" | "sending" | "done">("form");
-  const [fee, setFee] = useState<number | null>(null);
+  const [, setFee] = useState<number | null>(null);
   const [unsigned, setUnsigned] = useState("");
   const [hash, setHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState("");
@@ -352,6 +355,8 @@ function SendView({ from, bal, live, close, back, onSent }: {
       return;
     }
     try {
+      // The transfer's gas: Pecun tops up a little Base ETH (about $0.05) when the wallet is low.
+      await ensureGas({ address: from, signAccountsRequest } as unknown as Signer, HOME_CHAIN_ID, from, GAS_NEED, bal?.ethRaw ?? BigInt(0));
       const build = token === "USDC" ? buildUsdgTransfer : buildEthTransfer;
       const t = await build(from, to.trim() as `0x${string}`, tokenStr);
       setUnsigned(t.unsigned);
@@ -359,7 +364,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
       setStage("review");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
-      setError(/insufficient|exceeds balance/i.test(msg) ? "Not enough balance, or not enough ETH for the network fee." : "Couldn't prepare the transfer. Check the details and try again.");
+      setError(/insufficient|exceeds balance/i.test(msg) ? "Not enough balance." : "Couldn't prepare the transfer. Check the details and try again.");
     }
   };
 
@@ -453,7 +458,6 @@ function SendView({ from, bal, live, close, back, onSent }: {
           {[
             ["To", shortAddress(to)],
             ["Network", "Base"],
-            ["Network fee", fee != null ? `≈ ${fee.toLocaleString("en-US", { maximumFractionDigits: 8 })} ETH` : "—"],
           ].map(([k, v]) => (
             <div key={k} className="flex items-center justify-between px-4 py-3">
               <dt className="text-white/50">{k}</dt>
@@ -461,9 +465,6 @@ function SendView({ from, bal, live, close, back, onSent }: {
             </div>
           ))}
         </dl>
-        {live && bal && fee != null && bal.eth < fee + (token === "ETH" ? tokens : 0) && (
-          <p className="mt-3 font-sans text-xs text-amber">You need a little more ETH on Base for the network fee.</p>
-        )}
         <button
           type="button"
           onClick={() => void send()}
@@ -527,7 +528,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
           </button>
           {picker && (
             <ul className="absolute inset-x-3 top-full z-10 mt-1 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b1e] shadow-[0_18px_40px_rgba(0,0,0,0.5)]">
-              {(["USDC", "ETH"] as Token[]).map((t) => {
+              {(["USDC"] as Token[]).map((t) => {
                 const b = t === "USDC" ? bal?.usdg ?? 0 : bal?.eth ?? 0;
                 return (
                   <li key={t}>
