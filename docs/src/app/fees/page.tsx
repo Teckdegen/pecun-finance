@@ -11,7 +11,7 @@ export default function Fees() {
       <H2>Who charges what</H2>
       <Facts
         rows={[
-          ["Pecun's fee", "0.5% on each deposit and each withdrawal, in USDC. It's shown before you press. On a deposit it's only taken once the deposit lands; if a deposit fails, there's no fee."],
+          ["Pecun's fee", "0.2% on each deposit, in USDC, taken once. Withdrawals are free. It's shown before you press and only taken once the deposit lands; if a deposit fails, there's no fee."],
           ["Protocol fees", "Set by each protocol, not by Pecun: performance, management, deposit, withdrawal or unstaking fees. Shown on the vault page where the protocol reports them."],
           ["Swaps and routing", "When a deposit or withdrawal needs a swap, routers may charge a fee and prices can move (slippage). The quote is shown before you confirm."],
         ]}

@@ -20,9 +20,9 @@ export const BASE_CHAIN_ID = 8453;
 const RPC: Record<number, string> = Object.fromEntries(EVM_CHAINS.map((c) => [c.id, c.rpc]));
 const RELAY = "https://api.relay.link";
 
-/** Pecun's fee on deposits and withdrawals, sent to the treasury. Off when either value is missing. */
+/** Pecun's fee, taken once on deposits only (withdrawals are free), sent to the treasury. Off when either value is missing. */
 const TREASURY = (process.env.NEXT_PUBLIC_PECUN_TREASURY ?? "") as Address | "";
-const FEE_BPS = Number(process.env.NEXT_PUBLIC_PECUN_FEE_BPS ?? "50") || 0; // 50 bps = 0.5%
+const FEE_BPS = Number(process.env.NEXT_PUBLIC_PECUN_FEE_BPS ?? "20") || 0; // 20 bps = 0.2%
 export const feeBps = FEE_BPS;
 
 /**
@@ -490,8 +490,15 @@ export async function waitForArrival(read: () => Promise<bigint>, before: bigint
 
 export const usdgOf = (s: { address: Address }) => () => erc20Balance(ROBINHOOD_CHAIN_ID, USDG, s.address);
 
-/** Takes Pecun's fee from a USDC amount on Base; returns what's left. */
+/**
+ * Takes Pecun's fee from a USDC amount on Base; returns what's left. Deposits only: anywhere else (withdrawals,
+ * automatic returns of queued payouts) nothing is taken and the whole amount is returned.
+ */
 export async function takeUsdgFee(s: Signer, total: bigint, on: Progress): Promise<bigint> {
+  if (!runs.get(s)?.deferFee) {
+    on("fee", "skipped");
+    return total;
+  }
   const fee = (total * BigInt(feeBps)) / BigInt(10_000);
   on("fee", fee > BigInt(0) ? "running" : "skipped");
   if (fee > BigInt(0) && !TREASURY) {
@@ -982,7 +989,7 @@ export const IN_STEPS: Step[] = [
 export const OUT_STEPS: Step[] = [
   { id: "withdraw", label: "Withdraw" },
   { id: "bridge", label: "Move funds back to your wallet" },
-  { id: "fee", label: "Pecun fee" },
+  { id: "fee", label: "No Pecun fee on withdrawals" },
 ];
 
 /* ---------------- EVM vaults: one adapter, a small protocol object per family ---------------- */

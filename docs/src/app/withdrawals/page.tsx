@@ -34,7 +34,7 @@ export default function Withdrawals() {
       </P>
 
       <Callout title="Fees on withdrawals">
-        Pecun takes a small fee on each withdrawal, shown before you confirm. Some protocols charge their own withdrawal or unstaking fees. See{" "}
+        Pecun charges nothing on withdrawals. Some protocols charge their own withdrawal or unstaking fees, shown before you confirm. See{" "}
         <A href="/fees">Fees</A>.
       </Callout>
     </Doc>

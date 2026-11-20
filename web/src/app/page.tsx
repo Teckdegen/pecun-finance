@@ -210,7 +210,7 @@ function Faq() {
     ],
     [
       "What does it cost?",
-      "Pecun charges a small fee on deposits and withdrawals, always shown before you confirm. Protocols may charge their own fees on top, which are shown on the vault.",
+      "Pecun charges 0.2% on deposits, taken once. Withdrawals are free. It's always shown before you confirm. Protocols may charge their own fees on top, which are shown on the vault.",
     ],
     [
       "Is it risky?",

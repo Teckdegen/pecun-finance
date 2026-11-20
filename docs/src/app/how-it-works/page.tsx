@@ -53,7 +53,7 @@ export default function HowItWorks() {
           },
           {
             title: "Deposit",
-            body: "The asset goes into the vault and the position lands in your wallet, under your name. Pecun's fee is only taken once the deposit lands.",
+            body: "The asset goes into the vault and the position lands in your wallet, under your name. Pecun's 0.2% fee is only taken once the deposit lands. It's the only time Pecun charges.",
           },
         ]}
       />

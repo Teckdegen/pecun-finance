@@ -21,7 +21,7 @@ const SECTIONS: LegalSection[] = [
     heading: "What Pecun is",
     body: [
       "Pecun is an interface that finds yield across EVM chains, Solana, Sui and Hyperliquid and routes your deposits and withdrawals into them. Every vault, lending market, pool and staking product shown is run by an independent protocol or manager, not by Pecun. Pecun does not manage strategies, make investment decisions or give investment advice. Make sure you understand a product and its risks before you deposit.",
-      "Pecun does not hold the assets you deposit. They sit in the protocol you choose, and the position belongs to your wallet. Pecun builds the transactions you approve and charges a fee on deposits and on withdrawals, shown before you confirm. Protocols may charge their own fees (performance, management, withdrawal or unstaking), which are separate from Pecun's.",
+      "Pecun does not hold the assets you deposit. They sit in the protocol you choose, and the position belongs to your wallet. Pecun builds the transactions you approve and charges a fee on deposits only, shown before you confirm; withdrawals carry no Pecun fee. Protocols may charge their own fees (performance, management, withdrawal or unstaking), which are separate from Pecun's.",
     ],
   },
   {

@@ -11,7 +11,7 @@ const QA: [string, ReactNode][] = [
   ["Do I need an account to look around?", "No. You can browse every yield without signing up. You only need a wallet to deposit."],
   ["Where do the rates come from?", <>From each protocol, live. Pecun doesn&apos;t set rates or add to them. See <A href="/rates">Rates and APY</A>.</>],
   ["Can I withdraw whenever I want?", <>It depends on the vault: some pay out instantly, some use a queue, and fixed yield pays at maturity. See <A href="/withdrawals">Withdrawals</A>.</>],
-  ["What does it cost?", <>A small Pecun fee on deposits and withdrawals, shown before you confirm. Protocols may charge their own fees. See <A href="/fees">Fees</A>.</>],
+  ["What does it cost?", <>0.2% on deposits, taken once, and nothing on withdrawals. It's shown before you confirm. Protocols may charge their own fees. See <A href="/fees">Fees</A>.</>],
   ["Is it risky?", <>Yes. All yield carries risk and you could lose what you deposit. See <A href="/risks">Risks</A>.</>],
   ["What is $PEN?", <>The Pecun token, launching on Base. Every trade pays a 3% tax: 70% goes into the Pecun Fund, which is invested in yield vaults and strategies and owned by holders, and 30% pays for running Pecun. See <A href="/token">$PEN token</A> and <A href="/fund">Pecun Fund</A>.</>],
   ["Where is Pecun available?", <>Most of the world, with some exceptions. See <A href="/availability">Availability</A>.</>],

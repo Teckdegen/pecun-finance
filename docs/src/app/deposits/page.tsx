@@ -17,7 +17,7 @@ export default function Deposits() {
         items={[
           {
             title: "You choose an amount",
-            body: "Before you press, Pecun shows the 0.5% fee, the bridge and swap costs, the total route cost and what you'll receive. Routes that would cost more than 0.5% don't run.",
+            body: "Before you press, Pecun shows the 0.2% fee, the bridge and swap costs, the total route cost and what you'll receive. Routes that would cost more than 0.5% don't run.",
           },
           {
             title: "Bridge from Base",
@@ -36,7 +36,7 @@ export default function Deposits() {
         items={[
           "Some vaults have a deposit cap. When a vault is full, deposits pause until there's room.",
           "A vault that the protocol has closed shows as closed and won't take new deposits.",
-          <>Pecun's fee is 0.5%, shown before you press and only taken once your deposit lands. See <A href="/fees">Fees</A>.</>,
+          <>Pecun's fee is 0.2%, shown before you press and only taken once your deposit lands. Withdrawals are free. See <A href="/fees">Fees</A>.</>,
           "If a deposit fails part-way, no fee is taken and anything that already moved is sent back to your wallet automatically.",
           "Blockchain transactions are final once confirmed. Check the amount and the vault before you approve.",
         ]}

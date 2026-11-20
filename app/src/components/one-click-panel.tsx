@@ -102,7 +102,8 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
     return () => clearTimeout(t);
   }, [exitKey, evmAddress, solanaAddress, suiAddress, source, moveUsd]);
   const entryPct = cost === null ? null : cost + feeBps / 100;
-  const exitPct = exitQ?.key === exitKey && exitQ.pct !== undefined ? exitQ.pct + feeBps / 100 : null;
+  // Withdrawals carry no Pecun fee: leaving costs only the route.
+  const exitPct = exitQ?.key === exitKey && exitQ.pct !== undefined ? exitQ.pct : null;
   const payback: Payback | null =
     side !== "add" || !(n > 0) || entryPct === null || tooCostly
       ? null
@@ -176,8 +177,8 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
     return () => window.removeEventListener("pecun:open-deposit", f);
   }, [openSheet]);
   const fmtPos = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: v !== 0 && v < 1 ? 6 : 4 });
-  // "You get": the vault token on a deposit, USDC after Pecun's fee on a withdrawal.
-  const youGet = shown?.p ? (side === "add" ? Number(shown.p.out) : Number(shown.p.out) * (1 - feeBps / 10_000)) : 0;
+  // "You get": the vault token on a deposit, USDC on a withdrawal (no fee on withdrawals).
+  const youGet = shown?.p ? Number(shown.p.out) : 0;
   const getSymbol = shown?.p?.outSymbol ?? (side === "add" ? symbol : "USDC");
   const closed = o.status && o.status !== "open";
 
@@ -471,12 +472,13 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
   const out = Number(p.out);
   const min = Number(p.minOut);
   // Deposit: the fee comes off the USDC before routing. Withdraw: it comes off the USDC that arrives back.
-  const fee = side === "add" ? (amount * feeBps) / 10_000 : (out * feeBps) / 10_000;
-  const receive = side === "add" ? out : out - fee;
+  // Pecun's fee is taken once, on the deposit. Withdrawals are free.
+  const fee = side === "add" ? (amount * feeBps) / 10_000 : 0;
+  const receive = out;
   // Worst case Pecun lets through: the whole route never costs more than MAX_ROUTE_COST_PCT (legs are sized to it).
   const floor = out * (1 - Math.max(0, MAX_ROUTE_COST_PCT - routeCostPct(p)) / 100);
   const worst = Math.max(Math.min(min, out), floor);
-  const receiveMin = side === "add" ? worst : worst - (worst * feeBps) / 10_000;
+  const receiveMin = worst;
   const feeRow: [string, string] = [`Platform fee (${pct}%)`, `−${fmt(fee)} USDC`];
   const cost = routeCostPct(p);
   const route: [string, string][] = [
@@ -490,7 +492,7 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
     [side === "add" ? "You pay" : "You withdraw", `${fmt(amount)} ${inSymbol}`],
     ...(side === "add" && feeBps ? [feeRow] : []),
     ...route,
-    ...(side === "withdraw" && feeBps ? [feeRow] : []),
+    ...(side === "withdraw" ? ([["Pecun fee", "None on withdrawals"]] as [string, string][]) : []),
   ];
   return (
     <div className="mt-3 rounded-xl border border-line px-3 py-2.5 text-xs">

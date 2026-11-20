@@ -129,7 +129,7 @@ const SECTIONS: LegalSection[] = [
       {
         heading: "Pecun's fees",
         body: [
-          "Pecun charges a fee on each deposit and on each withdrawal made through the App. The fee is shown before you confirm and is paid as a transfer to Pecun; on deposits it is taken once your funds have entered the product, and no fee is taken if a deposit does not complete. Fees are not refundable once taken, including when a Third-Party Protocol later loses value.",
+          "Pecun charges a fee on each deposit made through the App; withdrawals carry no Pecun fee. The fee is shown before you confirm and is paid as a transfer to Pecun; it is taken once your funds have entered the product, and no fee is taken if a deposit does not complete. Fees are not refundable once taken, including when a Third-Party Protocol later loses value.",
         ],
       },
       {
