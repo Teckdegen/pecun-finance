@@ -74,8 +74,10 @@ function useTicker(n: number, ms: number, ref: RefObject<HTMLElement | null>) {
  */
 export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[]; lead?: StartRow; children?: ReactNode }) {
   const shown = rows.slice(0, 4);
+  const stack = useRef<HTMLDivElement>(null);
+  useCoveredScreens(stack);
   return (
-    <div>
+    <div ref={stack}>
       {/* Anchors for the header links. Plain blocks in the flow, so a jump lands where each screen starts. */}
       <span id="explore" className="block" />
       <Headline z="z-10">
@@ -134,9 +136,43 @@ export function GetStarted({ rows, lead = rows[0], children }: { rows: StartRow[
       <Hold />
 
       <span id="faq" className="block" />
-      {children}
+      <div data-screen>{children}</div>
     </div>
   );
+}
+
+/**
+ * The screens stack: each one sticks and the next slides over it, so by the FAQ eight full-screen panels sit on top of
+ * each other, all still painted (shadows, live tickers). Phones run short on memory drawing them all and the screen
+ * coming in shows up late or half-drawn. Once a screen is fully covered by the next one it's hidden, so at most two
+ * are ever drawn. Reads all positions first, then writes, once per frame.
+ */
+function useCoveredScreens(stack: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const root = stack.current;
+    if (!root) return;
+    const screens = [...root.querySelectorAll<HTMLElement>(":scope > [data-screen]")];
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const tops = screens.map((el) => el.getBoundingClientRect().top);
+      screens.forEach((el, i) => {
+        const covered = i < screens.length - 1 && tops[i + 1] <= 0.5;
+        const v = covered ? "hidden" : "";
+        if (el.style.visibility !== v) el.style.visibility = v;
+      });
+    };
+    const onScroll = () => {
+      if (!queued) (queued = true), requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [stack]);
 }
 
 /* ---------- screen pieces ---------- */
@@ -149,6 +185,7 @@ function Hold() {
 function Headline({ z, children }: { z: string; children: ReactNode }) {
   return (
     <section
+      data-screen
       className={`sticky top-0 flex h-[100svh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] ${z}`}
     >
       <h2 className="max-w-5xl text-[2.6rem] font-medium leading-[1.1] tracking-[-0.045em] sm:text-[4rem] lg:text-[5.75rem]">{children}</h2>
@@ -209,6 +246,7 @@ function CardScreen({
 }) {
   return (
     <section
+      data-screen
       className={`sticky top-0 flex h-[100svh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
