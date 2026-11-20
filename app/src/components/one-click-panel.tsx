@@ -328,7 +328,7 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
       <div
         role="dialog"
         aria-modal="true"
-        className={`absolute inset-x-2 top-2 bottom-2 flex flex-col overflow-hidden rounded-[28px] border border-white/[0.06] bg-[#1c1b1d] shadow-[0_24px_80px_rgba(0,0,0,0.6)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:inset-x-auto sm:right-3 sm:top-3 sm:bottom-3 sm:w-[440px] ${
+        className={`absolute inset-x-2 top-2 bottom-2 flex flex-col overflow-hidden rounded-[28px] border border-line bg-bg shadow-[0_24px_80px_rgba(0,0,0,0.6)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:inset-x-auto sm:right-3 sm:top-3 sm:bottom-3 sm:w-[440px] ${
           shown ? "translate-x-0" : "translate-x-[calc(100%+24px)]"
         }`}
       >
