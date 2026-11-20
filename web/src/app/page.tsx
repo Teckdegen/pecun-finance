@@ -222,7 +222,7 @@ function Faq() {
     ],
   ];
   return (
-    <section className="relative z-[70] flex min-h-[100svh] flex-col justify-center rounded-t-[2rem] bg-white px-4 pt-24 pb-16 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform [transform:translateZ(0)] sm:px-8 md:pt-28 md:pb-24">
+    <section className="relative z-[70] flex min-h-[100svh] flex-col justify-center rounded-t-[2rem] bg-white px-4 pt-24 pb-16 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] sm:px-8 md:pt-28 md:pb-24">
       <div className="mx-auto w-full max-w-4xl">
         <h2 className="text-center text-[2.6rem] font-medium leading-[1.04] tracking-[-0.045em] sm:text-[3.5rem] lg:text-[4.5rem]">
           Questions,

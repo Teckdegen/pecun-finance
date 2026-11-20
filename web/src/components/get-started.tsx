@@ -149,7 +149,7 @@ function Hold() {
 function Headline({ z, children }: { z: string; children: ReactNode }) {
   return (
     <section
-      className={`sticky top-0 flex h-[100svh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform [transform:translateZ(0)] ${z}`}
+      className={`sticky top-0 flex h-[100svh] flex-col items-center justify-center rounded-t-[2rem] bg-[#f5f8ef] px-4 text-center text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] ${z}`}
     >
       <h2 className="max-w-5xl text-[2.6rem] font-medium leading-[1.1] tracking-[-0.045em] sm:text-[4rem] lg:text-[5.75rem]">{children}</h2>
     </section>
@@ -209,7 +209,7 @@ function CardScreen({
 }) {
   return (
     <section
-      className={`sticky top-0 flex h-[100svh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] will-change-transform [transform:translateZ(0)] sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
+      className={`sticky top-0 flex h-[100svh] flex-col rounded-t-[2rem] bg-[#f5f8ef] px-4 pt-[4.75rem] pb-6 text-ink shadow-[0_-12px_32px_rgba(10,10,10,0.08)] sm:px-8 md:pt-24 md:pb-10 lg:px-10 ${z}`}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
         <div className="flex items-center justify-between gap-3">
