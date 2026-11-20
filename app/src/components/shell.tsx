@@ -199,6 +199,16 @@ function Header() {
   const { toggle, menuOpen, openSignIn } = useShell();
   const { signedIn } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profileView, setProfileView] = useState<"home" | "receive" | "send">("home");
+  // Any part of the app can open the wallet, e.g. a deposit's "Add USDC" opens it on Receive.
+  useEffect(() => {
+    const f = (e: Event) => {
+      setProfileView((e as CustomEvent<{ view?: "home" | "receive" | "send" }>).detail?.view ?? "home");
+      setProfileOpen(true);
+    };
+    window.addEventListener("pecun:open-wallet", f);
+    return () => window.removeEventListener("pecun:open-wallet", f);
+  }, []);
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
@@ -216,7 +226,7 @@ function Header() {
           {signedIn ? (
             <button
               type="button"
-              onClick={() => setProfileOpen(true)}
+              onClick={() => (setProfileView("home"), setProfileOpen(true))}
               className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent hover:bg-accent-deep"
             >
               Profile
@@ -230,7 +240,7 @@ function Header() {
               Sign up / Sign in
             </button>
           )}
-          <ProfileModal open={profileOpen && signedIn} onClose={() => setProfileOpen(false)} />
+          <ProfileModal open={profileOpen && signedIn} startView={profileView} onClose={() => setProfileOpen(false)} />
         </div>
       </div>
     </header>

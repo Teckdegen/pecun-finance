@@ -33,7 +33,7 @@ const money = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 
  * pays for transactions is Pecun's top-up, so it isn't shown.
  * Solana and Sui addresses exist on the account but are only used behind the scenes.
  */
-export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ProfileModal({ open, onClose, startView = "home" }: { open: boolean; onClose: () => void; startView?: View }) {
   const { account, evmAddress, signOut, live } = useAuth();
   const [view, setView] = useState<View>("home");
   const [bal, setBal] = useState<Balances | null>(null);
@@ -53,7 +53,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   // Load on open, then keep the balance fresh every 20 seconds while the wallet is open.
   useEffect(() => {
     if (!open) return;
-    setView("home");
+    setView(startView);
     void refresh();
     const t = setInterval(() => void refresh(), 20_000);
     const prev = document.body.style.overflow;
@@ -65,7 +65,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose, refresh]);
+  }, [open, onClose, refresh, startView]);
 
   if (!open || typeof document === "undefined") return null;
 

@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, Clock, Loader2, RotateCw, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowDownToLine, ArrowUpFromLine, Check, ChevronsUpDown, Clock, Loader2, Plus, RotateCw, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { budgetLegs, feeBps, MAX_ROUTE_COST_PCT, oneClickFor, resetLegSlippage, routeCostPct, type Preview, type QueueState, type StepStatus } from "@/lib/exec";
 import { firstNumber, recordActivity, slimVault } from "@/lib/activity";
 import { rememberPending, runningVaults } from "@/lib/pending-withdrawals";
 import type { Opportunity } from "@/lib/types";
-import { getBalances } from "@/lib/wallet";
+import { getBalances, HOME_LOGO } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
 
 type Side = "add" | "withdraw";
@@ -117,75 +118,224 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
     }
   };
 
+  // The amount sheet: opened from the page card, the phone bar, or anywhere that fires pecun:open-deposit.
+  const [open, setOpen] = useState(false);
+  const openSheet = useCallback(
+    (t: Side) => {
+      if (!signedIn) return window.dispatchEvent(new Event("pecun:open-signin"));
+      if (!busy && t !== side) (setSide(t), setAmount(""), setRun((r) => (r && (r.result || r.error) ? null : r)));
+      setOpen(true);
+    },
+    [signedIn, busy, side],
+  );
+  useEffect(() => {
+    const f = (e: Event) => {
+      const d = (e as CustomEvent<{ side?: Side; handled?: boolean }>).detail;
+      if (d) d.handled = true;
+      openSheet(d?.side ?? "add");
+    };
+    window.addEventListener("pecun:open-deposit", f);
+    return () => window.removeEventListener("pecun:open-deposit", f);
+  }, [openSheet]);
+  const fmtPos = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: v !== 0 && v < 1 ? 6 : 4 });
+  // "You get": the vault token on a deposit, USDC after Pecun's fee on a withdrawal.
+  const youGet = shown?.p ? (side === "add" ? Number(shown.p.out) : Number(shown.p.out) * (1 - feeBps / 10_000)) : 0;
+  const getSymbol = shown?.p?.outSymbol ?? (side === "add" ? symbol : "USDC");
+  const closed = o.status && o.status !== "open";
+
   return (
     <aside id="deposit" className="scroll-mt-24 lg:sticky lg:top-20 lg:self-start">
       <div className="rounded-xl bg-card p-4">
-        <div className="flex rounded-full bg-card-2 p-0.5 text-sm" style={{ width: "fit-content" }}>
-          {(["add", "withdraw"] as const).map((t) => (
-            <button
-              key={t}
-              disabled={busy}
-              onClick={() => (setSide(t), setAmount(""), setRun(null))}
-              className={`h-8 rounded-full px-4 capitalize ${side === t ? "bg-white/15 font-medium text-ink" : "text-muted"}`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {!signedIn ? (
-          <div className="mt-4 text-sm text-muted">
-            Sign in to add to this vault in one click.
+        {signedIn && (
+          <div className="mb-4">
+            <p className="text-xs text-muted">Your position</p>
+            <p className="tabular mt-1 text-2xl font-medium text-ink">
+              {pos === null ? "—" : fmtPos(pos)} <span className="text-base text-muted">{symbol}</span>
+            </p>
+          </div>
+        )}
+        {queue && (queue.pending > 0 || queue.arrived > 0) && <PendingBox q={queue} />}
+        {busy ? (
+          <button type="button" onClick={() => setOpen(true)} className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-line text-[15px] font-medium hover:bg-card-2">
+            <Loader2 className="size-4 animate-spin" /> {run!.side === "add" ? "Depositing…" : "Withdrawing…"}
+          </button>
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => window.dispatchEvent(new Event("pecun:open-signin"))}
-              className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-accent text-[15px] font-medium text-on-accent hover:bg-accent-deep"
+              disabled={!!closed}
+              onClick={() => openSheet("add")}
+              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-accent text-[15px] font-medium text-on-accent hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-muted"
             >
-              Sign up / Sign in
+              <ArrowDownToLine className="size-4" /> Deposit
+            </button>
+            <button
+              type="button"
+              onClick={() => openSheet("withdraw")}
+              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-white/10 text-[15px] font-medium text-ink hover:bg-white/15"
+            >
+              <ArrowUpFromLine className="size-4" /> Withdraw
             </button>
           </div>
-        ) : run ? (
-          <RunView run={run} onRetry={() => void go()} onDone={() => setRun(null)} />
-        ) : (
-          <>
-            {queue && (queue.pending > 0 || queue.arrived > 0) && <PendingBox q={queue} />}
-            <div className="mt-3 rounded-2xl border border-line p-4">
-              <div className="flex items-center justify-between text-xs text-muted">
-                <span>{side === "add" ? "Add" : "Withdraw"}</span>
-                <button type="button" onClick={() => setAmount(String(max))} className="hover:text-ink">
-                  {side === "add" ? `Wallet: ${(usdg ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} USDC` : `In vault: ${(pos ?? 0).toLocaleString("en-US", { maximumFractionDigits: 4 })} ${symbol}`}
-                </button>
+        )}
+        <p className="mt-3 text-xs leading-relaxed text-muted">
+          {signedIn ? "One click: Pecun moves, swaps and deposits for you, and brings it back as USDC when you withdraw." : "Sign in to deposit in one click."}
+          {signedIn && !live && " Demo mode: connect Turnkey to run it for real."}
+        </p>
+      </div>
+
+      <Sheet open={open && signedIn} onClose={() => setOpen(false)}>
+        <div className="relative px-16 pt-6 pb-2 text-center">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => (setSide(side === "add" ? "withdraw" : "add"), setAmount(""), setRun(null))}
+            className="inline-flex items-center gap-1 text-2xl font-semibold text-ink disabled:opacity-100"
+            aria-label={`Switch to ${side === "add" ? "withdraw" : "deposit"}`}
+          >
+            {side === "add" ? "Deposit" : "Withdraw"}
+            {!busy && <ChevronsUpDown className="size-5 text-muted" />}
+          </button>
+          <p className="mt-1 truncate text-[15px] text-muted">
+            {o.name} on {o.chain}
+          </p>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+            className="absolute top-5 right-4 grid size-11 place-items-center rounded-full bg-white/10 text-ink hover:bg-white/15"
+          >
+            <X className="size-5" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5">
+          {run ? (
+            <RunView run={run} onRetry={() => void go()} onDone={() => (setRun(null), run.result && setOpen(false))} />
+          ) : (
+            <>
+              <div className="flex flex-1 flex-col items-center justify-center py-8">
+                <label className="flex max-w-full items-baseline justify-center gap-3 font-semibold tracking-tight">
+                  <input
+                    autoFocus
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="0"
+                    aria-label="Amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value.replace(",", ".").replace(/[^0-9.]/g, ""))}
+                    style={{ width: `${Math.max(1, amount.length) - (amount.match(/[.,1]/g)?.length ?? 0) * 0.45 + 0.1}ch` }}
+                    className={`tabular min-w-[1ch] bg-transparent text-right text-ink outline-none placeholder:text-faint ${amount.length > 9 ? "text-4xl" : amount.length > 6 ? "text-5xl" : "text-6xl sm:text-7xl"}`}
+                  />
+                  <span className={`shrink-0 ${n ? "text-ink" : "text-faint"} ${amount.length > 9 ? "text-4xl" : amount.length > 6 ? "text-5xl" : "text-6xl sm:text-7xl"}`}>
+                    {side === "add" ? "USDC" : symbol}
+                  </span>
+                </label>
+                <p className="mt-4 flex h-6 items-center gap-2 text-[17px] text-muted">
+                  {n > 0 && !shown ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" /> Finding the best route…
+                    </>
+                  ) : (
+                    <>
+                      You get {fmtPos(n > 0 ? youGet : 0)} {getSymbol}
+                    </>
+                  )}
+                </p>
+                <div className="mt-6 flex items-center gap-2">
+                  <span className="flex h-12 items-center gap-2.5 rounded-full bg-white/[0.06] pr-5 pl-1.5 text-[15px]">
+                    {side === "add" ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={HOME_LOGO} alt="" className="size-9 rounded-full" />
+                    ) : o.logoUrl || o.protocolLogo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={o.logoUrl || o.protocolLogo} alt="" className="size-9 rounded-full bg-white object-contain" />
+                    ) : (
+                      <span className="size-9 rounded-full bg-white/10" />
+                    )}
+                    <span className="text-muted">{side === "add" ? "Balance" : "In vault"}</span>
+                    <span className="tabular text-ink">
+                      {side === "add" ? (usdg ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : fmtPos(pos ?? 0)} {side === "add" ? "USDC" : symbol}
+                    </span>
+                  </span>
+                  <button type="button" onClick={() => setAmount(String(max))} className="h-11 rounded-full bg-white/[0.06] px-5 text-[15px] font-medium text-muted hover:text-ink">
+                    Max
+                  </button>
+                </div>
+                {side === "add" && (
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent("pecun:open-wallet", { detail: { view: "receive" } }))}
+                    className="mt-6 inline-flex h-12 items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-5 text-[17px] font-semibold text-ink hover:bg-white/10"
+                  >
+                    <Plus className="size-5" /> Add USDC
+                  </button>
+                )}
+                {n > max && <p className="mt-4 text-sm text-red-300">That&apos;s more than you have.</p>}
               </div>
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <input
-                  inputMode="decimal"
-                  autoComplete="off"
-                  placeholder="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value.replace(",", ".").replace(/[^0-9.]/g, ""))}
-                  className="w-1/2 bg-transparent text-3xl text-ink outline-none placeholder:text-faint"
-                />
-                <span className="text-base font-medium">{side === "add" ? "USDC" : symbol}</span>
-              </div>
-            </div>
-            {n > max && <p className="mt-2 text-xs text-red-300">That&apos;s more than you have.</p>}
+              {queue && (queue.pending > 0 || queue.arrived > 0) && <PendingBox q={queue} />}
+              {n > 0 && shown && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDC" : symbol} />}
+            </>
+          )}
+        </div>
+
+        {!run && (
+          <div className="px-5 pt-3" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
             <button
               type="button"
               onClick={() => void go()}
               disabled={!ok}
-              className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-accent text-[15px] font-medium text-on-accent transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-muted"
+              className="flex h-14 w-full items-center justify-center rounded-full bg-accent text-[17px] font-semibold text-on-accent transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-accent/25 disabled:text-white/45"
             >
-              {!n ? "Enter an amount" : tooCostly ? "Route costs too much right now" : side === "add" ? `Add ${n.toLocaleString("en-US")} USDC` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
+              {!n ? "Enter an amount" : n > max ? "Not enough balance" : tooCostly ? "Route costs too much right now" : side === "add" ? `Deposit ${n.toLocaleString("en-US")} USDC` : `Withdraw ${n.toLocaleString("en-US")} ${symbol}`}
             </button>
-            {n > 0 && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDC" : symbol} />}
-            <p className="mt-3 text-xs leading-relaxed text-muted">
-              One click: {side === "add" ? `swaps your USDC into ${symbol} and deposits it` : "withdraws and returns USDC to your wallet"}.
-              {!live && " Demo mode: connect Turnkey to run it for real."}
-            </p>
-          </>
+          </div>
         )}
-      </div>
+      </Sheet>
     </aside>
+  );
+}
+
+/** A panel that slides in from the right (from the bottom edge on phones), over a dimmed page. */
+function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+  const [mounted, setMounted] = useState(open);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const r = requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
+      return () => cancelAnimationFrame(r);
+    }
+    setShown(false);
+    const t = setTimeout(() => setMounted(false), 300);
+    return () => clearTimeout(t);
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+  if (!mounted || typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[70]">
+      <div onClick={onClose} className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`absolute inset-x-2 top-2 bottom-2 flex flex-col overflow-hidden rounded-[28px] border border-white/[0.06] bg-[#1c1b1d] shadow-[0_24px_80px_rgba(0,0,0,0.6)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:inset-x-auto sm:right-3 sm:top-3 sm:bottom-3 sm:w-[440px] ${
+          shown ? "translate-x-0" : "translate-x-[calc(100%+24px)]"
+        }`}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -125,7 +125,14 @@ function PhoneDepositBar({ o }: { o: Opportunity }) {
   if (panelVisible) return null;
   return (
     <div className="fixed inset-x-3 z-30 lg:hidden" style={{ bottom: "max(12px, env(safe-area-inset-bottom))" }}>
-      <a href="#deposit" className="flex h-[60px] items-center justify-between rounded-xl border border-line bg-[#161616] pl-5 pr-2 text-ink shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
+      <a
+        href="#deposit"
+        onClick={(e) => {
+          const detail = { side: "add" as const, handled: false };
+          window.dispatchEvent(new CustomEvent("pecun:open-deposit", { detail }));
+          if (detail.handled) e.preventDefault();
+        }}
+        className="flex h-[60px] items-center justify-between rounded-xl border border-line bg-[#161616] pl-5 pr-2 text-ink shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
         <span className="text-sm">
           Earn <b className="tabular">{pct(o.apy30d ?? o.apy7d ?? o.apy)}</b> <span className="text-muted">on {o.asset}</span>
         </span>
