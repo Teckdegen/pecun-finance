@@ -20,9 +20,9 @@ export const BASE_CHAIN_ID = 8453;
 const RPC: Record<number, string> = Object.fromEntries(EVM_CHAINS.map((c) => [c.id, c.rpc]));
 const RELAY = "https://api.relay.link";
 
-/** Pecun's fee, taken once on deposits only (withdrawals are free), sent to the treasury. Off when either value is missing. */
+/** Pecun's fee, taken once on deposits only (withdrawals are free), sent to the treasury. Off when the treasury address is missing. */
 const TREASURY = (process.env.NEXT_PUBLIC_PECUN_TREASURY ?? "") as Address | "";
-const FEE_BPS = Number(process.env.NEXT_PUBLIC_PECUN_FEE_BPS ?? "20") || 0; // 20 bps = 0.2%
+const FEE_BPS = 20; // 0.2%, fixed in code (not read from the environment)
 export const feeBps = FEE_BPS;
 
 /**
