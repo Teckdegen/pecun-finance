@@ -3,10 +3,12 @@
 import { ArrowDownToLine, ArrowUpFromLine, Check, ChevronsUpDown, Clock, Loader2, Plus, RotateCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { budgetLegs, feeBps, MAX_ROUTE_COST_PCT, oneClickFor, resetLegSlippage, routeCostPct, type Preview, type QueueState, type StepStatus } from "@/lib/exec";
+import { budgetLegs, feeBps, MAX_ROUTE_COST_PCT, oneClickFor, type Adapter, resetLegSlippage, routeCostPct, type Preview, type QueueState, type StepStatus } from "@/lib/exec";
 import { firstNumber, recordActivity, slimVault } from "@/lib/activity";
 import { rememberPending, runningVaults } from "@/lib/pending-withdrawals";
 import type { Opportunity } from "@/lib/types";
+import { daysText, lockupDays, newMoney, steadyApy, switchMove, type Payback } from "@/lib/payback";
+import { readPositions, type Position } from "@/lib/positions";
 import { getBalances, HOME_LOGO } from "@/lib/wallet";
 import { useAuth } from "./auth-provider";
 
@@ -73,6 +75,42 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
   const cost = shown?.p ? routeCostPct(shown.p) : null;
   const tooCostly = cost !== null && cost > MAX_ROUTE_COST_PCT;
   const ok = n > 0 && n <= max && !!shown?.p && !tooCostly;
+
+  // Payback: what a deposit costs against what it earns, as new money or as a switch from a vault the user holds.
+  const [held, setHeld] = useState<Position[] | null>(null);
+  const [from, setFrom] = useState("");
+  const [exitQ, setExitQ] = useState<{ key: string; pct?: number } | null>(null);
+  useEffect(() => {
+    if (!evmAddress || side !== "add" || held) return;
+    readPositions(evmAddress, { address: evmAddress, solanaAddress, suiAddress }, signAccountsRequest)
+      .then((r) => setHeld(r.filter((x) => x.o.id !== o.id && (x.usd ?? 0) > 0.5)))
+      .catch(() => setHeld([]));
+  }, [evmAddress, solanaAddress, suiAddress, side, held, o.id, signAccountsRequest]);
+  const source = held?.find((x) => x.o.id === from) ?? null;
+  const moveUsd = source ? Math.min(n, source.usd ?? 0) : n;
+  const exitKey = `${from}:${moveUsd.toFixed(2)}`;
+  useEffect(() => {
+    if (!evmAddress || !source || !(moveUsd > 0)) return;
+    const t = setTimeout(() => {
+      const a: Adapter | null = oneClickFor(source.o as Opportunity);
+      const units = Math.min(source.amount, (moveUsd / (source.usd ?? moveUsd)) * source.amount);
+      if (!a) return setExitQ({ key: exitKey });
+      a.previewWithdraw({ address: evmAddress, solanaAddress, suiAddress }, units.toFixed(8))
+        .then((q) => setExitQ({ key: exitKey, pct: routeCostPct(q) }))
+        .catch(() => setExitQ({ key: exitKey }));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [exitKey, evmAddress, solanaAddress, suiAddress, source, moveUsd]);
+  const entryPct = cost === null ? null : cost + feeBps / 100;
+  const exitPct = exitQ?.key === exitKey && exitQ.pct !== undefined ? exitQ.pct + feeBps / 100 : null;
+  const payback: Payback | null =
+    side !== "add" || !(n > 0) || entryPct === null || tooCostly
+      ? null
+      : source
+        ? exitPct === null
+          ? null
+          : switchMove(moveUsd, exitPct, entryPct, steadyApy(source.o), steadyApy(o), lockupDays((source.o as Opportunity).redemption))
+        : newMoney(n, entryPct, steadyApy(o));
 
   const go = async () => {
     if (!evmAddress || !ok) return;
@@ -273,6 +311,9 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
                 )}
                 {n > max && <p className="mt-4 text-sm text-white">That&apos;s more than you have.</p>}
               </div>
+              {side === "add" && n > 0 && !tooCostly && (
+                <PaybackCard payback={payback} held={held} from={from} onFrom={setFrom} sourceName={source?.o.name} loading={!!source && exitPct === null} />
+              )}
               {queue && (queue.pending > 0 || queue.arrived > 0) && <PendingBox q={queue} />}
               {n > 0 && shown && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDC" : symbol} />}
             </>
@@ -293,6 +334,72 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
         )}
       </Sheet>
     </aside>
+  );
+}
+
+/** How long the deposit takes to earn back its cost: as new money, or as a switch from a vault the user holds. */
+function PaybackCard({
+  payback: p,
+  held,
+  from,
+  onFrom,
+  sourceName,
+  loading,
+}: {
+  payback: Payback | null;
+  held: Position[] | null;
+  from: string;
+  onFrom: (id: string) => void;
+  sourceName?: string;
+  loading: boolean;
+}) {
+  const money = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const pc = (v: number) => `${(v * 100).toFixed(2)}%`;
+  return (
+    <div className="mt-2 rounded-2xl border border-line p-4">
+      {!!held?.length && (
+        <label className="mb-3 flex items-center justify-between gap-3 text-xs text-muted">
+          <span className="shrink-0">Compare with</span>
+          <select
+            value={from}
+            onChange={(e) => onFrom(e.target.value)}
+            className="min-w-0 flex-1 truncate rounded-lg border border-line bg-bg px-2 py-1.5 text-right text-xs text-ink outline-none"
+          >
+            <option value="">New money</option>
+            {held.map((h) => (
+              <option key={h.o.id} value={h.o.id}>
+                {h.o.name} · {pc(steadyApy(h.o))} · {money(h.usd ?? 0)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {!p || loading ? (
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <Loader2 className="size-4 animate-spin" /> Working out the payback…
+        </p>
+      ) : p.days === null ? (
+        <>
+          <p className="text-[17px] font-semibold text-ink">Doesn&apos;t pay back</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            {p.kind === "switch"
+              ? `This vault earns ${pc(Math.abs(p.gain))} a year less than ${sourceName}, so moving only costs you ${money(p.costUsd)}.`
+              : "This vault isn't earning right now."}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-[17px] font-semibold text-ink">
+            Pays back in <span className="text-accent">{daysText(p.days)}</span>
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            {p.kind === "switch"
+              ? `Moving from ${sourceName} costs ${money(p.costUsd)} and earns ${pc(p.gain)} a year more${p.lockDays > 0 ? `, including ${daysText(p.lockDays)} waiting to exit` : ""}.`
+              : `Costs ${money(p.costUsd)} (${p.costPct.toFixed(2)}%), earned back at ${pc(p.apy)} APY.`}
+          </p>
+        </>
+      )}
+    </div>
   );
 }
 
