@@ -285,11 +285,25 @@ export type RelayQuote = {
 };
 export type RelayLeg = { from: number; to: number; inToken: string; outToken: string; amount: bigint; user: string; recipient: string; gasUsd?: number; noGasLeg?: boolean };
 
-const GAS_RESERVE_DEFAULT_USD = 0.15;
+/** Gas a deposit uses on the vault chain (approve + deposit); the 2x covers the later withdrawal too. */
+const DEPOSIT_GAS_UNITS = BigInt(400_000);
+const GAS_RESERVE_MIN_USD = 0.02; // L2s: covers the L1 data fee that the gas price leaves out
+const GAS_RESERVE_MAX_USD = 1;
+const nativePrice = new Map<number, { usd: number; at: number }>();
+async function nativeUsdPrice(chainId: number): Promise<number | null> {
+  const hit = nativePrice.get(chainId);
+  if (hit && Date.now() - hit.at < 5 * 60_000) return hit.usd;
+  const r = await fetch(`https://li.quest/v1/token?chain=${chainId}&token=${zeroAddress}`, { signal: AbortSignal.timeout(10_000) }).catch(() => null);
+  const usd = Number(((await r?.json().catch(() => null)) as { priceUSD?: string } | null)?.priceUSD);
+  if (!(usd > 0)) return null;
+  nativePrice.set(chainId, { usd, at: Date.now() });
+  return usd;
+}
+
 /**
- * How much of the vault chain's gas token (in USD) a deposit's bridge should also deliver. Only on legs leaving
- * Base for an EVM chain, and only when the user's wallet there is short, so Pecun's gas tank only has to
- * cover Base; it stays a backup everywhere else.
+ * How much of the vault chain's gas token (in USD) a deposit's bridge also delivers: twice the live gas estimate
+ * for the deposit's transactions there, less what the wallet already holds. Only on legs leaving Base for an EVM
+ * chain, so Pecun's gas tank only has to cover Base.
  */
 async function gasReserveUsd(p: RelayLeg): Promise<number> {
   if (p.gasUsd !== undefined) return p.gasUsd;
@@ -297,9 +311,17 @@ async function gasReserveUsd(p: RelayLeg): Promise<number> {
   const c = evmChain(p.to);
   if (!c || c.feeToken || c.gasReserveUsd === 0) return 0;
   if (["0x0000000000000000000000000000000000000000", "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"].includes(p.outToken.toLowerCase())) return 0; // already delivers gas
-  const bal = await chainClient(p.to).getBalance({ address: p.recipient as Address }).catch(() => null);
-  if (bal === null || bal >= parseUnits(c.topUp, 18) * BigInt(2)) return 0;
-  return c.gasReserveUsd ?? GAS_RESERVE_DEFAULT_USD;
+  const client = chainClient(p.to);
+  const [bal, gasPrice, price] = await Promise.all([
+    client.getBalance({ address: p.recipient as Address }).catch(() => null),
+    client.getGasPrice().catch(() => null),
+    nativeUsdPrice(p.to),
+  ]);
+  if (bal === null || gasPrice === null || price === null) return 0;
+  const need = DEPOSIT_GAS_UNITS * gasPrice * BigInt(2);
+  if (bal >= need) return 0;
+  const usd = Number(formatUnits(need - bal, 18)) * price;
+  return Math.round(Math.min(GAS_RESERVE_MAX_USD, Math.max(GAS_RESERVE_MIN_USD, usd)) * 100) / 100;
 }
 
 /**
