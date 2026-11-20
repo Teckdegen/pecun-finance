@@ -873,7 +873,7 @@ function DepositPanel({ o }: { o: Opportunity }) {
             <Info className="size-3.5 shrink-0 text-muted" /> Withdrawals: <b className="font-medium">{o.redemption}</b>
           </div>
         )}
-        <div className={`mt-3 rounded-2xl border p-4 ${amountError ? "border-red-400/70" : "border-line"}`}>
+        <div className={`mt-3 rounded-2xl border p-4 ${amountError ? "border-accent/70" : "border-line"}`}>
           <label htmlFor="amount" className="text-xs text-muted">
             {side === "deposit" ? "Deposit" : "Withdraw"}
           </label>
@@ -898,7 +898,7 @@ function DepositPanel({ o }: { o: Opportunity }) {
           </div>
         </div>
         {amountError && (
-          <p id="amount-error" role="alert" className="mt-2 text-xs text-red-300">
+          <p id="amount-error" role="alert" className="mt-2 text-xs text-white">
             {amountError}
           </p>
         )}

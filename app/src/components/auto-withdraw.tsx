@@ -143,7 +143,7 @@ export function AutoWithdraw() {
         ) : notice.kind === "done" ? (
           <Check className="size-4 text-accent" strokeWidth={3} />
         ) : (
-          <X className="size-4 text-red-300" strokeWidth={3} />
+          <X className="size-4 text-accent" strokeWidth={3} />
         )}
       </span>
       <p className="flex-1 leading-snug">{notice.text}</p>

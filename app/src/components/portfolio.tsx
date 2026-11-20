@@ -291,7 +291,7 @@ export function ActivityView() {
                     className="grid grid-cols-[1.2fr_2fr_1fr_1fr] items-center gap-2 px-3 py-3 text-sm hover:bg-card-2"
                   >
                     <span className="min-w-0">
-                      <span className={`block font-medium ${a.status === "failed" ? "text-red-300" : "text-ink"}`}>
+                      <span className={`block font-medium ${a.status === "failed" ? "text-white" : "text-ink"}`}>
                         {ACTION[a.side]}
                         {a.status === "failed" ? " · didn't finish" : ""}
                       </span>

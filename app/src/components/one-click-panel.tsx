@@ -271,7 +271,7 @@ export function OneClickPanel({ o }: { o: Opportunity }) {
                     <Plus className="size-5" /> Add USDC
                   </button>
                 )}
-                {n > max && <p className="mt-4 text-sm text-red-300">That&apos;s more than you have.</p>}
+                {n > max && <p className="mt-4 text-sm text-white">That&apos;s more than you have.</p>}
               </div>
               {queue && (queue.pending > 0 || queue.arrived > 0) && <PendingBox q={queue} />}
               {n > 0 && shown && <Breakdown q={shown} side={side} amount={n} inSymbol={side === "add" ? "USDC" : symbol} />}
@@ -350,11 +350,11 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
         <Loader2 className="size-3.5 animate-spin" /> Finding the best route…
       </p>
     );
-  if (q.error || !q.p) return <p className="mt-3 break-words text-xs text-red-300">{q.error ?? "No route right now."}</p>;
+  if (q.error || !q.p) return <p className="mt-3 break-words text-xs text-white">{q.error ?? "No route right now."}</p>;
   const p = q.p;
   if (routeCostPct(p) > MAX_ROUTE_COST_PCT)
     return (
-      <p className="mt-3 rounded-xl border border-red-400/40 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-white/85">
+      <p className="mt-3 rounded-xl border border-accent/30 bg-accent/[0.08] px-3 py-2 text-xs leading-relaxed text-white">
         Moving this amount would cost {routeCostPct(p).toFixed(2)}% in bridge and swap fees and price impact, above Pecun&apos;s {MAX_ROUTE_COST_PCT}% limit, so it won&apos;t run. Fixed
         fees weigh less on larger amounts: try a bigger amount, or try again later.
       </p>
@@ -391,7 +391,7 @@ function Breakdown({ q, side, amount, inSymbol }: { q: { p?: Preview; error?: st
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-3">
             <dt className="text-muted">{k}</dt>
-            <dd className={k === "Price impact" && p.impactPct < -1 ? "text-red-300" : "text-ink"}>{v}</dd>
+            <dd className={k === "Price impact" && p.impactPct < -1 ? "text-white" : "text-ink"}>{v}</dd>
           </div>
         ))}
       </dl>
@@ -455,7 +455,7 @@ function RunView({ run, onRetry, onDone }: { run: Run; onRetry: () => void; onDo
         {run.result ? (
           <Check className="size-5 shrink-0 text-accent" strokeWidth={3} />
         ) : run.error ? (
-          <X className="size-5 shrink-0 text-red-300" strokeWidth={3} />
+          <X className="size-5 shrink-0 text-accent" strokeWidth={3} />
         ) : (
           <Loader2 className="size-5 shrink-0 animate-spin text-muted" />
         )}
@@ -464,7 +464,7 @@ function RunView({ run, onRetry, onDone }: { run: Run; onRetry: () => void; onDo
         </p>
       </div>
       {run.result && <p className="mt-3 text-sm text-muted">{run.side === "add" ? `${run.result} is now earning.` : `${run.result} is back in your wallet.`}</p>}
-      {run.error && <p className="mt-3 break-words rounded-xl border border-red-400/40 bg-red-400/10 px-3 py-2 text-sm text-white/85">{run.error}</p>}
+      {run.error && <p className="mt-3 break-words rounded-xl border border-accent/30 bg-accent/[0.08] px-3 py-2 text-sm text-white">{run.error}</p>}
       {(run.result || run.error) && (
         <div className="mt-3 flex gap-2">
           {run.error && (

@@ -108,7 +108,7 @@ export function TermsGate() {
             </span>
           </label>
           {declined && (
-            <p role="alert" className="mt-3 font-sans text-xs text-red-300">
+            <p role="alert" className="mt-3 font-sans text-xs text-white">
               You need to accept the terms to use Pecun.
             </p>
           )}

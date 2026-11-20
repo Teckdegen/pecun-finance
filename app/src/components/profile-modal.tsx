@@ -318,7 +318,7 @@ function PrivateReceive({ address }: { address: string }) {
     };
   }, [address, signAccountsRequest, signEvmDigest]);
 
-  if (error) return <p className="mt-8 rounded-2xl border border-red-400/40 bg-red-400/10 px-4 py-3 font-sans text-sm text-white/85">{error}</p>;
+  if (error) return <p className="mt-8 rounded-2xl border border-accent/30 bg-accent/[0.08] px-4 py-3 font-sans text-sm text-white">{error}</p>;
   if (!tag)
     return (
       <p className="mt-10 flex items-center justify-center gap-2 font-sans text-sm text-white/55">
@@ -638,9 +638,9 @@ function SendView({ from, bal, live, close, back, onSent }: {
           className="mt-1 w-full bg-transparent font-mono text-[14px] text-white outline-none placeholder:font-sans placeholder:text-[16px] placeholder:text-white/35"
         />
       </label>
-      {to && !isAddress(to) && <p className="mt-2 px-1 font-sans text-xs text-neg">That isn&apos;t a valid address.</p>}
-      {isAddress(to) && !toOk && <p className="mt-2 px-1 font-sans text-xs text-neg">That&apos;s your own address.</p>}
-      {tooMuch && <p className="mt-2 px-1 font-sans text-xs text-neg">That&apos;s more {token} than you have.</p>}
+      {to && !isAddress(to) && <p className="mt-2 px-1 font-sans text-xs text-white">That isn&apos;t a valid address.</p>}
+      {isAddress(to) && !toOk && <p className="mt-2 px-1 font-sans text-xs text-white">That&apos;s your own address.</p>}
+      {tooMuch && <p className="mt-2 px-1 font-sans text-xs text-white">That&apos;s more {token} than you have.</p>}
 
       <button
         type="button"
@@ -657,7 +657,7 @@ function SendView({ from, bal, live, close, back, onSent }: {
 
 function ErrorNote({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="mt-4 rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white/85">
+    <p role="alert" className="mt-4 rounded-2xl border border-accent/30 bg-accent/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white">
       {children}
     </p>
   );

@@ -260,7 +260,7 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
               {setupError ? "Creating your wallet failed." : "This may take a moment."}
             </p>
             {setupError && (
-              <p role="alert" className="mt-4 break-words rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 text-left font-sans text-sm leading-relaxed text-white/85">
+              <p role="alert" className="mt-4 break-words rounded-2xl border border-accent/30 bg-accent/[0.08] px-4 py-3 text-left font-sans text-sm leading-relaxed text-white">
                 {setupError}
               </p>
             )}
@@ -296,7 +296,7 @@ export function SignInModal({ open, onClose }: { open: boolean; onClose: () => v
           </p>
         )}
         {error && (
-          <p role="alert" className="mt-4 rounded-2xl border border-neg/30 bg-neg/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white/85">
+          <p role="alert" className="mt-4 rounded-2xl border border-accent/30 bg-accent/[0.08] px-4 py-3 font-sans text-sm leading-relaxed text-white">
             {error}
           </p>
         )}

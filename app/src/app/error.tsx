@@ -10,7 +10,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   }, [error]);
   return (
     <div role="alert" className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-      <p className="font-mono text-sm text-red-300">Something went wrong</p>
+      <p className="font-mono text-sm text-white">Something went wrong</p>
       <h1 className="mt-3 text-[1.7rem] font-medium leading-tight tracking-[-0.03em] md:text-[2rem]">We couldn&apos;t load this page.</h1>
       <p className="mt-3 max-w-md text-sm text-muted">
         A data source may be slow or down. Try again in a moment. Your funds aren&apos;t affected: positions live on-chain, not in this page.
