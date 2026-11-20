@@ -290,15 +290,19 @@ const DEPOSIT_GAS_UNITS = BigInt(400_000);
 const GAS_RESERVE_MIN_USD = 0.02; // L2s: covers the L1 data fee that the gas price leaves out
 const GAS_RESERVE_MAX_USD = 1;
 const nativePrice = new Map<number, { usd: number; at: number }>();
-async function nativeUsdPrice(chainId: number): Promise<number | null> {
+/** USD price of a chain's gas coin (LI.FI's chain id and token id), cached for 5 minutes. */
+async function nativeUsdPrice(chainId: number, token: string = zeroAddress): Promise<number | null> {
   const hit = nativePrice.get(chainId);
   if (hit && Date.now() - hit.at < 5 * 60_000) return hit.usd;
-  const r = await fetch(`https://li.quest/v1/token?chain=${chainId}&token=${zeroAddress}`, { signal: AbortSignal.timeout(10_000) }).catch(() => null);
+  const r = await fetch(`https://li.quest/v1/token?chain=${chainId}&token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(10_000) }).catch(() => null);
   const usd = Number(((await r?.json().catch(() => null)) as { priceUSD?: string } | null)?.priceUSD);
   if (!(usd > 0)) return null;
   nativePrice.set(chainId, { usd, at: Date.now() });
   return usd;
 }
+/** A separate gas leg (Solana, Sui) is never smaller than this, so the bridge's own fee doesn't eat it. */
+const GAS_LEG_MIN_USD = 0.1;
+const usdToUsdc = (usd: number) => BigInt(Math.ceil(Math.min(GAS_RESERVE_MAX_USD, Math.max(GAS_LEG_MIN_USD, usd)) * 100)) * BigInt(10_000);
 
 /**
  * How much of the vault chain's gas token (in USD) a deposit's bridge also delivers: twice the live gas estimate
@@ -326,16 +330,38 @@ async function gasReserveUsd(p: RelayLeg): Promise<number> {
 
 /**
  * Solana: Relay can't add a gas top-up there, so when the user's Solana wallet is short on SOL, a deposit's bridge is
- * split: a small leg into native SOL (the user's gas reserve, about $0.60) and the rest into the vault's asset.
+ * split: a small leg into native SOL and the rest into the vault's asset. The SOL is twice the live estimate of what
+ * the deposit's transactions need there (fees, plus rent for the one token account a deposit may open), less what the
+ * wallet already holds; the 2x covers the withdrawal later.
  */
 const SOLANA_NATIVE = "11111111111111111111111111111111";
-const SOL_RESERVE_USDG = BigInt(600_000); // $0.60 of USDC (6 decimals): about 0.008 SOL
+const LIFI_SOLANA_ID = 1151111081099710;
+const SOL_RENT_TOKEN_ACCOUNT = BigInt(2_039_280);
+const SOL_TXS_PER_DEPOSIT = BigInt(3);
+const SOL_COMPUTE_UNITS = BigInt(400_000);
+async function solanaPriorityFee(): Promise<bigint> {
+  // Median recent priority fee, micro-lamports per compute unit.
+  const r = await fetch(SOLANA_RPC, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getRecentPrioritizationFees", params: [] }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch(() => null);
+  const fees = (((await r?.json().catch(() => null)) as { result?: { prioritizationFee: number }[] } | null)?.result ?? []).map((x) => x.prioritizationFee).sort((a, b) => a - b);
+  return BigInt(Math.round(fees[Math.floor(fees.length / 2)] ?? 0));
+}
+async function solanaGasNeed(): Promise<bigint> {
+  const perTx = BigInt(5_000) + ((await solanaPriorityFee().catch(() => BigInt(0))) * SOL_COMPUTE_UNITS) / BigInt(1_000_000);
+  const need = BigInt(2) * (SOL_RENT_TOKEN_ACCOUNT + SOL_TXS_PER_DEPOSIT * perTx);
+  return need > SOL_NEEDED ? need : SOL_NEEDED;
+}
 export async function solanaGasLeg(p: RelayLeg): Promise<RelayLeg | null> {
   if (p.noGasLeg || p.from !== ROBINHOOD_CHAIN_ID || p.to !== SOLANA_CHAIN_ID || p.outToken === SOLANA_NATIVE) return null;
-  if (p.amount <= SOL_RESERVE_USDG * BigInt(5)) return null; // too small to split
-  const have = await lamports(p.recipient).catch(() => null);
-  if (have === null || have >= SOL_NEEDED) return null;
-  return { ...p, outToken: SOLANA_NATIVE, amount: SOL_RESERVE_USDG, noGasLeg: true };
+  const [have, need, price] = await Promise.all([lamports(p.recipient).catch(() => null), solanaGasNeed(), nativeUsdPrice(LIFI_SOLANA_ID, SOLANA_NATIVE)]);
+  if (have === null || price === null || have >= need) return null;
+  const amount = usdToUsdc(Number(formatUnits(need - have, 9)) * price);
+  if (p.amount <= amount * BigInt(5)) return null; // too small to split
+  return { ...p, outToken: SOLANA_NATIVE, amount, noGasLeg: true };
 }
 
 export async function relayQuote(p: RelayLeg): Promise<RelayQuote> {
@@ -2007,11 +2033,31 @@ export const suiOutSteps = (coinType: string, symbol: string, withdrawLabel?: st
  * Sui: no bridge adds gas there, so when the user's Sui wallet is short on SUI, a little of the USDC that reaches Base
  * (about $0.30) is bridged into SUI as their gas reserve, and the rest goes on to the vault.
  */
-const SUI_RESERVE_USDC = BigInt(300_000); // $0.30 of USDC (6 decimals)
+const LIFI_SUI_ID = 9270000000000000;
+const SUI_TXS_PER_DEPOSIT = BigInt(3);
+async function suiGasPrice(): Promise<bigint> {
+  // Sui's public JSON-RPC is retired; the reference gas price comes from its GraphQL endpoint.
+  const r = await fetch("https://graphql.mainnet.sui.io/graphql", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query: "{ epoch { referenceGasPrice } }" }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch(() => null);
+  const v = ((await r?.json().catch(() => null)) as { data?: { epoch?: { referenceGasPrice?: string } } } | null)?.data?.epoch?.referenceGasPrice;
+  return v ? BigInt(v) : BigInt(1_000);
+}
+/**
+ * USDC to bridge into SUI as the wallet's gas: twice the live estimate for the deposit's transactions (computation at
+ * the reference gas price plus storage), on top of the per-transaction budget Sui sets aside, less what's there.
+ */
 async function suiReserveFor(sui: string, usdc: bigint): Promise<bigint> {
-  if (usdc <= SUI_RESERVE_USDC * BigInt(5)) return BigInt(0);
-  const have = await suiBalance(sui, SUI_TYPE).catch(() => null);
-  return have !== null && have < SUI_GAS * BigInt(3) ? SUI_RESERVE_USDC : BigInt(0);
+  const [have, gasPrice, price] = await Promise.all([suiBalance(sui, SUI_TYPE).catch(() => null), suiGasPrice().catch(() => BigInt(1_000)), nativeUsdPrice(LIFI_SUI_ID, SUI_TYPE)]);
+  if (have === null || price === null) return BigInt(0);
+  const perTx = gasPrice * BigInt(5_000) + BigInt(3_000_000); // computation + storage, in MIST
+  const need = SUI_GAS + BigInt(2) * SUI_TXS_PER_DEPOSIT * perTx;
+  if (have >= need) return BigInt(0);
+  const reserve = usdToUsdc(Number(formatUnits(need - have, 9)) * price);
+  return usdc > reserve * BigInt(5) ? reserve : BigInt(0);
 }
 const withReserve = (p: Preview, reserve: bigint): Preview =>
   reserve > BigInt(0) ? { ...p, gasReserveUsd: (p.gasReserveUsd ?? 0) + Number(formatUnits(reserve, 6)) } : p;
